@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Info } from "lucide-react";
-import { ActionBar } from "../../layout/ActionBar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -15,15 +14,11 @@ import {
 } from "../../data/evaluationData";
 
 interface TestItemsProps {
-  onNext: () => void;
-  onPrevious: () => void;
   taskType?: TaskType | "";
   onSelectedTCsChange?: (ids: string[]) => void;
 }
 
 export function TestItems({
-  onNext,
-  onPrevious,
   taskType,
   onSelectedTCsChange,
 }: TestItemsProps) {
@@ -156,8 +151,6 @@ export function TestItems({
           </CardContent>
         </Card>
       </main>
-
-      <ActionBar showPrevious={true} onPrevious={onPrevious} onNext={onNext} nextDisabled={selectedTCs.length === 0} />
     </>
   );
 }

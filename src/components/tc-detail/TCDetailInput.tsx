@@ -17,12 +17,10 @@ import type { TcDetailState, TcDetailStateMap } from "../../types/workflow.types
 import { parseNumericValue, getTargetValueRule } from "../../utils/validation";
 
 interface TCDetailInputProps {
-  onNext: () => void;
-  onPrevious: () => void;
-  taskType?: TaskType | "";
-  selectedTCIds?: string[];
   tcDetails: TcDetailStateMap;
   onTcDetailsChange: (value: TcDetailStateMap | ((prev: TcDetailStateMap) => TcDetailStateMap)) => void;
+  currentTCIndex: number;
+  onCurrentTCIndexChange: (idx: number) => void;
 }
 
 function createDefaultState(id: string, name: string): TcDetailState {
@@ -39,16 +37,15 @@ function createDefaultState(id: string, name: string): TcDetailState {
 }
 
 export function TCDetailInput({
-  onNext,
-  onPrevious,
   taskType = "",
   selectedTCIds = [],
   tcDetails,
   onTcDetailsChange,
+  currentTCIndex,
+  onCurrentTCIndexChange,
 }: TCDetailInputProps) {
   const resolvedTaskType = taskType || "multiclass";
   const selectedTCs = useMemo(() => getSelectedTestCases(resolvedTaskType, selectedTCIds), [resolvedTaskType, selectedTCIds]);
-  const [currentTCIndex, setCurrentTCIndex] = useState(0);
 
   useEffect(() => {
     if (selectedTCs.length === 0) {
@@ -271,17 +268,42 @@ export function TCDetailInput({
           </Card>
         </div>
       </main>
-
-      <div className="h-18 border-t border-border bg-background sticky bottom-0 z-40">
-        <div className="h-full px-8 py-4 flex items-center justify-between max-w-[1344px] mx-auto">
-          <Button variant="outline" onClick={handlePreviousClick}>
-            {currentTCIndex === 0 ? "Previous step" : "Previous TC"}
-          </Button>
-          <Button onClick={handleNextClick} disabled={!isComplete}>
-            {isLastTC ? "Finish" : "Next TC"}
-          </Button>
-        </div>
-      </div>
     </>
   );
+}
+
+export function isCurrentTCValid(
+  taskType: TaskType | "",
+  tcId: string,
+  state: TcDetailState
+) {
+  const needsPositiveClass = selectionNeedsField(taskType || "multiclass", [tcId], "positiveClass");
+  const needsBeta = selectionNeedsField(taskType || "multiclass", [tcId], "beta");
+  
+  const parsedTargetValue = parseNumericValue(state.targetValue);
+  const targetValueRule = getTargetValueRule(tcId);
+  const targetValueError =
+    state.targetValue.trim() === ""
+      ? "Target value is required."
+      : parsedTargetValue === null
+        ? "Target value must be a valid number."
+        : targetValueRule.validate(parsedTargetValue);
+
+  const parsedBeta = parseNumericValue(state.beta);
+  const betaError = !needsBeta
+    ? null
+    : state.beta.trim() === ""
+      ? "Beta is required for this TC."
+      : parsedBeta === null
+        ? "Beta must be a valid number."
+        : parsedBeta <= 0
+          ? "Beta must be greater than 0."
+          : null;
+
+  const isComplete =
+    !targetValueError &&
+    !betaError &&
+    (!needsPositiveClass || state.positiveClass.trim() !== "");
+
+  return isComplete;
 }

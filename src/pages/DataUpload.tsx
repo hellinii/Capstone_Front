@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { DataUpload as DataUploadContent } from "../components/data-upload/DataUpload";
+import { DataUpload as DataUploadContent, isDataUploadValid } from "../components/data-upload/DataUpload";
 
 /**
  * Step 4 — Data Upload page
@@ -22,10 +22,16 @@ export function DataUpload() {
   };
 
   return (
-    <WorkflowShell>
+    <WorkflowShell
+      showActionBar
+      showPrevious={true}
+      showNext={true}
+      onPrevious={handlePrevious}
+      onNext={handleNext}
+      nextDisabled={!isDataUploadValid(store.datasetInfo, store.uploadedFile)}
+      nextLabel="Next step"
+    >
       <DataUploadContent
-        onNext={handleNext}
-        onPrevious={handlePrevious}
         taskType={store.taskType}
         selectedTCIds={store.selectedTCIds}
         datasetInfo={store.datasetInfo}

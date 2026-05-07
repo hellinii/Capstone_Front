@@ -16,10 +16,14 @@ export function EvaluationReport() {
   };
 
   return (
-    <WorkflowShell>
+    <WorkflowShell
+      showActionBar
+      showPrevious={true}
+      showNext={false}
+      onPrevious={handlePrevious}
+    >
       <EvaluationReportStep
         report={store.getReport()}
-        onPrevious={handlePrevious}
       />
     </WorkflowShell>
   );

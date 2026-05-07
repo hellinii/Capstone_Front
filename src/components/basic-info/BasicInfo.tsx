@@ -18,8 +18,29 @@ interface BasicInfoProps {
   onTaskTypeChange?: (type: string) => void;
 }
 
+export function isBasicInfoValid(formData: BasicInfoFormData) {
+  const baseValid =
+    formData.companyName &&
+    formData.representative &&
+    formData.businessNumber &&
+    formData.phone &&
+    formData.address &&
+    formData.contractDate &&
+    formData.reportPurpose &&
+    formData.versionName &&
+    formData.modelName &&
+    formData.modelPurpose &&
+    formData.modelCategory &&
+    formData.taskType;
+
+  if (formData.reportPurpose === "project") {
+    return baseValid && formData.projectName && formData.projectAgency;
+  }
+
+  return !!baseValid;
+}
+
 export function BasicInfo({
-  onNext,
   formData,
   onFormDataChange,
   onTaskTypeChange,
@@ -31,28 +52,6 @@ export function BasicInfo({
   const handleTaskTypeChange = (value: string) => {
     update("taskType", value as BasicInfoFormData["taskType"]);
     onTaskTypeChange?.(value);
-  };
-
-  const isFormValid = () => {
-    const baseValid =
-      formData.companyName &&
-      formData.representative &&
-      formData.businessNumber &&
-      formData.phone &&
-      formData.address &&
-      formData.contractDate &&
-      formData.reportPurpose &&
-      formData.versionName &&
-      formData.modelName &&
-      formData.modelPurpose &&
-      formData.modelCategory &&
-      formData.taskType;
-
-    if (formData.reportPurpose === "project") {
-      return baseValid && formData.projectName && formData.projectAgency;
-    }
-
-    return !!baseValid;
   };
 
   return (
@@ -203,13 +202,6 @@ export function BasicInfo({
           </Card>
         </div>
       </main>
-
-      <div className="fixed bottom-0 left-0 right-0 h-[72px] bg-card border-t border-border flex items-center justify-between px-8 z-10">
-        <Button variant="outline">Save draft</Button>
-        <Button onClick={onNext} disabled={!isFormValid()}>
-          Next step
-        </Button>
-      </div>
     </>
   );
 }

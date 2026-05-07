@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Info, ShieldAlert, Sparkles } from "lucide-react";
-import { ActionBar } from "../../layout/ActionBar";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -24,8 +23,7 @@ import { getRoleStatusLabel, getRowMatchState } from "../../utils/mappingHelpers
 interface ColumnMappingProps {
   taskType?: TaskType | "";
   selectedTCIds?: string[];
-  onNext: () => void;
-  onPrevious: () => void;
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 const roleOptions: Array<{ value: MappingRole; label: string }> = [
@@ -42,8 +40,7 @@ const roleOptions: Array<{ value: MappingRole; label: string }> = [
 export function ColumnMapping({
   taskType = "",
   selectedTCIds = [],
-  onNext,
-  onPrevious,
+  onValidationChange,
 }: ColumnMappingProps) {
   const resolvedTaskType: TaskType = taskType || "multiclass";
   const selectedTestCases = useMemo(
@@ -116,6 +113,10 @@ export function ColumnMapping({
       isValid: missingRoles.length === 0 && duplicateCount === 0,
     };
   }, [requiredRoles, roleCounts, rows]);
+
+  useEffect(() => {
+    onValidationChange?.(mappingSummary.isValid);
+  }, [mappingSummary.isValid, onValidationChange]);
 
   const handleRoleChange = (index: number, newRole: string) => {
     setRows((prev) =>
@@ -374,14 +375,6 @@ export function ColumnMapping({
           </Alert>
         )}
       </main>
-
-      <ActionBar
-        showPrevious={true}
-        onPrevious={onPrevious}
-        onNext={onNext}
-        nextDisabled={!mappingSummary.isValid}
-        nextLabel="Confirm mapping"
-      />
     </>
   );
 }

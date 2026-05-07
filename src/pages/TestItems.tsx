@@ -22,10 +22,16 @@ export function TestItems() {
   };
 
   return (
-    <WorkflowShell>
+    <WorkflowShell
+      showActionBar
+      showPrevious={true}
+      showNext={true}
+      onPrevious={handlePrevious}
+      onNext={handleNext}
+      nextDisabled={store.selectedTCIds.length === 0}
+      nextLabel="Next step"
+    >
       <TestItemsContent
-        onNext={handleNext}
-        onPrevious={handlePrevious}
         taskType={store.taskType}
         onSelectedTCsChange={store.setSelectedTCIds}
       />

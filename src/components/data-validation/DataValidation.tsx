@@ -1,5 +1,5 @@
+import { useEffect } from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
-import { ActionBar } from "../../layout/ActionBar";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -21,8 +21,8 @@ import { buildMockValidationResponse } from "../../data/mock/dataValidationMock"
 interface DataValidationProps {
   taskType?: TaskType | "";
   selectedTCIds?: string[];
-  onNext: () => void;
-  onPrevious: () => void;
+  selectedTCIds?: string[];
+  onValidationChange?: (hasError: boolean) => void;
 }
 
 function getStatusBadge(status: ValidationStatus) {
@@ -38,11 +38,14 @@ function getStatusBadge(status: ValidationStatus) {
 export function DataValidation({
   taskType = "",
   selectedTCIds = [],
-  onNext,
-  onPrevious,
+  onValidationChange,
 }: DataValidationProps) {
   const validationResponse = buildMockValidationResponse(taskType, selectedTCIds);
   const hasBlockingError = validationResponse.errorCount > 0;
+
+  useEffect(() => {
+    onValidationChange?.(hasBlockingError);
+  }, [hasBlockingError, onValidationChange]);
 
   return (
     <>
@@ -137,8 +140,6 @@ export function DataValidation({
           </CardContent>
         </Card>
       </main>
-
-      <ActionBar showPrevious={true} onPrevious={onPrevious} onNext={onNext} nextLabel="Run evaluation" />
     </>
   );
 }

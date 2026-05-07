@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
@@ -9,6 +10,7 @@ import { DataValidation as DataValidationContent } from "../components/data-vali
 export function DataValidation() {
   const navigate = useNavigate();
   const store = useWorkflowStore();
+  const [hasError, setHasError] = useState(false);
 
   const handleNext = () => {
     store.markStepCompleted(6);
@@ -22,12 +24,19 @@ export function DataValidation() {
   };
 
   return (
-    <WorkflowShell>
+    <WorkflowShell
+      showActionBar
+      showPrevious={true}
+      showNext={true}
+      onPrevious={handlePrevious}
+      onNext={handleNext}
+      nextDisabled={hasError}
+      nextLabel="Run evaluation"
+    >
       <DataValidationContent
-        onNext={handleNext}
-        onPrevious={handlePrevious}
         taskType={store.taskType}
         selectedTCIds={store.selectedTCIds}
+        onValidationChange={setHasError}
       />
     </WorkflowShell>
   );

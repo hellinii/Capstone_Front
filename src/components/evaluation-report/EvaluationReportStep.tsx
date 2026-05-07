@@ -1,15 +1,12 @@
-import { ActionBar } from "../../layout/ActionBar";
 import { EvaluationReport } from "./EvaluationReport";
 import type { EvaluationReportData } from "@/types/report.types";
 
 interface EvaluationReportStepProps {
   report: EvaluationReportData;
-  onPrevious: () => void;
 }
 
 export function EvaluationReportStep({
   report,
-  onPrevious,
 }: EvaluationReportStepProps) {
   return (
     <>
@@ -23,8 +20,6 @@ export function EvaluationReportStep({
 
         <EvaluationReport report={report} />
       </main>
-
-      <ActionBar showPrevious={true} onPrevious={onPrevious} showNext={false} />
     </>
   );
 }

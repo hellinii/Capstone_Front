@@ -8,6 +8,7 @@ interface ActionBarProps {
   onNext?: () => void;
   nextDisabled?: boolean;
   nextLabel?: string;
+  leftAction?: React.ReactNode;
 }
 
 export function ActionBar({
@@ -17,17 +18,19 @@ export function ActionBar({
   onNext,
   nextDisabled = false,
   nextLabel = "Next",
+  leftAction,
 }: ActionBarProps) {
   return (
     <div className="h-18 border-t border-border bg-background sticky bottom-0 z-40">
       <div className="h-full px-8 py-4 flex items-center justify-between max-w-[1344px] mx-auto">
-        <div>
+        <div className="flex items-center gap-4">
           {showPrevious && (
             <Button variant="outline" onClick={onPrevious}>
               <ChevronLeft className="h-4 w-4 mr-1" />
               Previous
             </Button>
           )}
+          {leftAction}
         </div>
 
         <div>

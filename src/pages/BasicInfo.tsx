@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { BasicInfo as BasicInfoContent } from "../components/basic-info/BasicInfo";
+import { BasicInfo as BasicInfoContent, isBasicInfoValid } from "../components/basic-info/BasicInfo";
+
+import { Button } from "../components/ui/button";
 
 /**
  * Step 1 — Basic Info page
@@ -17,9 +19,15 @@ export function BasicInfo() {
   };
 
   return (
-    <WorkflowShell>
+    <WorkflowShell
+      showActionBar
+      showPrevious={false}
+      onNext={handleNext}
+      nextDisabled={!isBasicInfoValid(store.basicInfo)}
+      nextLabel="Next step"
+      leftAction={<Button variant="outline">Save draft</Button>}
+    >
       <BasicInfoContent
-        onNext={handleNext}
         formData={store.basicInfo}
         onFormDataChange={store.setBasicInfo}
         onTaskTypeChange={(type) => store.setTaskType(type as any)}

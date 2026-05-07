@@ -1,6 +1,5 @@
 import { useMemo, useRef, type ChangeEvent, type ReactNode } from "react";
 import { FileText, Lightbulb, Upload, X } from "lucide-react";
-import { ActionBar } from "../../layout/ActionBar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
@@ -22,8 +21,6 @@ import { formatFileSize } from "../../utils/format";
 import { getCsvExample, getJsonExample } from "../../data/templateExamples";
 
 interface DataUploadProps {
-  onNext: () => void;
-  onPrevious: () => void;
   selectedTCIds?: string[];
   taskType?: TaskType | "";
   datasetInfo: DatasetInfoFormData;
@@ -35,9 +32,16 @@ interface DataUploadProps {
 }
 
 
+export function isDataUploadValid(datasetInfo: DatasetInfoFormData, uploadedFile: UploadedFileInfo | null) {
+  return (
+    uploadedFile !== null &&
+    datasetInfo.datasetFormat.trim() !== "" &&
+    datasetInfo.trainingSampleCount.trim() !== "" &&
+    datasetInfo.evaluationSampleCount.trim() !== ""
+  );
+}
+
 export function DataUpload({
-  onNext,
-  onPrevious,
   selectedTCIds = [],
   taskType = "",
   datasetInfo,
@@ -312,13 +316,6 @@ export function DataUpload({
           </Card>
         </div>
       </main>
-
-      <ActionBar
-        showPrevious={true}
-        onPrevious={onPrevious}
-        onNext={onNext}
-        nextDisabled={!uploadedFile || !isDatasetInfoValid}
-      />
     </>
   );
 }

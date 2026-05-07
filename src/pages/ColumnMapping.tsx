@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
@@ -9,6 +10,7 @@ import { ColumnMapping as ColumnMappingContent } from "../components/column-mapp
 export function ColumnMapping() {
   const navigate = useNavigate();
   const store = useWorkflowStore();
+  const [isValid, setIsValid] = useState(false);
 
   const handleNext = () => {
     store.markStepCompleted(5);
@@ -22,12 +24,19 @@ export function ColumnMapping() {
   };
 
   return (
-    <WorkflowShell>
+    <WorkflowShell
+      showActionBar
+      showPrevious={true}
+      showNext={true}
+      onPrevious={handlePrevious}
+      onNext={handleNext}
+      nextDisabled={!isValid}
+      nextLabel="Confirm mapping"
+    >
       <ColumnMappingContent
-        onNext={handleNext}
-        onPrevious={handlePrevious}
         taskType={store.taskType}
         selectedTCIds={store.selectedTCIds}
+        onValidationChange={setIsValid}
       />
     </WorkflowShell>
   );
