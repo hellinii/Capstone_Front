@@ -14,6 +14,7 @@ import {
   type TaskType,
 } from "../../data/evaluationData";
 import type { TcDetailState, TcDetailStateMap } from "../../types/workflow.types";
+import { parseNumericValue, getTargetValueRule } from "../../utils/validation";
 
 interface TCDetailInputProps {
   onNext: () => void;
@@ -34,71 +35,6 @@ function createDefaultState(id: string, name: string): TcDetailState {
     beta: id === "TC5" ? "1.0" : "",
     positiveClass: "",
     completed: false,
-  };
-}
-
-function parseNumericValue(value: string): number | null {
-  if (value.trim() === "") {
-    return null;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function getTargetValueRule(tcId: string): { summary: string; validate: (value: number) => string | null } {
-  const zeroToOneIds = new Set([
-    "TC1",
-    "TC2",
-    "TC3",
-    "TC4",
-    "TC5",
-    "TC7",
-    "TC8",
-    "TC9",
-    "TC10",
-    "TC11",
-    "TC12",
-    "TC13",
-    "TC15",
-    "TC16",
-    "TC17",
-    "TC22",
-  ]);
-
-  const nonNegativeIds = new Set(["TC6", "TC14", "TC18", "TC19", "TC21"]);
-
-  if (zeroToOneIds.has(tcId)) {
-    return {
-      summary: "Enter a number between 0 and 1.",
-      validate: (value) => (value < 0 || value > 1 ? "Target value must be between 0 and 1 for this TC." : null),
-    };
-  }
-
-  if (nonNegativeIds.has(tcId)) {
-    return {
-      summary: "Enter a number greater than or equal to 0.",
-      validate: (value) => (value < 0 ? "Target value must be 0 or greater for this TC." : null),
-    };
-  }
-
-  if (tcId === "TC20") {
-    return {
-      summary: "Enter a number between -1 and 1.",
-      validate: (value) => (value < -1 || value > 1 ? "Target value must be between -1 and 1 for MCC." : null),
-    };
-  }
-
-  if (tcId === "TC23") {
-    return {
-      summary: "Enter a number greater than or equal to 1.",
-      validate: (value) => (value < 1 ? "Target value must be 1 or greater for imbalance ratio." : null),
-    };
-  }
-
-  return {
-    summary: "Enter a valid numeric target value.",
-    validate: () => null,
   };
 }
 
