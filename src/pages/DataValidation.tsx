@@ -1,0 +1,40 @@
+import { useNavigate } from "react-router";
+import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
+import { WorkflowShell } from "../layout/WorkflowShell";
+import { DataValidation as DataValidationContent } from "../components/home/DataValidation";
+
+/**
+ * Step 6 — Data Validation page
+ */
+export function DataValidation() {
+  const navigate = useNavigate();
+  const store = useWorkflowStore();
+
+  const handleNext = () => {
+    store.markStepCompleted(6);
+    store.setCurrentStep(7);
+    navigate(stepToPath(7));
+  };
+
+  const handlePrevious = () => {
+    store.setCurrentStep(5);
+    navigate(stepToPath(5));
+  };
+
+  return (
+    <WorkflowShell>
+      <DataValidationContent
+        currentStep={store.currentStep}
+        completedSteps={store.completedSteps}
+        onStepClick={(step) => {
+          store.setCurrentStep(step);
+          navigate(stepToPath(step));
+        }}
+        onNext={handleNext}
+        onPrevious={handlePrevious}
+        taskType={store.taskType}
+        selectedTCIds={store.selectedTCIds}
+      />
+    </WorkflowShell>
+  );
+}
