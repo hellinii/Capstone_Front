@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { ColumnMapping as ColumnMappingContent } from "../components/home/ColumnMapping";
+import { ColumnMapping as ColumnMappingContent } from "../components/column-mapping/ColumnMapping";
 
 /**
  * Step 5 — Column Mapping page

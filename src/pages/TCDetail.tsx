@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { TCDetailInput } from "../components/home/TCDetailInput";
+import { TCDetailInput } from "../components/tc-detail/TCDetailInput";
 
 /**
  * Step 3 — TC Detail page

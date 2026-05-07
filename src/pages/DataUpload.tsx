@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { DataUpload as DataUploadContent } from "../components/home/DataUpload";
+import { DataUpload as DataUploadContent } from "../components/data-upload/DataUpload";
 
 /**
  * Step 4 — Data Upload page

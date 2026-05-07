@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { EvaluationReportStep } from "../components/home/EvaluationReportStep";
+import { EvaluationReportStep } from "../components/evaluation-report/EvaluationReportStep";
 
 /**
  * Step 7 — Evaluation Report page

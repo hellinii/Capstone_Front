@@ -1,5 +1,5 @@
 import { ActionBar } from "../../layout/ActionBar";
-import { EvaluationReport } from "../report/EvaluationReport";
+import { EvaluationReport } from "./EvaluationReport";
 import type { EvaluationReportData } from "@/types/report.types";
 
 interface EvaluationReportStepProps {

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { BasicInfo as BasicInfoContent } from "../components/home/BasicInfo";
+import { BasicInfo as BasicInfoContent } from "../components/basic-info/BasicInfo";
 
 /**
  * Step 1 — Basic Info page
