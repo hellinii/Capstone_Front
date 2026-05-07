@@ -24,12 +24,6 @@ export function TCDetail() {
   return (
     <WorkflowShell>
       <TCDetailInput
-        currentStep={store.currentStep}
-        completedSteps={store.completedSteps}
-        onStepClick={(step) => {
-          store.setCurrentStep(step);
-          navigate(stepToPath(step));
-        }}
         onNext={handleNext}
         onPrevious={handlePrevious}
         taskType={store.taskType}

@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { AppHeader } from "./AppHeader";
-import { StepTabs } from "./StepTabs";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -18,9 +16,6 @@ import {
 import type { TcDetailState, TcDetailStateMap } from "../../types/workflow.types";
 
 interface TCDetailInputProps {
-  currentStep: number;
-  completedSteps: number[];
-  onStepClick: (step: number) => void;
   onNext: () => void;
   onPrevious: () => void;
   taskType?: TaskType | "";
@@ -108,9 +103,6 @@ function getTargetValueRule(tcId: string): { summary: string; validate: (value: 
 }
 
 export function TCDetailInput({
-  currentStep,
-  completedSteps,
-  onStepClick,
   onNext,
   onPrevious,
   taskType = "",
@@ -138,17 +130,13 @@ export function TCDetailInput({
 
   if (selectedTCs.length === 0) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA]">
-        <AppHeader />
-        <StepTabs currentStep={currentStep} completedSteps={completedSteps} onStepClick={onStepClick} />
-        <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto">
-          <Card>
-            <CardContent className="py-10 text-sm text-muted-foreground">
-              Select test cases in Step 2 before entering TC details.
-            </CardContent>
-          </Card>
-        </main>
-      </div>
+      <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto">
+        <Card>
+          <CardContent className="py-10 text-sm text-muted-foreground">
+            Select test cases in Step 2 before entering TC details.
+          </CardContent>
+        </Card>
+      </main>
     );
   }
 
@@ -217,10 +205,7 @@ export function TCDetailInput({
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <AppHeader />
-      <StepTabs currentStep={currentStep} completedSteps={completedSteps} onStepClick={onStepClick} />
-
+    <>
       <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-2">TC details</h1>
@@ -361,6 +346,6 @@ export function TCDetailInput({
           </Button>
         </div>
       </div>
-    </div>
+    </>
   );
 }

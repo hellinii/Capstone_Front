@@ -18,14 +18,8 @@ export function EvaluationReport() {
   return (
     <WorkflowShell>
       <EvaluationReportStep
-        currentStep={store.currentStep}
-        completedSteps={store.completedSteps}
-        onStepClick={(step) => {
-          store.setCurrentStep(step);
-          navigate(stepToPath(step));
-        }}
-        onPrevious={handlePrevious}
         report={store.getReport()}
+        onPrevious={handlePrevious}
       />
     </WorkflowShell>
   );

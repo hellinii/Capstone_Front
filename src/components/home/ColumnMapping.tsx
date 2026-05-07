@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Info, ShieldAlert, Sparkles } from "lucide-react";
-import { ActionBar } from "./ActionBar";
-import { AppHeader } from "./AppHeader";
-import { StepTabs } from "./StepTabs";
+import { ActionBar } from "../../layout/ActionBar";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -39,11 +37,8 @@ interface BackendMappingResponse {
 }
 
 interface ColumnMappingProps {
-  currentStep: number;
-  completedSteps: number[];
   taskType?: TaskType | "";
   selectedTCIds?: string[];
-  onStepClick: (step: number) => void;
   onNext: () => void;
   onPrevious: () => void;
 }
@@ -253,11 +248,8 @@ function getRowMatchState(row: MappingRow, duplicate: boolean) {
 }
 
 export function ColumnMapping({
-  currentStep,
-  completedSteps,
   taskType = "",
   selectedTCIds = [],
-  onStepClick,
   onNext,
   onPrevious,
 }: ColumnMappingProps) {
@@ -348,10 +340,7 @@ export function ColumnMapping({
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <AppHeader />
-      <StepTabs currentStep={currentStep} completedSteps={completedSteps} onStepClick={onStepClick} />
-
+    <>
       <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto space-y-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
@@ -601,6 +590,6 @@ export function ColumnMapping({
         nextDisabled={!mappingSummary.isValid}
         nextLabel="Confirm mapping"
       />
-    </div>
+    </>
   );
 }

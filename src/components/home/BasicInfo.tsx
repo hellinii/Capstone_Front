@@ -1,6 +1,4 @@
-﻿import * as React from "react";
-import { AppHeader } from "./AppHeader";
-import { StepTabs } from "./StepTabs";
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -14,22 +12,14 @@ import { cn } from "../ui/utils";
 import type { BasicInfoFormData } from "../../types/workflow.types";
 
 interface BasicInfoProps {
-  currentStep: number;
-  completedSteps: number[];
-  onStepClick: (step: number) => void;
   onNext: () => void;
-  onPrevious: () => void;
   formData: BasicInfoFormData;
   onFormDataChange: (value: BasicInfoFormData | ((prev: BasicInfoFormData) => BasicInfoFormData)) => void;
   onTaskTypeChange?: (type: string) => void;
 }
 
 export function BasicInfo({
-  currentStep,
-  completedSteps,
-  onStepClick,
   onNext,
-  onPrevious: _onPrevious,
   formData,
   onFormDataChange,
   onTaskTypeChange,
@@ -66,10 +56,7 @@ export function BasicInfo({
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <AppHeader />
-      <StepTabs currentStep={currentStep} completedSteps={completedSteps} onStepClick={onStepClick} />
-
+    <>
       <main className="px-8 pt-12 pb-32 max-w-[1280px] mx-auto">
         <div className="mb-10">
           <h1 className="text-2xl font-bold text-foreground mb-2">Basic information</h1>
@@ -223,7 +210,7 @@ export function BasicInfo({
           Next step
         </Button>
       </div>
-    </div>
+    </>
   );
 }
 

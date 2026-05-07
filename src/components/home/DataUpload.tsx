@@ -1,8 +1,6 @@
 import { useMemo, useRef, type ChangeEvent, type ReactNode } from "react";
 import { FileText, Lightbulb, Upload, X } from "lucide-react";
-import { AppHeader } from "./AppHeader";
-import { StepTabs } from "./StepTabs";
-import { ActionBar } from "./ActionBar";
+import { ActionBar } from "../../layout/ActionBar";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
@@ -22,9 +20,6 @@ import type {
 } from "../../types/workflow.types";
 
 interface DataUploadProps {
-  currentStep: number;
-  completedSteps: number[];
-  onStepClick: (step: number) => void;
   onNext: () => void;
   onPrevious: () => void;
   selectedTCIds?: string[];
@@ -84,9 +79,6 @@ function getJsonExample(taskType: TaskType, requiresProb: boolean): string {
 }
 
 export function DataUpload({
-  currentStep,
-  completedSteps,
-  onStepClick,
   onNext,
   onPrevious,
   selectedTCIds = [],
@@ -148,10 +140,7 @@ export function DataUpload({
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <AppHeader />
-      <StepTabs currentStep={currentStep} completedSteps={completedSteps} onStepClick={onStepClick} />
-
+    <>
       <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground mb-2">Data upload</h1>
@@ -373,7 +362,7 @@ export function DataUpload({
         onNext={onNext}
         nextDisabled={!uploadedFile || !isDatasetInfoValid}
       />
-    </div>
+    </>
   );
 }
 

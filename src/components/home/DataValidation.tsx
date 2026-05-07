@@ -1,7 +1,5 @@
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
-import { ActionBar } from "./ActionBar";
-import { AppHeader } from "./AppHeader";
-import { StepTabs } from "./StepTabs";
+import { ActionBar } from "../../layout/ActionBar";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -20,11 +18,8 @@ import {
 } from "../../data/evaluationData";
 
 interface DataValidationProps {
-  currentStep: number;
-  completedSteps: number[];
   taskType?: TaskType | "";
   selectedTCIds?: string[];
-  onStepClick: (step: number) => void;
   onNext: () => void;
   onPrevious: () => void;
 }
@@ -240,11 +235,8 @@ function getStatusBadge(status: ValidationStatus) {
 }
 
 export function DataValidation({
-  currentStep,
-  completedSteps,
   taskType = "",
   selectedTCIds = [],
-  onStepClick,
   onNext,
   onPrevious,
 }: DataValidationProps) {
@@ -252,10 +244,7 @@ export function DataValidation({
   const hasBlockingError = validationResponse.errorCount > 0;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <AppHeader />
-      <StepTabs currentStep={currentStep} completedSteps={completedSteps} onStepClick={onStepClick} />
-
+    <>
       <main className="mx-auto max-w-[1344px] space-y-6 px-8 pb-24 pt-12">
         <div>
           <h1 className="mb-2 text-2xl font-bold text-foreground">Data validation</h1>
@@ -349,6 +338,6 @@ export function DataValidation({
       </main>
 
       <ActionBar showPrevious={true} onPrevious={onPrevious} onNext={onNext} nextLabel="Run evaluation" />
-    </div>
+    </>
   );
 }

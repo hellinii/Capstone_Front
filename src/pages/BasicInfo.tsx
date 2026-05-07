@@ -1,11 +1,10 @@
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { ActionBar } from "../layout/ActionBar";
 import { BasicInfo as BasicInfoContent } from "../components/home/BasicInfo";
 
 /**
- * Step 1 — Basic Info page (bridge: wraps legacy component in new layout)
+ * Step 1 — Basic Info page
  */
 export function BasicInfo() {
   const navigate = useNavigate();
@@ -20,14 +19,7 @@ export function BasicInfo() {
   return (
     <WorkflowShell>
       <BasicInfoContent
-        currentStep={store.currentStep}
-        completedSteps={store.completedSteps}
-        onStepClick={(step) => {
-          store.setCurrentStep(step);
-          navigate(stepToPath(step));
-        }}
         onNext={handleNext}
-        onPrevious={() => {}}
         formData={store.basicInfo}
         onFormDataChange={store.setBasicInfo}
         onTaskTypeChange={(type) => store.setTaskType(type as any)}

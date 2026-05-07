@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Info } from "lucide-react";
-import { ActionBar } from "./ActionBar";
-import { AppHeader } from "./AppHeader";
-import { StepTabs } from "./StepTabs";
+import { ActionBar } from "../../layout/ActionBar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -17,9 +15,6 @@ import {
 } from "../../data/evaluationData";
 
 interface TestItemsProps {
-  currentStep: number;
-  completedSteps: number[];
-  onStepClick: (step: number) => void;
   onNext: () => void;
   onPrevious: () => void;
   taskType?: TaskType | "";
@@ -27,9 +22,6 @@ interface TestItemsProps {
 }
 
 export function TestItems({
-  currentStep,
-  completedSteps,
-  onStepClick,
   onNext,
   onPrevious,
   taskType,
@@ -69,10 +61,7 @@ export function TestItems({
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      <AppHeader />
-      <StepTabs currentStep={currentStep} completedSteps={completedSteps} onStepClick={onStepClick} />
-
+    <>
       <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Test item selection</h1>
@@ -169,6 +158,6 @@ export function TestItems({
       </main>
 
       <ActionBar showPrevious={true} onPrevious={onPrevious} onNext={onNext} nextDisabled={selectedTCs.length === 0} />
-    </div>
+    </>
   );
 }
