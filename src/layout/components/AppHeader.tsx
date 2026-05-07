@@ -1,5 +1,5 @@
 import { HelpCircle } from "lucide-react";
-import { Button } from "../components/ui/button";
+import { Button } from "../../components/ui/button";
 
 export function AppHeader() {
   return (

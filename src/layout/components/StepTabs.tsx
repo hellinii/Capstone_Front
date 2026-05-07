@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import { useNavigate } from "react-router";
-import { cn } from "../components/ui/utils";
-import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
+import { cn } from "../../components/ui/utils";
+import { useWorkflowStore, stepToPath } from "../../stores/useWorkflowStore";
 
 const steps = [
   "Basic info",

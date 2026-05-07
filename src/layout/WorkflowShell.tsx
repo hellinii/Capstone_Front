@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { AppHeader } from "./AppHeader";
-import { StepTabs } from "./StepTabs";
-import { ActionBar } from "./ActionBar";
+import { AppHeader } from "./components/AppHeader";
+import { StepTabs } from "./components/StepTabs";
+import { ActionBar } from "./components/ActionBar";
 
 interface WorkflowShellProps {
   children: ReactNode;
