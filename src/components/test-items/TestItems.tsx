@@ -4,7 +4,7 @@ import { ActionBar } from "../../layout/ActionBar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Checkbox } from "../ui/checkbox";
+import { Checkbox } from "./checkbox";
 import { Label } from "../ui/label";
 import { cn } from "../ui/utils";
 import {
