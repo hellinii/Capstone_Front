@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { cn } from "../ui/utils";
+import { cn } from "../../utils/styling/styles";
 import {
   getRequiredColumnsForTc,
   getSelectedTestCases,
@@ -14,7 +14,7 @@ import {
   type TaskType,
 } from "../../data/evaluationData";
 import type { TcDetailState, TcDetailStateMap } from "../../types/workflow.types";
-import { parseNumericValue, getTargetValueRule } from "../../utils/validation";
+import { parseNumericValue, getTargetValueRule } from "../../utils/domain/validation";
 
 interface TCDetailInputProps {
   tcDetails: TcDetailStateMap;

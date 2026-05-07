@@ -8,7 +8,7 @@ import { Calendar } from "./calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { format } from "date-fns";
 import { CalendarIcon, ChevronRight, ChevronDown } from "lucide-react";
-import { cn } from "../ui/utils";
+import { cn } from "../../utils/styling/styles";
 import type { BasicInfoFormData } from "../../types/workflow.types";
 
 interface BasicInfoProps {

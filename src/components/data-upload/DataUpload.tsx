@@ -17,7 +17,7 @@ import type {
   DatasetInfoFormData,
   UploadedFileInfo,
 } from "../../types/workflow.types";
-import { formatFileSize } from "../../utils/format";
+import { formatFileSize } from "../../utils/format/format";
 import { getCsvExample, getJsonExample } from "../../data/templateExamples";
 
 interface DataUploadProps {

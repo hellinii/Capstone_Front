@@ -1,4 +1,11 @@
 /**
+ * 평가 데이터 유효성 검사 규칙
+ *
+ * 이 모듈은 워크플로우 전반(특히 Step 3 TC Detail Input)에서 사용되는 핵심 유효성 검사
+ * 로직을 포함합니다. 다양한 숫자 입력값(target value, beta 등)에 대한 허용 범위,
+ * 검증 규칙 및 파싱(parsing) 로직을 정의합니다.
+ */
+/**
  * Parse a string to a number, returning null for empty or invalid values.
  */
 export function parseNumericValue(value: string): number | null {

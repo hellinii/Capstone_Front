@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Checkbox } from "./checkbox";
 import { Label } from "../ui/label";
-import { cn } from "../ui/utils";
+import { cn } from "../../utils/styling/styles";
 import {
   getAvailableTestCases,
   getRecommendedTestCaseIds,

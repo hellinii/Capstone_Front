@@ -15,10 +15,10 @@ import {
 } from "../../data/evaluationData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { cn } from "../ui/utils";
+import { cn } from "../../utils/styling/styles";
 import type { MappingRole, MappingRow, FilterMode } from "../../types/mapping.types";
 import { buildMockBackendResponse } from "../../data/mock/columnMappingMock";
-import { getRoleStatusLabel, getRowMatchState } from "../../utils/mappingHelpers";
+import { getRoleStatusLabel, getRowMatchState } from "../../utils/domain/mappingHelpers";
 
 interface ColumnMappingProps {
   taskType?: TaskType | "";
