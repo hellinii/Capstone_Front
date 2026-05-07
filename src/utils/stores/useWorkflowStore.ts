@@ -1,6 +1,12 @@
+/**
+ * 워크플로우 전역 상태 관리 (Zustand)
+ *
+ * 이 스토어는 전체 평가 워크플로우의 상태(각 스텝의 입력 데이터, 현재 단계, 완료 여부 등)를
+ * 관리하며, 최종 평가 리포트 데이터를 생성하는 로직을 포함합니다.
+ */
 import { create } from "zustand";
-import { createEvaluationReport } from "../lib/report/createEvaluationReport";
-import type { TaskType } from "../data/evaluationData";
+import { createEvaluationReport } from "../../lib/report/createEvaluationReport";
+import type { TaskType } from "../../data/evaluationData";
 import {
   DEFAULT_BASIC_INFO,
   DEFAULT_DATASET_INFO,
@@ -8,8 +14,8 @@ import {
   type DatasetInfoFormData,
   type TcDetailStateMap,
   type UploadedFileInfo,
-} from "../types/workflow.types";
-import type { EvaluationReportData } from "../types/report.types";
+} from "../../types/workflow.types";
+import type { EvaluationReportData } from "../../types/report.types";
 
 /** Step path segments used in routing */
 export const STEP_PATHS = [

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
+import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import { TestItems as TestItemsContent } from "../components/test-items/TestItems";
 

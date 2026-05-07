@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
+import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import { DataValidation as DataValidationContent } from "../components/data-validation/DataValidation";
 
 /**
- * Step 6 — Data Validation page
+ * Step 6 ??Data Validation page
  */
 export function DataValidation() {
   const navigate = useNavigate();

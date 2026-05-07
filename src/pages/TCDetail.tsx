@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
+import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import { TCDetailInput, isCurrentTCValid } from "../components/tc-detail/TCDetailInput";
 import { getSelectedTestCases } from "../data/evaluationData";

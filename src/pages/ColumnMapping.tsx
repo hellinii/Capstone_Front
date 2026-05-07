@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
+import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import { ColumnMapping as ColumnMappingContent } from "../components/column-mapping/ColumnMapping";
 
 /**
- * Step 5 — Column Mapping page
+ * Step 5 ??Column Mapping page
  */
 export function ColumnMapping() {
   const navigate = useNavigate();

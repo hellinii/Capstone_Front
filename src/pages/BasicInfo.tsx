@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router";
-import { useWorkflowStore, stepToPath } from "../stores/useWorkflowStore";
+import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import { BasicInfo as BasicInfoContent, isBasicInfoValid } from "../components/basic-info/BasicInfo";
 
 import { Button } from "../components/ui/button";
 
 /**
- * Step 1 — Basic Info page
+ * Step 1 ??Basic Info page
  */
 export function BasicInfo() {
   const navigate = useNavigate();
