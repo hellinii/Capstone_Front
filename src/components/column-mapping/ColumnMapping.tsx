@@ -140,7 +140,7 @@ export function ColumnMapping({
           <div>
             <h1 className="text-2xl font-bold text-foreground mb-2">Column mapping review</h1>
             <p className="text-sm text-muted-foreground">
-              Review the backend auto-mapping result, fix any mismatches, and confirm the columns required for this evaluation.
+              Review and adjust the mapped roles to ensure your dataset is correctly interpreted for evaluation.
             </p>
           </div>
           <Badge variant="outline" className="w-fit px-3 py-1 text-sm">
@@ -151,7 +151,7 @@ export function ColumnMapping({
         <Alert>
           <Sparkles className="h-4 w-4" />
           <AlertDescription>
-            The backend has already analyzed the uploaded file and suggested roles for each detected column. This step is for human review and final confirmation.
+            The system has automatically mapped your columns based on their contents. Please review and confirm the assignments before proceeding.
           </AlertDescription>
         </Alert>
 
