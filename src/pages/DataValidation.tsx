@@ -35,7 +35,7 @@ export function DataValidation() {
     >
       <DataValidationContent
         taskType={store.taskType}
-        selectedTCIds={store.selectedTCIds}
+        selectedMetricIds={store.selectedMetricIds}
         onValidationChange={setHasError}
       />
     </WorkflowShell>

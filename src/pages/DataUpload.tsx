@@ -33,7 +33,7 @@ export function DataUpload() {
     >
       <DataUploadContent
         taskType={store.taskType}
-        selectedTCIds={store.selectedTCIds}
+        selectedMetricIds={store.selectedMetricIds}
         datasetInfo={store.datasetInfo}
         onDatasetInfoChange={store.setDatasetInfo}
         uploadedFile={store.uploadedFile}

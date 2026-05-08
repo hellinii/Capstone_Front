@@ -7,11 +7,11 @@ import type { ValidationDetailItem, ValidationResponse } from "../../types/valid
  */
 export function buildMockValidationResponse(
   taskType?: TaskType | "",
-  selectedTCIds: string[] = [],
+  selectedMetricIds: string[] = [],
 ): ValidationResponse {
   const resolvedTaskType: TaskType = taskType || "multiclass";
   const hasPositiveClassRequirement =
-    resolvedTaskType === "binary" && selectionNeedsField(resolvedTaskType, selectedTCIds, "positiveClass");
+    resolvedTaskType === "binary" && selectionNeedsField(resolvedTaskType, selectedMetricIds, "positiveClass");
   const hasLatencyColumn = false;
 
   const validationDetails: ValidationDetailItem[] = [
@@ -52,7 +52,7 @@ export function buildMockValidationResponse(
       {
         name: "Missing probability column",
         result: "None",
-        handling: "Stop evaluation when required by selected TCs",
+        handling: "Stop evaluation when required by selected metrics",
         status: "pass",
       },
       {
@@ -110,7 +110,7 @@ export function buildMockValidationResponse(
       {
         name: "Missing prob_label_* column",
         result: "None",
-        handling: "Stop evaluation when required by selected TCs",
+        handling: "Stop evaluation when required by selected metrics",
         status: "pass",
       },
       {
@@ -144,7 +144,7 @@ export function buildMockValidationResponse(
 
   return {
     taskType: resolvedTaskType,
-    selectedTcIds: selectedTCIds,
+    selectedMetricIds: selectedMetricIds,
     executionSummary: [
       {
         label: "Total validated rows",
@@ -162,12 +162,12 @@ export function buildMockValidationResponse(
         note: "Rows excluded because of missing or invalid values.",
       },
       {
-        label: "Selected TC count",
-        value: `[${selectedTCIds.length || "N"} items]`,
+        label: "Selected metric count",
+        value: `[${selectedMetricIds.length || "N"} items]`,
         note:
-          selectedTCIds.length > 0
-            ? `Selected TCs: [${selectedTCIds.join(", ")}]`
-            : "No test cases selected.",
+          selectedMetricIds.length > 0
+            ? `Selected metrics: [${selectedMetricIds.join(", ")}]`
+            : "No metrics selected.",
       },
       {
         label: "Validation result",

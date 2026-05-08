@@ -11,7 +11,7 @@ import {
   type RequiredColumnDisplay,
   type TaskType,
   getRequiredColumnsForSelection,
-  getRequiredColumnsForTc,
+  getRequiredColumnsForMetric,
 } from "../../data/evaluationData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
@@ -22,7 +22,7 @@ import { getRoleStatusLabel, getRowMatchState } from "../../utils/domain/mapping
 
 interface ColumnMappingProps {
   taskType?: TaskType | "";
-  selectedTCIds?: string[];
+  selectedMetricIds?: string[];
   onValidationChange?: (isValid: boolean) => void;
 }
 
@@ -39,17 +39,17 @@ const roleOptions: Array<{ value: MappingRole; label: string }> = [
 ];
 export function ColumnMapping({
   taskType = "",
-  selectedTCIds = [],
+  selectedMetricIds = [],
   onValidationChange,
 }: ColumnMappingProps) {
   const resolvedTaskType: TaskType = taskType || "multiclass";
-  const selectedTestCases = useMemo(
-    () => TEST_CASES.filter((tc) => selectedTCIds.includes(tc.id) && tc.supportedTaskTypes.includes(resolvedTaskType)),
-    [resolvedTaskType, selectedTCIds],
+  const selectedMetrics = useMemo(
+    () => TEST_CASES.filter((m) => selectedMetricIds.includes(m.id) && m.supportedTaskTypes.includes(resolvedTaskType)),
+    [resolvedTaskType, selectedMetricIds],
   );
   const requiredRoles = useMemo(
-    () => getRequiredColumnsForSelection(resolvedTaskType, selectedTCIds),
-    [resolvedTaskType, selectedTCIds],
+    () => getRequiredColumnsForSelection(resolvedTaskType, selectedMetricIds),
+    [resolvedTaskType, selectedMetricIds],
   );
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [rows, setRows] = useState<MappingRow[]>([]);
@@ -156,54 +156,54 @@ export function ColumnMapping({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Selected test cases and required columns</CardTitle>
+            <CardTitle className="text-lg font-semibold">Selected metrics and required columns</CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              Each selected TC can require different columns. Confirm that all of them are satisfied before continuing.
+              Each selected metric can require different columns. Confirm that all of them are satisfied before continuing.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {selectedTestCases.length === 0 && (
+            {selectedMetrics.length === 0 && (
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  No TC selection was passed into this screen, so the UI is falling back to the current task type only.
+                  No metric selection was passed into this screen, so the UI is falling back to the current task type only.
                 </AlertDescription>
               </Alert>
             )}
 
-            {selectedTestCases.length > 0 && (
+            {selectedMetrics.length > 0 && (
               <div className="space-y-3">
-                {selectedTestCases.map((tc) => {
-                  const tcRequiredRoles = getRequiredColumnsForTc(resolvedTaskType, tc.id);
-                  const tcMissing = tcRequiredRoles.filter((role) => (roleCounts[role.code] ?? 0) === 0);
-                  const tcHasConflict = tcRequiredRoles.some((role) => {
+                {selectedMetrics.map((metric) => {
+                  const metricRequiredRoles = getRequiredColumnsForMetric(resolvedTaskType, metric.id);
+                  const metricMissing = metricRequiredRoles.filter((role) => (roleCounts[role.code] ?? 0) === 0);
+                  const metricHasConflict = metricRequiredRoles.some((role) => {
                     const count = roleCounts[role.code] ?? 0;
                     return role.code !== "prob_class_*" && role.code !== "prob_label_*" && count > 1;
                   });
-                  const tcComplete = tcMissing.length === 0 && !tcHasConflict;
+                  const metricComplete = metricMissing.length === 0 && !metricHasConflict;
 
                   return (
-                    <div key={tc.id} className="rounded-xl border border-border bg-card p-5">
+                    <div key={metric.id} className="rounded-xl border border-border bg-card p-5">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline">{tc.id}</Badge>
-                            <div className="font-semibold">{tc.name}</div>
+                            <Badge variant="outline">{metric.id}</Badge>
+                            <div className="font-semibold">{metric.name}</div>
                           </div>
-                          <p className="mt-2 text-sm text-muted-foreground">{tc.description}</p>
+                          <p className="mt-2 text-sm text-muted-foreground">{metric.description}</p>
                         </div>
-                        <Badge variant={tcComplete ? "secondary" : "destructive"}>
-                          {tcComplete ? "Ready" : "Needs review"}
+                        <Badge variant={metricComplete ? "secondary" : "destructive"}>
+                          {metricComplete ? "Ready" : "Needs review"}
                         </Badge>
                       </div>
 
                       <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {tcRequiredRoles.map((role) => {
+                        {metricRequiredRoles.map((role) => {
                           const count = roleCounts[role.code] ?? 0;
                           const status = getRoleStatusLabel(role, count);
 
                           return (
-                            <div key={`${tc.id}-${role.code}`} className="rounded-lg border border-border bg-muted/20 p-4">
+                            <div key={`${metric.id}-${role.code}`} className="rounded-lg border border-border bg-muted/20 p-4">
                               <div className="flex items-start justify-between gap-3">
                                 <div>
                                   <div className="font-medium">{role.code}</div>
@@ -370,7 +370,7 @@ export function ColumnMapping({
           <Alert>
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
-              All required roles are mapped for the selected test cases. You can confirm this mapping and continue to validation.
+              All required roles are mapped for the selected metrics. You can confirm this mapping and continue to validation.
             </AlertDescription>
           </Alert>
         )}

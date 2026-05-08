@@ -21,7 +21,7 @@ import { formatFileSize } from "../../utils/format/format";
 import { getCsvExample, getJsonExample } from "../../data/templateExamples";
 
 interface DataUploadProps {
-  selectedTCIds?: string[];
+  selectedMetricIds?: string[];
   taskType?: TaskType | "";
   datasetInfo: DatasetInfoFormData;
   onDatasetInfoChange: (
@@ -42,7 +42,7 @@ export function isDataUploadValid(datasetInfo: DatasetInfoFormData, uploadedFile
 }
 
 export function DataUpload({
-  selectedTCIds = [],
+  selectedMetricIds = [],
   taskType = "",
   datasetInfo,
   onDatasetInfoChange,
@@ -51,10 +51,10 @@ export function DataUpload({
 }: DataUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const resolvedTaskType = taskType || "multiclass";
-  const requiresProb = selectionRequiresProbability(resolvedTaskType, selectedTCIds);
+  const requiresProb = selectionRequiresProbability(resolvedTaskType, selectedMetricIds);
   const requiredColumns = useMemo(
-    () => getRequiredColumnsForSelection(resolvedTaskType, selectedTCIds),
-    [resolvedTaskType, selectedTCIds],
+    () => getRequiredColumnsForSelection(resolvedTaskType, selectedMetricIds),
+    [resolvedTaskType, selectedMetricIds],
   );
   const csvExample = getCsvExample(resolvedTaskType, requiresProb);
   const jsonExample = getJsonExample(resolvedTaskType, requiresProb);
@@ -207,13 +207,13 @@ export function DataUpload({
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                These are the exact columns required by the TCs you selected. Optional columns are intentionally hidden here.
+                These are the exact columns required by the metrics you selected. Optional columns are intentionally hidden here.
               </p>
 
               <div className="space-y-3">
                 {requiredColumns.length === 0 && (
                   <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                    Select one or more TCs first to see the exact required columns here.
+                    Select one or more metrics first to see the exact required columns here.
                   </div>
                 )}
 

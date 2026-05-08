@@ -1,14 +1,14 @@
 import {
   TASK_TYPE_LABELS,
-  TEST_CASES,
-  getRecommendedTestCaseIds,
-  getSelectedTestCases,
+  METRICS,
+  getRecommendedMetricIds,
+  getSelectedMetrics,
   type TaskType,
 } from "@/data/evaluationData";
 import type {
   BasicInfoFormData,
   DatasetInfoFormData,
-  TcDetailStateMap,
+  MetricDetailStateMap,
   UploadedFileInfo,
 } from "@/types/workflow.types";
 import type {
@@ -26,8 +26,8 @@ interface CreateEvaluationReportParams {
   basicInfo: BasicInfoFormData;
   datasetInfo: DatasetInfoFormData;
   taskType: TaskType | "";
-  selectedTCIds: string[];
-  tcDetails: TcDetailStateMap;
+  selectedMetricIds: string[];
+  metricDetails: MetricDetailStateMap;
   uploadedFile: UploadedFileInfo | null;
 }
 
@@ -158,17 +158,17 @@ export function createEvaluationReport({
   basicInfo,
   datasetInfo,
   taskType,
-  selectedTCIds,
-  tcDetails,
+  selectedMetricIds,
+  metricDetails,
   uploadedFile,
 }: CreateEvaluationReportParams): EvaluationReportData {
   const resolvedTaskType = taskType || "multiclass";
   const resolvedSelectedIds =
-    selectedTCIds.length > 0 ? selectedTCIds : getRecommendedTestCaseIds(resolvedTaskType);
-  const selectedCases = getSelectedTestCases(resolvedTaskType, resolvedSelectedIds);
-  const testItems = selectedCases.map((tc) => toReportTestItem(tc.id, tc.name, tc.subtitle));
+    selectedMetricIds.length > 0 ? selectedMetricIds : getRecommendedMetricIds(resolvedTaskType);
+  const selectedMetrics = getSelectedMetrics(resolvedTaskType, resolvedSelectedIds);
+  const testItems = selectedMetrics.map((m) => toReportTestItem(m.id, m.name, m.subtitle));
 
-  const classLabels = getClassLabels(resolvedTaskType, tcDetails);
+  const classLabels = getClassLabels(resolvedTaskType, metricDetails);
   const trainingSamples = parseCount(datasetInfo.trainingSampleCount, 8715);
   const evaluationSamples = parseCount(datasetInfo.evaluationSampleCount, 1868);
   const totalSamples = trainingSamples + evaluationSamples;
@@ -179,7 +179,7 @@ export function createEvaluationReport({
   const verdict = getVerdict(overallScore);
   const confusionMatrix = buildConfusionMatrix(resolvedTaskType, classLabels, evaluationSamples);
   const diagnostics = buildDiagnostics(perClass);
-  const selectedMetricNames = selectedCases.map((tc) => tc.name);
+  const selectedMetricNames = selectedMetrics.map((m) => m.name);
   const summaryHeadline =
     verdict === "PASS"
       ? "The selected evaluation set is ready to be packaged into a report."
@@ -257,10 +257,10 @@ function toReportTestItem(id: string, name: string, subtitle: string): ReportTes
   };
 }
 
-function resolveHighlightedMetricIds(taskType: TaskType, selectedTCIds: string[]) {
-  const selectedMetricIds = selectedTCIds.filter((id) => HIGHLIGHTABLE_METRIC_IDS.has(id));
-  if (selectedMetricIds.length > 0) {
-    return selectedMetricIds.slice(0, 4);
+function resolveHighlightedMetricIds(taskType: TaskType, selectedMetricIds: string[]) {
+  const highlightableIds = selectedMetricIds.filter((id) => HIGHLIGHTABLE_METRIC_IDS.has(id));
+  if (highlightableIds.length > 0) {
+    return highlightableIds.slice(0, 4);
   }
   return FALLBACK_HIGHLIGHTED_METRICS[taskType];
 }
@@ -274,7 +274,7 @@ function buildMetricResult(metricId: string, perClass: PerClassMetric[]): Report
 
   return {
     metricId,
-    metricName: TEST_CASES.find((tc) => tc.id === metricId)?.name || metricId,
+    metricName: METRICS.find((m) => m.id === metricId)?.name || metricId,
     value: template.value,
     threshold: template.threshold,
     summary: template.summary,
@@ -415,9 +415,9 @@ function buildRecommendations(
   ];
 }
 
-function getClassLabels(taskType: TaskType, tcDetails: TcDetailStateMap) {
+function getClassLabels(taskType: TaskType, metricDetails: MetricDetailStateMap) {
   if (taskType === "binary") {
-    const positiveClass = Object.values(tcDetails).find((detail) => detail.positiveClass)?.positiveClass;
+    const positiveClass = Object.values(metricDetails).find((detail) => detail.positiveClass)?.positiveClass;
     return ["Negative", positiveClass || "Positive"];
   }
 

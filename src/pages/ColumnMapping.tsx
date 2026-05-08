@@ -35,7 +35,7 @@ export function ColumnMapping() {
     >
       <ColumnMappingContent
         taskType={store.taskType}
-        selectedTCIds={store.selectedTCIds}
+        selectedMetricIds={store.selectedMetricIds}
         onValidationChange={setIsValid}
       />
     </WorkflowShell>

@@ -1,4 +1,4 @@
-﻿import type { TaskType } from "../data/evaluationData";
+import type { TaskType } from "../data/evaluationData";
 
 export interface BasicInfoFormData {
   companyName: string;
@@ -25,7 +25,7 @@ export interface BasicInfoFormData {
   envSoftware: string;
 }
 
-export interface TcDetailState {
+export interface MetricDetailState {
   id: string;
   name: string;
   description: string;
@@ -36,7 +36,7 @@ export interface TcDetailState {
   completed: boolean;
 }
 
-export type TcDetailStateMap = Record<string, TcDetailState>;
+export type MetricDetailStateMap = Record<string, MetricDetailState>;
 
 export interface UploadedFileInfo {
   name: string;
