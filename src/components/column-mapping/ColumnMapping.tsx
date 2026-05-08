@@ -62,6 +62,11 @@ export function ColumnMapping({
     setRows(response.rows);
   }, [resolvedTaskType, requiredRoles]);
 
+  // Binary Positive Class UI State
+  const [positiveClass, setPositiveClass] = useState<string>("");
+  const yTrueRow = useMemo(() => rows.find((r) => r.confirmedRole === "y_true"), [rows]);
+  const yTrueValues = useMemo(() => yTrueRow ? Array.from(new Set(yTrueRow.sampleValues)) : [], [yTrueRow]);
+
   const roleCounts = useMemo(() => {
     const counts: Partial<Record<MappingRole, number>> = {};
     rows.forEach((row) => {
@@ -110,9 +115,9 @@ export function ColumnMapping({
       editedCount,
       duplicateCount,
       missingRoles,
-      isValid: missingRoles.length === 0 && duplicateCount === 0,
+      isValid: missingRoles.length === 0 && duplicateCount === 0 && (resolvedTaskType !== "binary" || positiveClass !== ""),
     };
-  }, [requiredRoles, roleCounts, rows]);
+  }, [requiredRoles, roleCounts, rows, resolvedTaskType, positiveClass]);
 
   useEffect(() => {
     onValidationChange?.(mappingSummary.isValid);
@@ -242,6 +247,48 @@ export function ColumnMapping({
           </CardContent>
         </Card>
 
+        {/* Binary Classification Settings */}
+        {resolvedTaskType === "binary" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-blue-500" />
+                Binary classification settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Which value is the positive class? The evaluation metrics will treat this value as "Positive" (1) and all others as "Negative" (0).
+                </p>
+                
+                {yTrueRow ? (
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm font-medium">Positive class value:</div>
+                    <Select value={positiveClass} onValueChange={setPositiveClass}>
+                      <SelectTrigger className={cn("w-[200px]", positiveClass === "" && "border-destructive")}>
+                        <SelectValue placeholder="Select positive class" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {yTrueValues.map((val) => (
+                          <SelectItem key={val} value={val}>{val}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <Alert className="bg-muted border-border">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                    <AlertDescription className="text-muted-foreground">
+                      Assign a column to the <strong>y_true</strong> role first to see available class values.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader className="gap-4">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -279,9 +326,7 @@ export function ColumnMapping({
                   <TableRow className="bg-muted/40">
                     <TableHead className="text-xs uppercase text-muted-foreground">Uploaded column</TableHead>
                     <TableHead className="text-xs uppercase text-muted-foreground">Sample values</TableHead>
-                    <TableHead className="text-xs uppercase text-muted-foreground">Auto-mapped role</TableHead>
-                    <TableHead className="text-xs uppercase text-muted-foreground">Match</TableHead>
-                    <TableHead className="text-xs uppercase text-muted-foreground">Final role</TableHead>
+                    <TableHead className="text-xs uppercase text-muted-foreground">Role</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -306,44 +351,29 @@ export function ColumnMapping({
                           </div>
                         </TableCell>
                         <TableCell className="align-top">
-                          <Badge variant={row.inferredRole ? "outline" : "destructive"}>
-                            {row.inferredRole ?? "No match"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="align-top">
                           <div className="flex flex-col gap-2">
-                            <Badge variant={matchState.tone}>{matchState.label}</Badge>
-                            {row.modified && row.inferredRole && row.confirmedRole && (
+                            <Select
+                              value={row.confirmedRole ?? "unassigned"}
+                              onValueChange={(value) => handleRoleChange(index, value)}
+                            >
+                              <SelectTrigger className={cn("w-[210px]", duplicate && "border-destructive")}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="unassigned">unassigned</SelectItem>
+                                {roleOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {row.inferredRole && row.confirmedRole !== row.inferredRole && (
                               <div className="text-xs text-muted-foreground">
-                                Auto-mapped as <span className="font-medium text-foreground">{row.inferredRole}</span>, changed to{" "}
-                                <span className="font-medium text-foreground">{row.confirmedRole}</span>
+                                Auto-mapped as: <span className="font-medium text-foreground">{row.inferredRole}</span>
                               </div>
                             )}
-                            {row.warnings.map((warning) => (
-                              <div key={warning} className="flex items-start gap-2 text-xs text-amber-800">
-                                <ShieldAlert className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-                                <span>{warning}</span>
-                              </div>
-                            ))}
                           </div>
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Select
-                            value={row.confirmedRole ?? "unassigned"}
-                            onValueChange={(value) => handleRoleChange(index, value)}
-                          >
-                            <SelectTrigger className={cn("w-[210px]", duplicate && "border-destructive")}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="unassigned">unassigned</SelectItem>
-                              {roleOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                         </TableCell>
                       </TableRow>
                     );
@@ -354,23 +384,56 @@ export function ColumnMapping({
           </CardContent>
         </Card>
 
-        {!mappingSummary.isValid && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {mappingSummary.missingRoles.length > 0 &&
-                `Missing required roles: ${mappingSummary.missingRoles.map((role) => role.code).join(", ")}. `}
-              {mappingSummary.duplicateCount > 0 &&
-                "At least one single-use role has been assigned to multiple columns. Resolve the conflicts before confirming."}
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Status Panel */}
+        {!mappingSummary.isValid ? (
+          <div className="space-y-4">
+            {mappingSummary.missingRoles.length > 0 && (
+              <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-900">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription>
+                  <div className="font-semibold mb-1 text-red-800">Missing required roles</div>
+                  <p className="mb-2 text-red-700">The following roles must be assigned before you can continue:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {mappingSummary.missingRoles.map((role) => (
+                      <Badge key={role.code} variant="outline" className="bg-white border-red-300 text-red-700">
+                        {role.code}
+                      </Badge>
+                    ))}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {mappingSummary.duplicateCount > 0 && (
+              <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
+                <ShieldAlert className="h-4 w-4 text-amber-600" />
+                <AlertDescription>
+                  <div className="font-semibold mb-1 text-amber-800">Role conflict detected</div>
+                  <p className="text-amber-700">
+                    Some single-use roles are assigned to multiple columns. Each single-use role must be assigned to exactly one column.
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
 
-        {mappingSummary.isValid && (
-          <Alert>
-            <CheckCircle2 className="h-4 w-4" />
+            {resolvedTaskType === "binary" && positiveClass === "" && yTrueRow && mappingSummary.missingRoles.filter(r => r.code === "y_true").length === 0 && (
+              <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertDescription>
+                  <div className="font-semibold mb-1 text-amber-800">Missing positive class</div>
+                  <p className="text-amber-700">
+                    Please select the positive class value for the binary classification task.
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        ) : (
+          <Alert className="bg-green-50 border-green-200 text-green-900">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
             <AlertDescription>
-              All required roles are mapped for the selected metrics. You can confirm this mapping and continue to validation.
+              <div className="font-semibold text-green-800">All required settings are satisfied.</div>
+              <p className="text-green-700">You can confirm this mapping and continue to validation.</p>
             </AlertDescription>
           </Alert>
         )}
