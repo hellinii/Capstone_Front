@@ -8,22 +8,22 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { cn } from "../../utils/styling/styles";
 import {
-  getRequiredColumnsForTc,
-  getSelectedTestCases,
+  getRequiredColumnsForMetric,
+  getSelectedMetrics,
   selectionNeedsField,
   type TaskType,
 } from "../../data/evaluationData";
-import type { TcDetailState, TcDetailStateMap } from "../../types/workflow.types";
+import type { MetricDetailState, MetricDetailStateMap } from "../../types/workflow.types";
 import { parseNumericValue, getTargetValueRule } from "../../utils/domain/validation";
 
 interface TCDetailInputProps {
-  tcDetails: TcDetailStateMap;
-  onTcDetailsChange: (value: TcDetailStateMap | ((prev: TcDetailStateMap) => TcDetailStateMap)) => void;
-  currentTCIndex: number;
-  onCurrentTCIndexChange: (idx: number) => void;
+  metricDetails: MetricDetailStateMap;
+  onMetricDetailsChange: (value: MetricDetailStateMap | ((prev: MetricDetailStateMap) => MetricDetailStateMap)) => void;
+  currentMetricIndex: number;
+  onCurrentMetricIndexChange: (idx: number) => void;
 }
 
-function createDefaultState(id: string, name: string): TcDetailState {
+function createDefaultState(id: string, name: string): MetricDetailState {
   return {
     id,
     name,
@@ -38,52 +38,52 @@ function createDefaultState(id: string, name: string): TcDetailState {
 
 export function TCDetailInput({
   taskType = "",
-  selectedTCIds = [],
-  tcDetails,
-  onTcDetailsChange,
-  currentTCIndex,
-  onCurrentTCIndexChange,
+  selectedMetricIds = [],
+  metricDetails,
+  onMetricDetailsChange,
+  currentMetricIndex,
+  onCurrentMetricIndexChange,
 }: TCDetailInputProps) {
   const resolvedTaskType = taskType || "multiclass";
-  const selectedTCs = useMemo(() => getSelectedTestCases(resolvedTaskType, selectedTCIds), [resolvedTaskType, selectedTCIds]);
+  const selectedMetrics = useMemo(() => getSelectedMetrics(resolvedTaskType, selectedMetricIds), [resolvedTaskType, selectedMetricIds]);
 
   useEffect(() => {
-    if (selectedTCs.length === 0) {
+    if (selectedMetrics.length === 0) {
       return;
     }
 
-    onTcDetailsChange((prev) => {
+    onMetricDetailsChange((prev) => {
       const next = { ...prev };
-      for (const tc of selectedTCs) {
-        next[tc.id] = next[tc.id] ?? createDefaultState(tc.id, tc.name);
+      for (const metric of selectedMetrics) {
+        next[metric.id] = next[metric.id] ?? createDefaultState(metric.id, metric.name);
       }
       return next;
     });
-  }, [selectedTCs, onTcDetailsChange]);
+  }, [selectedMetrics, onMetricDetailsChange]);
 
-  if (selectedTCs.length === 0) {
+  if (selectedMetrics.length === 0) {
     return (
       <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto">
         <Card>
           <CardContent className="py-10 text-sm text-muted-foreground">
-            Select test cases in Step 2 before entering TC details.
+            Select metrics in Step 2 before entering metric details.
           </CardContent>
         </Card>
       </main>
     );
   }
 
-  const currentTC = selectedTCs[currentTCIndex];
-  const currentState = tcDetails[currentTC.id] ?? createDefaultState(currentTC.id, currentTC.name);
-  const requiredColumns = getRequiredColumnsForTc(resolvedTaskType, currentTC.id);
-  const needsPositiveClass = selectionNeedsField(resolvedTaskType, [currentTC.id], "positiveClass");
-  const needsBeta = selectionNeedsField(resolvedTaskType, [currentTC.id], "beta");
-  const isLastTC = currentTCIndex === selectedTCs.length - 1;
-  const targetValueRule = getTargetValueRule(currentTC.id);
+  const currentMetric = selectedMetrics[currentMetricIndex];
+  const currentState = metricDetails[currentMetric.id] ?? createDefaultState(currentMetric.id, currentMetric.name);
+  const requiredColumns = getRequiredColumnsForMetric(resolvedTaskType, currentMetric.id);
+  const needsPositiveClass = selectionNeedsField(resolvedTaskType, [currentMetric.id], "positiveClass");
+  const needsBeta = selectionNeedsField(resolvedTaskType, [currentMetric.id], "beta");
+  const isLastMetric = currentMetricIndex === selectedMetrics.length - 1;
+  const targetValueRule = getTargetValueRule(currentMetric.id);
   const targetValueHint =
-    currentTC.id === "TC6"
+    currentMetric.id === "TC6"
       ? "Enter the maximum acceptable divergence value for this metric."
-      : "Enter the minimum metric value you want this TC to achieve.";
+      : "Enter the minimum metric value you want this metric to achieve.";
   const parsedTargetValue = parseNumericValue(currentState.targetValue);
   const targetValueError =
     currentState.targetValue.trim() === ""
@@ -95,20 +95,20 @@ export function TCDetailInput({
   const betaError = !needsBeta
     ? null
     : currentState.beta.trim() === ""
-      ? "Beta is required for this TC."
+      ? "Beta is required for this metric."
       : parsedBeta === null
         ? "Beta must be a valid number."
         : parsedBeta <= 0
           ? "Beta must be greater than 0."
           : null;
   const positiveClassError = needsPositiveClass && currentState.positiveClass.trim() === ""
-    ? "Positive class is required for this TC."
+    ? "Positive class is required for this metric."
     : null;
 
-  const updateCurrent = (patch: Partial<TcDetailState>) => {
-    onTcDetailsChange((prev) => ({
+  const updateCurrent = (patch: Partial<MetricDetailState>) => {
+    onMetricDetailsChange((prev) => ({
       ...prev,
-      [currentTC.id]: {
+      [currentMetric.id]: {
         ...currentState,
         ...patch,
       },
@@ -141,32 +141,32 @@ export function TCDetailInput({
     <>
       <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">TC details</h1>
-          <p className="text-sm text-muted-foreground">Set target values and any extra inputs required by each selected TC.</p>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Metric details</h1>
+          <p className="text-sm text-muted-foreground">Set target values and any extra inputs required by each selected metric.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">Selected TCs</CardTitle>
+              <CardTitle className="text-lg font-semibold">Selected metrics</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {selectedTCs.map((tc, index) => (
+              {selectedMetrics.map((metric, index) => (
                 <button
-                  key={tc.id}
+                  key={metric.id}
                   type="button"
-                  onClick={() => setCurrentTCIndex(index)}
+                  onClick={() => onCurrentMetricIndexChange(index)}
                   className={cn(
                     "w-full rounded-lg border p-3 text-left transition-colors",
-                    index === currentTCIndex ? "border-primary bg-blue-50" : "border-border bg-card hover:bg-muted/40",
+                    index === currentMetricIndex ? "border-primary bg-blue-50" : "border-border bg-card hover:bg-muted/40",
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <div className="font-mono text-xs text-muted-foreground">{tc.id}</div>
-                      <div className="text-sm font-semibold">{tc.name}</div>
+                      <div className="font-mono text-xs text-muted-foreground">{metric.id}</div>
+                      <div className="text-sm font-semibold">{metric.name}</div>
                     </div>
-                    {tcDetails[tc.id]?.completed && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                    {metricDetails[metric.id]?.completed && <CheckCircle2 className="h-4 w-4 text-green-600" />}
                   </div>
                 </button>
               ))}
@@ -175,7 +175,7 @@ export function TCDetailInput({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">{currentTC.id} details</CardTitle>
+              <CardTitle className="text-lg font-semibold">{currentMetric.id} details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -244,7 +244,7 @@ export function TCDetailInput({
               )}
 
               <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <div className="text-sm font-medium text-blue-950">Required columns for this TC</div>
+                <div className="text-sm font-medium text-blue-950">Required columns for this metric</div>
                 <div className="flex flex-wrap gap-2">
                   {requiredColumns.map((column) => (
                     <Badge key={column.code} variant="secondary">
@@ -272,16 +272,16 @@ export function TCDetailInput({
   );
 }
 
-export function isCurrentTCValid(
+export function isCurrentMetricValid(
   taskType: TaskType | "",
-  tcId: string,
-  state: TcDetailState
+  metricId: string,
+  state: MetricDetailState
 ) {
-  const needsPositiveClass = selectionNeedsField(taskType || "multiclass", [tcId], "positiveClass");
-  const needsBeta = selectionNeedsField(taskType || "multiclass", [tcId], "beta");
+  const needsPositiveClass = selectionNeedsField(taskType || "multiclass", [metricId], "positiveClass");
+  const needsBeta = selectionNeedsField(taskType || "multiclass", [metricId], "beta");
   
   const parsedTargetValue = parseNumericValue(state.targetValue);
-  const targetValueRule = getTargetValueRule(tcId);
+  const targetValueRule = getTargetValueRule(metricId);
   const targetValueError =
     state.targetValue.trim() === ""
       ? "Target value is required."
@@ -293,7 +293,7 @@ export function isCurrentTCValid(
   const betaError = !needsBeta
     ? null
     : state.beta.trim() === ""
-      ? "Beta is required for this TC."
+      ? "Beta is required for this metric."
       : parsedBeta === null
         ? "Beta must be a valid number."
         : parsedBeta <= 0

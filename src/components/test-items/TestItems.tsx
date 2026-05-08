@@ -7,52 +7,52 @@ import { Checkbox } from "./checkbox";
 import { Label } from "../ui/label";
 import { cn } from "../../utils/styling/styles";
 import {
-  getAvailableTestCases,
-  getRecommendedTestCaseIds,
+  getAvailableMetrics,
+  getRecommendedMetricIds,
   TASK_TYPE_LABELS,
   type TaskType,
 } from "../../data/evaluationData";
 
 interface TestItemsProps {
   taskType?: TaskType | "";
-  onSelectedTCsChange?: (ids: string[]) => void;
+  onSelectedMetricsChange?: (ids: string[]) => void;
 }
 
 export function TestItems({
   taskType,
-  onSelectedTCsChange,
+  onSelectedMetricsChange,
 }: TestItemsProps) {
-  const availableTCs = useMemo(() => getAvailableTestCases(taskType), [taskType]);
-  const [selectedTCs, setSelectedTCs] = useState<string[]>([]);
+  const availableMetrics = useMemo(() => getAvailableMetrics(taskType), [taskType]);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
 
   useEffect(() => {
-    setSelectedTCs([]);
-    onSelectedTCsChange?.([]);
-  }, [taskType, onSelectedTCsChange]);
+    setSelectedMetrics([]);
+    onSelectedMetricsChange?.([]);
+  }, [taskType, onSelectedMetricsChange]);
 
-  const handleToggleTC = (tcId: string) => {
-    setSelectedTCs((prev) => {
-      const next = prev.includes(tcId) ? prev.filter((id) => id !== tcId) : [...prev, tcId];
-      onSelectedTCsChange?.(next);
+  const handleToggleMetric = (metricId: string) => {
+    setSelectedMetrics((prev) => {
+      const next = prev.includes(metricId) ? prev.filter((id) => id !== metricId) : [...prev, metricId];
+      onSelectedMetricsChange?.(next);
       return next;
     });
   };
 
   const handleRecommended = () => {
-    const recommended = getRecommendedTestCaseIds(taskType);
-    setSelectedTCs(recommended);
-    onSelectedTCsChange?.(recommended);
+    const recommended = getRecommendedMetricIds(taskType);
+    setSelectedMetrics(recommended);
+    onSelectedMetricsChange?.(recommended);
   };
 
   const handleSelectAll = () => {
-    const next = availableTCs.map((tc) => tc.id);
-    setSelectedTCs(next);
-    onSelectedTCsChange?.(next);
+    const next = availableMetrics.map((m) => m.id);
+    setSelectedMetrics(next);
+    onSelectedMetricsChange?.(next);
   };
 
   const handleClear = () => {
-    setSelectedTCs([]);
-    onSelectedTCsChange?.([]);
+    setSelectedMetrics([]);
+    onSelectedMetricsChange?.([]);
   };
 
   return (
@@ -67,7 +67,7 @@ export function TestItems({
 
         <div className="flex items-center justify-between">
           <div className="text-sm">
-            <span className="font-semibold">{selectedTCs.length}</span> selected
+            <span className="font-semibold">{selectedMetrics.length}</span> selected
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRecommended} disabled={!taskType}>
@@ -90,35 +90,35 @@ export function TestItems({
         {!taskType ? (
           <Card>
             <CardContent className="py-10 text-sm text-muted-foreground">
-              Choose a classifier type in Step 1 before selecting test cases.
+              Choose a classifier type in Step 1 before selecting metrics.
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {availableTCs.map((tc) => {
-              const isSelected = selectedTCs.includes(tc.id);
+            {availableMetrics.map((metric) => {
+              const isSelected = selectedMetrics.includes(metric.id);
 
               return (
                 <label
-                  key={tc.id}
+                  key={metric.id}
                   className={cn(
                     "relative flex flex-col p-5 rounded-lg border-2 cursor-pointer transition-colors min-h-[180px]",
                     isSelected ? "border-primary bg-blue-50" : "border-border bg-card hover:border-gray-400",
                   )}
                 >
                   <div className="flex items-start gap-2 mb-3">
-                    <Checkbox checked={isSelected} onCheckedChange={() => handleToggleTC(tc.id)} className="mt-0.5" />
-                    {tc.additionalFields?.includes("beta") && (
+                    <Checkbox checked={isSelected} onCheckedChange={() => handleToggleMetric(metric.id)} className="mt-0.5" />
+                    {metric.additionalFields?.includes("beta") && (
                       <Badge variant="outline" className="ml-auto text-xs">
                         beta
                       </Badge>
                     )}
                   </div>
                   <div className="space-y-2 flex-1">
-                    <div className="font-mono text-xs uppercase font-medium text-muted-foreground">{tc.id}</div>
-                    <h3 className="text-base font-semibold leading-tight">{tc.name}</h3>
-                    <div className="text-sm text-foreground">{tc.subtitle}</div>
-                    <p className="text-xs text-[#6B7280] leading-[1.5]">{tc.description}</p>
+                    <div className="font-mono text-xs uppercase font-medium text-muted-foreground">{metric.id}</div>
+                    <h3 className="text-base font-semibold leading-tight">{metric.name}</h3>
+                    <div className="text-sm text-foreground">{metric.subtitle}</div>
+                    <p className="text-xs text-[#6B7280] leading-[1.5]">{metric.description}</p>
                   </div>
                 </label>
               );
@@ -126,7 +126,7 @@ export function TestItems({
           </div>
         )}
 
-        {selectedTCs.includes("TC5") && (
+        {selectedMetrics.includes("TC5") && (
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-semibold">F-beta note</CardTitle>
@@ -145,7 +145,7 @@ export function TestItems({
             <CardTitle className="text-lg font-semibold">Selection rules</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <div>`TC5` requires beta input.</div>
+            <div>`TC5` (F-beta Score) requires beta input.</div>
             <div>Some binary metrics also require a positive class selection.</div>
             <div>Probability columns become required automatically for probability-based metrics.</div>
           </CardContent>

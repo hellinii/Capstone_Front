@@ -20,8 +20,7 @@ import { buildMockValidationResponse } from "../../data/mock/dataValidationMock"
 
 interface DataValidationProps {
   taskType?: TaskType | "";
-  selectedTCIds?: string[];
-  selectedTCIds?: string[];
+  selectedMetricIds?: string[];
   onValidationChange?: (hasError: boolean) => void;
 }
 
@@ -37,10 +36,10 @@ function getStatusBadge(status: ValidationStatus) {
 
 export function DataValidation({
   taskType = "",
-  selectedTCIds = [],
+  selectedMetricIds = [],
   onValidationChange,
 }: DataValidationProps) {
-  const validationResponse = buildMockValidationResponse(taskType, selectedTCIds);
+  const validationResponse = buildMockValidationResponse(taskType, selectedMetricIds);
   const hasBlockingError = validationResponse.errorCount > 0;
 
   useEffect(() => {
@@ -59,7 +58,7 @@ export function DataValidation({
 
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">{TASK_TYPE_LABELS[validationResponse.taskType]}</Badge>
-          {validationResponse.selectedTcIds.map((id) => (
+          {validationResponse.selectedMetricIds.map((id) => (
             <Badge key={id} variant="outline">
               {id}
             </Badge>

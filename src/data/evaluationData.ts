@@ -2,7 +2,7 @@ export type TaskType = "binary" | "multiclass" | "multilabel";
 
 export type AdditionalInputField = "beta" | "positiveClass";
 
-export interface TestCaseDefinition {
+export interface MetricDefinition {
   id: string;
   name: string;
   subtitle: string;
@@ -41,7 +41,7 @@ export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   multilabel: "Multi-label",
 };
 
-export const TEST_CASES: TestCaseDefinition[] = [
+export const METRICS: MetricDefinition[] = [
   { id: "TC1", name: "Accuracy", subtitle: "Overall correctness", description: "Measures how often the classifier predicts the correct result.", supportedTaskTypes: ["binary", "multiclass", "multilabel"] },
   { id: "TC2", name: "Precision", subtitle: "Positive predictive value", description: "Among predicted positives, measures how many are actually positive.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"] },
   { id: "TC3", name: "Recall", subtitle: "Sensitivity", description: "Measures how many true positives are successfully detected.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"] },
@@ -176,15 +176,15 @@ const COLUMN_DISPLAY: Record<RequiredColumnCode, RequiredColumnDisplay> = {
   },
 };
 
-export function getAvailableTestCases(taskType?: string): TestCaseDefinition[] {
+export function getAvailableMetrics(taskType?: string): MetricDefinition[] {
   if (!taskType || !isTaskType(taskType)) {
-    return TEST_CASES;
+    return METRICS;
   }
 
-  return TEST_CASES.filter((tc) => tc.supportedTaskTypes.includes(taskType));
+  return METRICS.filter((m) => m.supportedTaskTypes.includes(taskType));
 }
 
-export function getRecommendedTestCaseIds(taskType?: string): string[] {
+export function getRecommendedMetricIds(taskType?: string): string[] {
   if (!taskType || !isTaskType(taskType)) {
     return [];
   }
@@ -192,18 +192,18 @@ export function getRecommendedTestCaseIds(taskType?: string): string[] {
   return RECOMMENDED_TCS[taskType];
 }
 
-export function getSelectedTestCases(taskType: TaskType, selectedIds: string[]): TestCaseDefinition[] {
+export function getSelectedMetrics(taskType: TaskType, selectedIds: string[]): MetricDefinition[] {
   const selectedSet = new Set(selectedIds);
-  return getAvailableTestCases(taskType).filter((tc) => selectedSet.has(tc.id));
+  return getAvailableMetrics(taskType).filter((m) => selectedSet.has(m.id));
 }
 
 export function selectionRequiresProbability(taskType: TaskType, selectedIds: string[]): boolean {
-  return getSelectedTestCases(taskType, selectedIds).some((tc) => tc.probabilityRequiredFor?.includes(taskType));
+  return getSelectedMetrics(taskType, selectedIds).some((m) => m.probabilityRequiredFor?.includes(taskType));
 }
 
 export function selectionNeedsField(taskType: TaskType, selectedIds: string[], field: AdditionalInputField): boolean {
-  return getSelectedTestCases(taskType, selectedIds).some((tc) => {
-    if (!tc.additionalFields?.includes(field)) {
+  return getSelectedMetrics(taskType, selectedIds).some((m) => {
+    if (!m.additionalFields?.includes(field)) {
       return false;
     }
     return field !== "positiveClass" || taskType === "binary";
@@ -261,8 +261,8 @@ export function getRequiredColumnsForSelection(taskType: TaskType, selectedIds: 
   return COLUMN_ORDER.filter((code) => columns.has(code)).map((code) => COLUMN_DISPLAY[code]);
 }
 
-export function getRequiredColumnsForTc(taskType: TaskType, tcId: string): RequiredColumnDisplay[] {
-  const columns = new Set<RequiredColumnCode>(REQUIRED_COLUMNS_BY_TC[taskType][tcId] ?? []);
+export function getRequiredColumnsForMetric(taskType: TaskType, metricId: string): RequiredColumnDisplay[] {
+  const columns = new Set<RequiredColumnCode>(REQUIRED_COLUMNS_BY_TC[taskType][metricId] ?? []);
   return COLUMN_ORDER.filter((code) => columns.has(code)).map((code) => COLUMN_DISPLAY[code]);
 }
 

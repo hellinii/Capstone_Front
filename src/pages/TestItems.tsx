@@ -28,12 +28,12 @@ export function TestItems() {
       showNext={true}
       onPrevious={handlePrevious}
       onNext={handleNext}
-      nextDisabled={store.selectedTCIds.length === 0}
+      nextDisabled={store.selectedMetricIds.length === 0}
       nextLabel="Next step"
     >
       <TestItemsContent
         taskType={store.taskType}
-        onSelectedTCsChange={store.setSelectedTCIds}
+        onSelectedMetricsChange={store.setSelectedMetricIds}
       />
     </WorkflowShell>
   );

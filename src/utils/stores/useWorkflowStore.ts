@@ -12,7 +12,7 @@ import {
   DEFAULT_DATASET_INFO,
   type BasicInfoFormData,
   type DatasetInfoFormData,
-  type TcDetailStateMap,
+  type MetricDetailStateMap,
   type UploadedFileInfo,
 } from "../../types/workflow.types";
 import type { EvaluationReportData } from "../../types/report.types";
@@ -51,11 +51,11 @@ interface WorkflowState {
   basicInfo: BasicInfoFormData;
   taskType: TaskType | "";
 
-  // Step 2 — Test items
-  selectedTCIds: string[];
+  // Step 2 — Metric selection
+  selectedMetricIds: string[];
 
-  // Step 3 — TC details
-  tcDetails: TcDetailStateMap;
+  // Step 3 — Metric details
+  metricDetails: MetricDetailStateMap;
 
   // Step 4 — Data upload
   uploadedFile: UploadedFileInfo | null;
@@ -72,11 +72,11 @@ interface WorkflowState {
   setTaskType: (type: TaskType | "") => void;
 
   // Actions — Step 2
-  setSelectedTCIds: (ids: string[]) => void;
+  setSelectedMetricIds: (ids: string[]) => void;
 
   // Actions — Step 3
-  setTcDetails: (
-    value: TcDetailStateMap | ((prev: TcDetailStateMap) => TcDetailStateMap),
+  setMetricDetails: (
+    value: MetricDetailStateMap | ((prev: MetricDetailStateMap) => MetricDetailStateMap),
   ) => void;
 
   // Actions — Step 4
@@ -99,8 +99,8 @@ const INITIAL_STATE = {
   completedSteps: [] as number[],
   basicInfo: DEFAULT_BASIC_INFO,
   taskType: "" as TaskType | "",
-  selectedTCIds: [] as string[],
-  tcDetails: {} as TcDetailStateMap,
+  selectedMetricIds: [] as string[],
+  metricDetails: {} as MetricDetailStateMap,
   uploadedFile: null as UploadedFileInfo | null,
   datasetInfo: DEFAULT_DATASET_INFO,
 };
@@ -126,19 +126,19 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   setTaskType: (type) =>
     set({
       taskType: type,
-      selectedTCIds: [],
-      tcDetails: {},
+      selectedMetricIds: [],
+      metricDetails: {},
       uploadedFile: null,
     }),
 
   // Step 2
-  setSelectedTCIds: (ids) => set({ selectedTCIds: ids }),
+  setSelectedMetricIds: (ids) => set({ selectedMetricIds: ids }),
 
   // Step 3
-  setTcDetails: (value) =>
+  setMetricDetails: (value) =>
     set((state) => ({
-      tcDetails:
-        typeof value === "function" ? value(state.tcDetails) : value,
+      metricDetails:
+        typeof value === "function" ? value(state.metricDetails) : value,
     })),
 
   // Step 4
@@ -157,8 +157,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       basicInfo: state.basicInfo,
       datasetInfo: state.datasetInfo,
       taskType: state.taskType,
-      selectedTCIds: state.selectedTCIds,
-      tcDetails: state.tcDetails,
+      selectedMetricIds: state.selectedMetricIds,
+      metricDetails: state.metricDetails,
       uploadedFile: state.uploadedFile,
     });
   },

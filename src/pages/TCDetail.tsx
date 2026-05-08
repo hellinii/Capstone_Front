@@ -2,8 +2,8 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { TCDetailInput, isCurrentTCValid } from "../components/tc-detail/TCDetailInput";
-import { getSelectedTestCases } from "../data/evaluationData";
+import { TCDetailInput, isCurrentMetricValid } from "../components/tc-detail/TCDetailInput";
+import { getSelectedMetrics } from "../data/evaluationData";
 
 /**
  * Step 3 — TC Detail page
@@ -11,25 +11,25 @@ import { getSelectedTestCases } from "../data/evaluationData";
 export function TCDetail() {
   const navigate = useNavigate();
   const store = useWorkflowStore();
-  const [currentTCIndex, setCurrentTCIndex] = useState(0);
+  const [currentMetricIndex, setCurrentMetricIndex] = useState(0);
 
   const resolvedTaskType = store.taskType || "multiclass";
-  const selectedTCs = useMemo(
-    () => getSelectedTestCases(resolvedTaskType, store.selectedTCIds),
-    [resolvedTaskType, store.selectedTCIds]
+  const selectedMetrics = useMemo(
+    () => getSelectedMetrics(resolvedTaskType, store.selectedMetricIds),
+    [resolvedTaskType, store.selectedMetricIds]
   );
 
   const handleNext = () => {
-    const currentTC = selectedTCs[currentTCIndex];
-    if (currentTC) {
-      store.setTcDetails((prev) => ({
+    const currentMetric = selectedMetrics[currentMetricIndex];
+    if (currentMetric) {
+      store.setMetricDetails((prev) => ({
         ...prev,
-        [currentTC.id]: { ...prev[currentTC.id], completed: true },
+        [currentMetric.id]: { ...prev[currentMetric.id], completed: true },
       }));
     }
 
-    if (currentTCIndex < selectedTCs.length - 1) {
-      setCurrentTCIndex((prev) => prev + 1);
+    if (currentMetricIndex < selectedMetrics.length - 1) {
+      setCurrentMetricIndex((prev) => prev + 1);
     } else {
       store.markStepCompleted(3);
       store.setCurrentStep(4);
@@ -38,19 +38,19 @@ export function TCDetail() {
   };
 
   const handlePrevious = () => {
-    if (currentTCIndex > 0) {
-      setCurrentTCIndex((prev) => prev - 1);
+    if (currentMetricIndex > 0) {
+      setCurrentMetricIndex((prev) => prev - 1);
     } else {
       store.setCurrentStep(2);
       navigate(stepToPath(2));
     }
   };
 
-  const currentTC = selectedTCs[currentTCIndex];
-  const currentState = currentTC ? store.tcDetails[currentTC.id] : undefined;
+  const currentMetric = selectedMetrics[currentMetricIndex];
+  const currentState = currentMetric ? store.metricDetails[currentMetric.id] : undefined;
   const isComplete =
-    currentTC && currentState
-      ? isCurrentTCValid(store.taskType, currentTC.id, currentState)
+    currentMetric && currentState
+      ? isCurrentMetricValid(store.taskType, currentMetric.id, currentState)
       : false;
 
   return (
@@ -61,15 +61,15 @@ export function TCDetail() {
       onPrevious={handlePrevious}
       onNext={handleNext}
       nextDisabled={!isComplete}
-      nextLabel={currentTCIndex < selectedTCs.length - 1 ? "Next TC" : "Finish"}
+      nextLabel={currentMetricIndex < selectedMetrics.length - 1 ? "Next metric" : "Finish"}
     >
       <TCDetailInput
         taskType={store.taskType}
-        selectedTCIds={store.selectedTCIds}
-        tcDetails={store.tcDetails}
-        onTcDetailsChange={store.setTcDetails}
-        currentTCIndex={currentTCIndex}
-        onCurrentTCIndexChange={setCurrentTCIndex}
+        selectedMetricIds={store.selectedMetricIds}
+        metricDetails={store.metricDetails}
+        onMetricDetailsChange={store.setMetricDetails}
+        currentMetricIndex={currentMetricIndex}
+        onCurrentMetricIndexChange={setCurrentMetricIndex}
       />
     </WorkflowShell>
   );
