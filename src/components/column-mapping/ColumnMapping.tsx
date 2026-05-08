@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import {
   TASK_TYPE_LABELS,
-  TEST_CASES,
+  METRICS,
   type RequiredColumnCode,
   type RequiredColumnDisplay,
   type TaskType,
@@ -44,7 +44,7 @@ export function ColumnMapping({
 }: ColumnMappingProps) {
   const resolvedTaskType: TaskType = taskType || "multiclass";
   const selectedMetrics = useMemo(
-    () => TEST_CASES.filter((m) => selectedMetricIds.includes(m.id) && m.supportedTaskTypes.includes(resolvedTaskType)),
+    () => METRICS.filter((m) => selectedMetricIds.includes(m.id) && m.supportedTaskTypes.includes(resolvedTaskType)),
     [resolvedTaskType, selectedMetricIds],
   );
   const requiredRoles = useMemo(
