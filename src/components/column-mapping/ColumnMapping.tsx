@@ -161,9 +161,9 @@ export function ColumnMapping({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Selected metrics and required columns</CardTitle>
+            <CardTitle className="text-lg font-semibold">Required Columns</CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              Each selected metric can require different columns. Confirm that all of them are satisfied before continuing.
+              These are the columns required by your selected evaluation metrics. You must map a column from your dataset to each of these roles.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -176,72 +176,46 @@ export function ColumnMapping({
               </Alert>
             )}
 
-            {selectedMetrics.length > 0 && (
-              <div className="space-y-3">
-                {selectedMetrics.map((metric) => {
-                  const metricRequiredRoles = getRequiredColumnsForMetric(resolvedTaskType, metric.id);
-                  const metricMissing = metricRequiredRoles.filter((role) => (roleCounts[role.code] ?? 0) === 0);
-                  const metricHasConflict = metricRequiredRoles.some((role) => {
-                    const count = roleCounts[role.code] ?? 0;
-                    return role.code !== "prob_class_*" && role.code !== "prob_label_*" && count > 1;
+            {requiredRoles.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {requiredRoles.map((role) => {
+                  const count = roleCounts[role.code] ?? 0;
+                  const status = getRoleStatusLabel(role, count);
+                  
+                  // 어떤 metric이 이 컬럼을 필요로 하는지 찾기
+                  const metricsRequiringThis = selectedMetrics.filter(metric => {
+                    const req = getRequiredColumnsForMetric(resolvedTaskType, metric.id);
+                    return req.some(r => r.code === role.code);
                   });
-                  const metricComplete = metricMissing.length === 0 && !metricHasConflict;
 
                   return (
-                    <div key={metric.id} className="rounded-xl border border-border bg-card p-5">
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div key={role.code} className="rounded-xl border border-border bg-card p-5 flex flex-col h-full">
+                      <div className="flex items-start justify-between gap-3 mb-3">
                         <div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">{metric.id}</Badge>
-                            <div className="font-semibold">{metric.name}</div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-lg">{role.code}</span>
+                            <Badge variant={status.tone}>{status.label}</Badge>
                           </div>
-                          <p className="mt-2 text-sm text-muted-foreground">{metric.description}</p>
+                          <div className="text-sm font-medium text-slate-700">{role.label}</div>
                         </div>
-                        <Badge variant={metricComplete ? "secondary" : "destructive"}>
-                          {metricComplete ? "Ready" : "Needs review"}
-                        </Badge>
                       </div>
-
-                      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {metricRequiredRoles.map((role) => {
-                          const count = roleCounts[role.code] ?? 0;
-                          const status = getRoleStatusLabel(role, count);
-
-                          return (
-                            <div key={`${metric.id}-${role.code}`} className="rounded-lg border border-border bg-muted/20 p-4">
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <div className="font-medium">{role.code}</div>
-                                  <div className="mt-1 text-xs text-muted-foreground">{role.label}</div>
-                                </div>
-                                <Badge variant={status.tone}>{status.label}</Badge>
-                              </div>
-                              <p className="mt-3 text-xs text-muted-foreground">{role.description}</p>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <p className="text-sm text-muted-foreground flex-grow mb-4">{role.description}</p>
+                      
+                      {metricsRequiringThis.length > 0 && (
+                        <div className="mt-auto pt-4 border-t border-slate-100">
+                          <div className="text-xs font-medium text-slate-500 mb-2 uppercase tracking-wider">Required by</div>
+                          <div className="flex flex-wrap gap-2">
+                            {metricsRequiringThis.map(metric => (
+                              <Badge key={metric.id} variant="outline" className="bg-slate-50 text-slate-600 font-normal border-slate-200">
+                                {metric.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
-              </div>
-            )}
-
-            {requiredRoles.length > 0 && (
-              <div className="rounded-xl border border-border bg-[#F8FAFC] p-4">
-                <div className="text-sm font-medium text-slate-900">Overall required role coverage</div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {requiredRoles.map((role) => {
-                    const count = roleCounts[role.code] ?? 0;
-                    const status = getRoleStatusLabel(role, count);
-
-                    return (
-                      <Badge key={role.code} variant={status.tone}>
-                        {role.code}: {status.label}
-                      </Badge>
-                    );
-                  })}
-                </div>
               </div>
             )}
           </CardContent>
