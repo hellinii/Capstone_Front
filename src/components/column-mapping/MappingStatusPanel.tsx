@@ -1,8 +1,16 @@
-import { AlertCircle, CheckCircle2, ShieldAlert } from "lucide-react";
+import { AlertCircle, CheckCircle2, ShieldAlert, Undo2, X } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
-import type { RequiredColumnDisplay, TaskType } from "../../data/evaluationData";
+import { Button } from "../ui/button";
+import {
+  type MetricDefinition,
+  type RequiredColumnDisplay,
+  type TaskType,
+  getRequiredColumnsForMetric,
+} from "../../data/evaluationData";
 import type { MappingRow } from "../../types/mapping.types";
+import { useNavigate } from "react-router";
+import { useWorkflowStore, stepToPath } from "../../utils/stores/useWorkflowStore";
 
 interface MappingStatusPanelProps {
   mappingSummary: {
@@ -11,6 +19,7 @@ interface MappingStatusPanelProps {
     duplicateCount: number;
   };
   resolvedTaskType: TaskType;
+  selectedMetrics: MetricDefinition[];
   positiveClass: string;
   yTrueRow: MappingRow | undefined;
 }
@@ -18,9 +27,16 @@ interface MappingStatusPanelProps {
 export function MappingStatusPanel({
   mappingSummary,
   resolvedTaskType,
+  selectedMetrics,
   positiveClass,
   yTrueRow,
 }: MappingStatusPanelProps) {
+  const navigate = useNavigate();
+  const { selectedMetricIds, setSelectedMetricIds } = useWorkflowStore();
+
+  const handleRemoveMetric = (id: string) => {
+    setSelectedMetricIds(selectedMetricIds.filter((mId) => mId !== id));
+  };
   if (mappingSummary.isValid) {
     return (
       <Alert className="bg-green-50 border-green-200 text-green-900">
@@ -39,14 +55,65 @@ export function MappingStatusPanel({
         <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-900">
           <AlertCircle className="h-4 w-4 text-red-600" />
           <AlertDescription>
-            <div className="font-semibold mb-1 text-red-800">Missing required roles</div>
-            <p className="mb-2 text-red-700">The following roles must be assigned before you can continue:</p>
-            <div className="flex flex-wrap gap-2">
-              {mappingSummary.missingRoles.map((role) => (
-                <Badge key={role.code} variant="outline" className="bg-white border-red-300 text-red-700">
-                  {role.code}
-                </Badge>
-              ))}
+            <div className="flex flex-col gap-4">
+              <div>
+                <div className="font-semibold mb-1 text-red-800">Missing required roles</div>
+                <p className="text-sm text-red-700">The following roles must be assigned before you can continue.</p>
+              </div>
+
+              <div className="space-y-3">
+                {mappingSummary.missingRoles.map((role) => {
+                  const metricsRequiringThis = selectedMetrics.filter((m) =>
+                    getRequiredColumnsForMetric(resolvedTaskType, m.id).some((r) => r.code === role.code)
+                  );
+
+                  return (
+                    <div key={role.code} className="bg-white/50 rounded-lg p-3 border border-red-100">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="bg-white border-red-300 text-red-700">
+                          {role.code}
+                        </Badge>
+                        <span className="text-xs font-medium text-red-800">{role.label}</span>
+                      </div>
+                      
+                      {metricsRequiringThis.length > 0 && (
+                        <div className="flex flex-col gap-2">
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-red-500">Required by:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {metricsRequiringThis.map((metric) => (
+                              <Button
+                                key={metric.id}
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2 text-[10px] bg-white hover:bg-red-50 border-red-200 text-red-700 transition-colors"
+                                onClick={() => handleRemoveMetric(metric.id)}
+                              >
+                                Exclude {metric.name}
+                                <X className="ml-1 h-3 w-3" />
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="pt-2 border-t border-red-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <p className="text-xs text-red-700">
+                  If your dataset is missing these columns, you may need to re-upload your data.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white hover:bg-red-50 border-red-200 text-red-700 gap-1 shrink-0"
+                  onClick={() => navigate(stepToPath(4))}
+                >
+                  <Undo2 className="h-3 w-3" />
+                  Go back to Data Upload
+                </Button>
+              </div>
             </div>
           </AlertDescription>
         </Alert>

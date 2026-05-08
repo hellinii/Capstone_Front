@@ -182,6 +182,7 @@ export function ColumnMapping({
         <MappingStatusPanel
           mappingSummary={mappingSummary}
           resolvedTaskType={resolvedTaskType}
+          selectedMetrics={selectedMetrics}
           positiveClass={positiveClass}
           yTrueRow={yTrueRow}
         />
