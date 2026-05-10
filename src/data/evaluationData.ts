@@ -25,8 +25,6 @@ export type RequiredColumnCode =
   | "y_pred"
   | "score"
   | "prob_class_*"
-  | "true_labels"
-  | "pred_labels"
   | "prob_label_*";
 
 export interface RequiredColumnDisplay {
@@ -107,27 +105,25 @@ const REQUIRED_COLUMNS_BY_TC: Record<TaskType, Partial<Record<string, RequiredCo
     TC23: ["id", "y_true"],
   },
   multilabel: {
-    TC1: ["id", "true_labels", "pred_labels"],
-    TC2: ["id", "true_labels", "pred_labels"],
-    TC3: ["id", "true_labels", "pred_labels"],
-    TC4: ["id", "true_labels", "pred_labels"],
-    TC5: ["id", "true_labels", "pred_labels"],
-    TC15: ["id", "true_labels", "pred_labels"],
-    TC16: ["id", "true_labels", "pred_labels"],
-    TC17: ["id", "true_labels", "pred_labels"],
-    TC18: ["id", "true_labels", "pred_labels"],
-    TC21: ["id", "true_labels", "pred_labels"],
-    TC22: ["id", "true_labels", "pred_labels"],
-    TC23: ["id", "true_labels"],
+    TC1: ["id", "y_true", "y_pred"],
+    TC2: ["id", "y_true", "y_pred"],
+    TC3: ["id", "y_true", "y_pred"],
+    TC4: ["id", "y_true", "y_pred"],
+    TC5: ["id", "y_true", "y_pred"],
+    TC15: ["id", "y_true", "y_pred"],
+    TC16: ["id", "y_true", "y_pred"],
+    TC17: ["id", "y_true", "y_pred"],
+    TC18: ["id", "y_true", "y_pred"],
+    TC21: ["id", "y_true", "y_pred"],
+    TC22: ["id", "y_true", "y_pred"],
+    TC23: ["id", "y_true"],
   },
 };
 
 const COLUMN_ORDER: RequiredColumnCode[] = [
   "id",
   "y_true",
-  "true_labels",
   "y_pred",
-  "pred_labels",
   "score",
   "prob_class_*",
   "prob_label_*",
@@ -142,12 +138,12 @@ const COLUMN_DISPLAY: Record<RequiredColumnCode, RequiredColumnDisplay> = {
   y_true: {
     code: "y_true",
     label: "Ground truth label",
-    description: "The actual target value.",
+    description: "The actual target value. For multi-label data, store the full set of true labels in one consistent format.",
   },
   y_pred: {
     code: "y_pred",
     label: "Predicted label",
-    description: "The label predicted by the model.",
+    description: "The label predicted by the model. For multi-label data, store the full set of predicted labels in the same format as y_true.",
   },
   score: {
     code: "score",
@@ -158,16 +154,6 @@ const COLUMN_DISPLAY: Record<RequiredColumnCode, RequiredColumnDisplay> = {
     code: "prob_class_*",
     label: "Per-class probabilities",
     description: "One probability column per class, for example prob_cat or prob_dog.",
-  },
-  true_labels: {
-    code: "true_labels",
-    label: "Ground truth labels",
-    description: "Actual labels for multi-label data, for example sports|news.",
-  },
-  pred_labels: {
-    code: "pred_labels",
-    label: "Predicted labels",
-    description: "Predicted labels for multi-label data, for example sports|news.",
   },
   "prob_label_*": {
     code: "prob_label_*",
@@ -182,6 +168,10 @@ export function getAvailableMetrics(taskType?: string): MetricDefinition[] {
   }
 
   return METRICS.filter((m) => m.supportedTaskTypes.includes(taskType));
+}
+
+export function getMetricDisplayId(metricId: string): string {
+  return metricId.replace(/^TC(\d+)$/, "M$1");
 }
 
 export function getRecommendedMetricIds(taskType?: string): string[] {
@@ -217,8 +207,8 @@ export function getUploadColumnGuide(taskType: TaskType, selectedIds: string[]):
   const probabilityColumn =
     taskType === "binary" ? "score" : taskType === "multiclass" ? "prob_class_*" : "prob_label_*";
 
-  const alwaysRequired = taskType === "multilabel" ? ["id", "true_labels"] : ["id", "y_true"];
-  const conditionallyRequired = onlyTc23 ? [] : [taskType === "multilabel" ? "pred_labels" : "y_pred"];
+  const alwaysRequired = ["id", "y_true"];
+  const conditionallyRequired = onlyTc23 ? [] : ["y_pred"];
   const optional = requiresProbability ? [] : [probabilityColumn];
   const notes = ["id values must be unique.", "Probability values must be between 0 and 1."];
 
@@ -232,7 +222,7 @@ export function getUploadColumnGuide(taskType: TaskType, selectedIds: string[]):
     notes.push("Use a consistent label separator or one-hot label columns for multi-label data.");
   }
   if (onlyTc23) {
-    notes.push("TC23 can be computed with dataset distribution only, so prediction columns are optional.");
+    notes.push("M23 can be computed with dataset distribution only, so prediction columns are optional.");
   }
 
   return { alwaysRequired, conditionallyRequired, optional, notes };
@@ -263,6 +253,19 @@ export function getRequiredColumnsForSelection(taskType: TaskType, selectedIds: 
 
 export function getRequiredColumnsForMetric(taskType: TaskType, metricId: string): RequiredColumnDisplay[] {
   const columns = new Set<RequiredColumnCode>(REQUIRED_COLUMNS_BY_TC[taskType][metricId] ?? []);
+  return COLUMN_ORDER.filter((code) => columns.has(code)).map((code) => COLUMN_DISPLAY[code]);
+}
+
+export function getRequiredColumnsForTaskType(taskType: TaskType): RequiredColumnDisplay[] {
+  const columns = new Set<RequiredColumnCode>();
+  const mapping = REQUIRED_COLUMNS_BY_TC[taskType];
+
+  for (const metricColumns of Object.values(mapping)) {
+    for (const column of metricColumns ?? []) {
+      columns.add(column);
+    }
+  }
+
   return COLUMN_ORDER.filter((code) => columns.has(code)).map((code) => COLUMN_DISPLAY[code]);
 }
 

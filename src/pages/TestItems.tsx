@@ -4,7 +4,7 @@ import { WorkflowShell } from "../layout/WorkflowShell";
 import { TestItems as TestItemsContent } from "../components/test-items/TestItems";
 
 /**
- * Step 2 — Test Items page
+ * Step 2 — Metric selection page
  */
 export function TestItems() {
   const navigate = useNavigate();

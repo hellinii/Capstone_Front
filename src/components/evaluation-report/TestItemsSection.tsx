@@ -1,5 +1,6 @@
 import { Sigma, Target } from "lucide-react";
 import { ReportSection } from "./ReportSection";
+import { getMetricDisplayId } from "@/data/evaluationData";
 import type { ReportTestItem } from "@/types/report.types";
 
 interface TestItemsSectionProps {
@@ -10,7 +11,7 @@ export function TestItemsSection({ items }: TestItemsSectionProps) {
   return (
     <ReportSection
       number={3}
-      title="Selected Test Items"
+      title="Selected Metrics"
       description="These items are derived from the current workflow selection, so the report and the preview step stay aligned."
     >
       <div className="grid gap-4 xl:grid-cols-2">
@@ -18,7 +19,7 @@ export function TestItemsSection({ items }: TestItemsSectionProps) {
           <div key={item.id} className="rounded-3xl border border-slate-200 bg-white p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">{item.id}</div>
+                <div className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">{getMetricDisplayId(item.id)}</div>
                 <div className="mt-2 text-xl font-semibold tracking-tight text-slate-900">{item.name}</div>
                 <div className="mt-1 text-sm text-slate-500">{item.subtitle}</div>
               </div>
