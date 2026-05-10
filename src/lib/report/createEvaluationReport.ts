@@ -216,7 +216,7 @@ export function createEvaluationReport({
       sourceFileName: uploadedFile?.name || "No source file attached yet",
     },
     dataset: {
-      format: datasetInfo.datasetFormat || "CSV",
+      format: uploadedFile?.type && uploadedFile.type !== "unknown" ? uploadedFile.type : inferDatasetFormat(uploadedFile?.name),
       sourceName: uploadedFile?.name || "Uploaded evaluation dataset",
       totalSamples,
       trainingSamples,
@@ -244,6 +244,15 @@ export function createEvaluationReport({
     },
     recommendations: buildRecommendations(resolvedTaskType, uploadedFile !== null, selectedCases.length),
   };
+}
+
+function inferDatasetFormat(fileName?: string) {
+  if (!fileName) {
+    return "Uploaded file";
+  }
+
+  const extension = fileName.split(".").pop()?.toUpperCase();
+  return extension ? `${extension} file` : "Uploaded file";
 }
 
 function toReportTestItem(id: string, name: string, subtitle: string, detail?: MetricDetailState): ReportTestItem {

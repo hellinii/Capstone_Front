@@ -44,9 +44,9 @@ export interface UploadedFileInfo {
 }
 
 export interface DatasetInfoFormData {
-  datasetFormat: string;
   trainingSampleCount: string;
   evaluationSampleCount: string;
+  trainingDatasetName: string;
 }
 
 export const DEFAULT_BASIC_INFO: BasicInfoFormData = {
@@ -75,8 +75,8 @@ export const DEFAULT_BASIC_INFO: BasicInfoFormData = {
 };
 
 export const DEFAULT_DATASET_INFO: DatasetInfoFormData = {
-  datasetFormat: "",
   trainingSampleCount: "",
   evaluationSampleCount: "",
+  trainingDatasetName: "",
 };
 

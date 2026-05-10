@@ -1,7 +1,13 @@
 import { useNavigate } from "react-router";
+import { useState } from "react";
 import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { DataUpload as DataUploadContent, isDataUploadValid } from "../components/data-upload/DataUpload";
+import {
+  DataUpload as DataUploadContent,
+  isEvaluationDataUploadValid,
+  isTrainingDatasetInfoValid,
+  type DataUploadPhase,
+} from "../components/data-upload/DataUpload";
 
 /**
  * Step 4 ??Data Upload page
@@ -9,17 +15,33 @@ import { DataUpload as DataUploadContent, isDataUploadValid } from "../component
 export function DataUpload() {
   const navigate = useNavigate();
   const store = useWorkflowStore();
+  const [phase, setPhase] = useState<DataUploadPhase>("evaluation");
 
   const handleNext = () => {
+    if (phase === "evaluation") {
+      setPhase("training");
+      return;
+    }
+
     store.markStepCompleted(4);
     store.setCurrentStep(5);
     navigate(stepToPath(5));
   };
 
   const handlePrevious = () => {
+    if (phase === "training") {
+      setPhase("evaluation");
+      return;
+    }
+
     store.setCurrentStep(3);
     navigate(stepToPath(3));
   };
+
+  const nextDisabled =
+    phase === "evaluation"
+      ? !isEvaluationDataUploadValid(store.datasetInfo, store.uploadedFile)
+      : !isTrainingDatasetInfoValid(store.datasetInfo);
 
   return (
     <WorkflowShell
@@ -28,16 +50,22 @@ export function DataUpload() {
       showNext={true}
       onPrevious={handlePrevious}
       onNext={handleNext}
-      nextDisabled={!isDataUploadValid(store.datasetInfo, store.uploadedFile)}
-      nextLabel="Next step"
+      nextDisabled={nextDisabled}
+      nextLabel={phase === "evaluation" ? "Next: training dataset" : "Next step"}
     >
       <DataUploadContent
+        phase={phase}
+        onPhaseChange={setPhase}
         taskType={store.taskType}
         selectedMetricIds={store.selectedMetricIds}
         datasetInfo={store.datasetInfo}
         onDatasetInfoChange={store.setDatasetInfo}
         uploadedFile={store.uploadedFile}
         onUploadedFileChange={store.setUploadedFile}
+        trainingExampleFile={store.trainingExampleFile}
+        onTrainingExampleFileChange={store.setTrainingExampleFile}
+        trainingUnsuitableExampleFile={store.trainingUnsuitableExampleFile}
+        onTrainingUnsuitableExampleFileChange={store.setTrainingUnsuitableExampleFile}
       />
     </WorkflowShell>
   );
