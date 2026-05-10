@@ -6,7 +6,7 @@ import { TCDetailInput, isCurrentMetricValid } from "../components/tc-detail/TCD
 import { getSelectedMetrics } from "../data/evaluationData";
 
 /**
- * Step 3 — TC Detail page
+ * Step 3 — Metric detail page
  */
 export function TCDetail() {
   const navigate = useNavigate();

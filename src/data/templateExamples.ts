@@ -12,8 +12,8 @@ export function getCsvExample(taskType: TaskType, requiresProb: boolean): string
 
   if (taskType === "multilabel") {
     return requiresProb
-      ? "id,true_labels,pred_labels,prob_label_sports,prob_label_news,inference_time_ms\nS001,sports,sports,0.92,0.08,12.4\nS002,news,news,0.14,0.86,11.8"
-      : "id,true_labels,pred_labels,inference_time_ms\nS001,sports,sports,12.4\nS002,news,news,11.8";
+      ? "id,y_true,y_pred,prob_label_sports,prob_label_news,inference_time_ms\nS001,sports|news,sports,0.92,0.08,12.4\nS002,news,news,0.14,0.86,11.8"
+      : "id,y_true,y_pred,inference_time_ms\nS001,sports|news,sports,12.4\nS002,news,news,11.8";
   }
 
   return requiresProb
@@ -33,8 +33,8 @@ export function getJsonExample(taskType: TaskType, requiresProb: boolean): strin
 
   if (taskType === "multilabel") {
     return requiresProb
-      ? '{\n  "samples": [\n    { "id": "S001", "true_labels": "sports", "pred_labels": "sports", "prob_label_sports": 0.92, "inference_time_ms": 12.4 }\n  ]\n}'
-      : '{\n  "samples": [\n    { "id": "S001", "true_labels": "sports", "pred_labels": "sports", "inference_time_ms": 12.4 }\n  ]\n}';
+      ? '{\n  "samples": [\n    { "id": "S001", "y_true": "sports|news", "y_pred": "sports", "prob_label_sports": 0.92, "inference_time_ms": 12.4 }\n  ]\n}'
+      : '{\n  "samples": [\n    { "id": "S001", "y_true": "sports|news", "y_pred": "sports", "inference_time_ms": 12.4 }\n  ]\n}';
   }
 
   return requiresProb

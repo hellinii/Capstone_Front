@@ -227,17 +227,13 @@ export function DataUpload({
                       {column.code === "id" &&
                         "Use this column to uniquely identify each evaluation sample. Every row should have a stable, non-duplicated identifier so later analysis can trace results back to the original record."}
                       {column.code === "y_true" &&
-                        "This column contains the ground-truth answer for each sample. In other words, it is the correct label used as the reference when computing accuracy, precision, recall, and related metrics."}
+                        "This column contains the ground-truth answer for each sample. For multi-label data, put the full true label set in a consistent format such as sports|news."}
                       {column.code === "y_pred" &&
-                        "This column contains the label predicted by the model for each sample. It is compared directly against the ground-truth label to calculate classification metrics."}
+                        "This column contains the model prediction for each sample. For multi-label data, put the full predicted label set in the same format as y_true."}
                       {column.code === "score" &&
                         "This column stores a confidence score, usually for the positive class in binary classification. It is required for threshold-based or probability-based metrics such as AUROC, AUPRC, log loss, or KL divergence."}
                       {column.code === "prob_class_*" &&
                         "Provide one probability column per class, such as prob_cat, prob_dog, and prob_bird. Each row should describe how the model distributes confidence across all classes."}
-                      {column.code === "true_labels" &&
-                        "This column contains the full set of correct labels for each sample in a multi-label task. If a sample belongs to multiple labels, they should be represented consistently using your agreed label format."}
-                      {column.code === "pred_labels" &&
-                        "This column contains the full set of labels predicted by the model for each sample in a multi-label task. It is compared against the true label set to compute multi-label metrics."}
                       {column.code === "prob_label_*" &&
                         "Provide one probability column per label in the multi-label setting. Each value represents the model confidence that a specific label applies to the sample."}
                     </p>

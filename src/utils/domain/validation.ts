@@ -1,7 +1,7 @@
 /**
  * 평가 데이터 유효성 검사 규칙
  *
- * 이 모듈은 워크플로우 전반(특히 Step 3 TC Detail Input)에서 사용되는 핵심 유효성 검사
+ * 이 모듈은 워크플로우 전반(특히 Step 3 Metric Detail Input)에서 사용되는 핵심 유효성 검사
  * 로직을 포함합니다. 다양한 숫자 입력값(target value, beta 등)에 대한 허용 범위,
  * 검증 규칙 및 파싱(parsing) 로직을 정의합니다.
  */
@@ -18,7 +18,7 @@ export function parseNumericValue(value: string): number | null {
 }
 
 /**
- * Get the validation rule for a TC target value based on its ID.
+ * Get the validation rule for a metric target value based on its internal ID.
  * Returns the range description and a validate function.
  */
 export function getTargetValueRule(tcId: string): { summary: string; validate: (value: number) => string | null } {
@@ -46,14 +46,14 @@ export function getTargetValueRule(tcId: string): { summary: string; validate: (
   if (zeroToOneIds.has(tcId)) {
     return {
       summary: "Enter a number between 0 and 1.",
-      validate: (value) => (value < 0 || value > 1 ? "Target value must be between 0 and 1 for this TC." : null),
+      validate: (value) => (value < 0 || value > 1 ? "Target value must be between 0 and 1 for this metric." : null),
     };
   }
 
   if (nonNegativeIds.has(tcId)) {
     return {
       summary: "Enter a number greater than or equal to 0.",
-      validate: (value) => (value < 0 ? "Target value must be 0 or greater for this TC." : null),
+      validate: (value) => (value < 0 ? "Target value must be 0 or greater for this metric." : null),
     };
   }
 

@@ -5,8 +5,8 @@ import { useWorkflowStore, stepToPath } from "../../utils/stores/useWorkflowStor
 
 const steps = [
   "Basic info",
-  "Test items",
-  "TC details",
+  "Metrics",
+  "Metric details",
   "Data upload",
   "Column mapping",
   "Validation",

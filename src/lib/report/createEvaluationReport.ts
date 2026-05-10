@@ -221,7 +221,7 @@ export function createEvaluationReport({
       evaluationSamples,
       classLabels,
       notes: [
-        `${selectedMetricNames.length} selected test case(s) are included in this draft report.`,
+        `${selectedMetricNames.length} selected metric(s) are included in this draft report.`,
         `Task type is configured as ${TASK_TYPE_LABELS[resolvedTaskType]}.`,
         uploadedFile
           ? `Source file ${uploadedFile.name} is connected to the evaluation flow.`
@@ -374,7 +374,7 @@ function buildWeaknesses(diagnostics: DiagnosticInsight[], usedFallbackSelection
       ? `${lowestRecall.className} has the weakest recall in the current preview and should be checked against data balance or labeling quality.`
       : "Class-level weaknesses are not available yet.",
     usedFallbackSelection
-      ? "No explicit test case selection was present, so the report relies on the recommended default metric set."
+      ? "No explicit metric selection was present, so the report relies on the recommended default metric set."
       : "The current report still uses preview values for final metric computation until backend integration is connected.",
     "Dataset counts and report narrative are partially synthesized from workflow inputs, so final export should still be verified against the API response.",
   ];
@@ -399,8 +399,8 @@ function buildRecommendations(
       category: "Workflow Consistency",
       action:
         selectedCount > 0
-          ? "Preserve the selected test case list as the single source of truth for both preview and report rendering."
-          : "Prompt the reviewer to confirm the recommended default test case set before final export.",
+          ? "Preserve the selected metric list as the single source of truth for both preview and report rendering."
+          : "Prompt the reviewer to confirm the recommended default metric set before final export.",
       expectedImpact: "Keeps preview cards and final report sections aligned.",
     },
     {

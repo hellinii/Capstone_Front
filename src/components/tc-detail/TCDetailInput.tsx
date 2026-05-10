@@ -8,6 +8,7 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { cn } from "../../utils/styling/styles";
 import {
+  getMetricDisplayId,
   getRequiredColumnsForMetric,
   getSelectedMetrics,
   selectionNeedsField,
@@ -17,6 +18,8 @@ import type { MetricDetailState, MetricDetailStateMap } from "../../types/workfl
 import { parseNumericValue, getTargetValueRule } from "../../utils/domain/validation";
 
 interface TCDetailInputProps {
+  taskType?: TaskType | "";
+  selectedMetricIds?: string[];
   metricDetails: MetricDetailStateMap;
   onMetricDetailsChange: (value: MetricDetailStateMap | ((prev: MetricDetailStateMap) => MetricDetailStateMap)) => void;
   currentMetricIndex: number;
@@ -78,7 +81,6 @@ export function TCDetailInput({
   const requiredColumns = getRequiredColumnsForMetric(resolvedTaskType, currentMetric.id);
   const needsPositiveClass = selectionNeedsField(resolvedTaskType, [currentMetric.id], "positiveClass");
   const needsBeta = selectionNeedsField(resolvedTaskType, [currentMetric.id], "beta");
-  const isLastMetric = currentMetricIndex === selectedMetrics.length - 1;
   const targetValueRule = getTargetValueRule(currentMetric.id);
   const targetValueHint =
     currentMetric.id === "TC6"
@@ -117,26 +119,6 @@ export function TCDetailInput({
 
   const isComplete = !targetValueError && !betaError && !positiveClassError;
 
-  const handleNextClick = () => {
-    updateCurrent({ completed: true });
-
-    if (isLastTC) {
-      onNext();
-      return;
-    }
-
-    setCurrentTCIndex((prev) => prev + 1);
-  };
-
-  const handlePreviousClick = () => {
-    if (currentTCIndex === 0) {
-      onPrevious();
-      return;
-    }
-
-    setCurrentTCIndex((prev) => prev - 1);
-  };
-
   return (
     <>
       <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto space-y-6">
@@ -163,7 +145,7 @@ export function TCDetailInput({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <div className="font-mono text-xs text-muted-foreground">{metric.id}</div>
+                      <div className="font-mono text-xs text-muted-foreground">{getMetricDisplayId(metric.id)}</div>
                       <div className="text-sm font-semibold">{metric.name}</div>
                     </div>
                     {metricDetails[metric.id]?.completed && <CheckCircle2 className="h-4 w-4 text-green-600" />}
@@ -175,7 +157,7 @@ export function TCDetailInput({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">{currentMetric.id} details</CardTitle>
+              <CardTitle className="text-lg font-semibold">{getMetricDisplayId(currentMetric.id)} details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">

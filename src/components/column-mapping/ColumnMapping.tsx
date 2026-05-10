@@ -28,8 +28,6 @@ const roleOptions: Array<{ value: MappingRole; label: string }> = [
   { value: "y_pred", label: "y_pred" },
   { value: "score", label: "score" },
   { value: "prob_class_*", label: "prob_class_*" },
-  { value: "true_labels", label: "true_labels" },
-  { value: "pred_labels", label: "pred_labels" },
   { value: "prob_label_*", label: "prob_label_*" },
   { value: "ignore", label: "ignore" },
 ];
