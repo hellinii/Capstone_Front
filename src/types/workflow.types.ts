@@ -30,7 +30,6 @@ export interface MetricDetailState {
   name: string;
   description: string;
   targetValue: string;
-  targetCondition: "above" | "below" | "within";
   beta: string;
   positiveClass: string;
   completed: boolean;

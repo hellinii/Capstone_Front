@@ -41,7 +41,7 @@ export function getTargetValueRule(tcId: string): { summary: string; validate: (
     "TC22",
   ]);
 
-  const nonNegativeIds = new Set(["TC6", "TC14", "TC18", "TC19", "TC21"]);
+  const nonNegativeIds = new Set(["TC6", "TC14", "TC18", "TC19"]);
 
   if (zeroToOneIds.has(tcId)) {
     return {
@@ -75,4 +75,12 @@ export function getTargetValueRule(tcId: string): { summary: string; validate: (
     summary: "Enter a valid numeric target value.",
     validate: () => null,
   };
+}
+
+/**
+ * 단일 숫자 판정 기준이 필요한 메트릭인지 확인합니다.
+ * M21(Confusion Matrix)은 결과 매트릭스 자체를 확인하는 정보성 항목이므로 타겟값을 받지 않습니다.
+ */
+export function metricNeedsTargetValue(metricId: string): boolean {
+  return metricId !== "TC21";
 }
