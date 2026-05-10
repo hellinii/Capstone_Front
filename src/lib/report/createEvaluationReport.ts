@@ -21,6 +21,8 @@ import type {
   ReportTestItem,
   ReportVerdict,
 } from "@/types/report.types";
+import type { MetricDetailState } from "@/types/workflow.types";
+import { metricNeedsTargetValue } from "@/utils/domain/validation";
 
 interface CreateEvaluationReportParams {
   basicInfo: BasicInfoFormData;
@@ -166,7 +168,7 @@ export function createEvaluationReport({
   const resolvedSelectedIds =
     selectedMetricIds.length > 0 ? selectedMetricIds : getRecommendedMetricIds(resolvedTaskType);
   const selectedMetrics = getSelectedMetrics(resolvedTaskType, resolvedSelectedIds);
-  const testItems = selectedMetrics.map((m) => toReportTestItem(m.id, m.name, m.subtitle));
+  const testItems = selectedMetrics.map((m) => toReportTestItem(m.id, m.name, m.subtitle, metricDetails[m.id]));
 
   const classLabels = getClassLabels(resolvedTaskType, metricDetails);
   const trainingSamples = parseCount(datasetInfo.trainingSampleCount, 8715);
@@ -244,17 +246,35 @@ export function createEvaluationReport({
   };
 }
 
-function toReportTestItem(id: string, name: string, subtitle: string): ReportTestItem {
+function toReportTestItem(id: string, name: string, subtitle: string, detail?: MetricDetailState): ReportTestItem {
   const template = REPORT_ITEM_TEMPLATES[id];
+  const thresholdLabel = resolveThresholdLabel(id, detail, template?.thresholdLabel);
 
   return {
     id,
     name,
     subtitle,
     formula: template?.formula || "Defined by selected evaluation protocol",
-    thresholdLabel: template?.thresholdLabel || "Defined during setup",
+    thresholdLabel,
     description: template?.description || subtitle,
   };
+}
+
+function resolveThresholdLabel(metricId: string, detail?: MetricDetailState, fallback = "Defined during setup") {
+  if (!metricNeedsTargetValue(metricId)) {
+    return "Informational";
+  }
+
+  const targetValue = detail?.targetValue.trim();
+  if (!targetValue) {
+    return fallback;
+  }
+
+  return `${isLowerBetterMetric(metricId) ? "<=" : ">="} ${targetValue}`;
+}
+
+function isLowerBetterMetric(metricId: string) {
+  return new Set(["TC6", "TC8", "TC14", "TC15", "TC18", "TC19", "TC23"]).has(metricId);
 }
 
 function resolveHighlightedMetricIds(taskType: TaskType, selectedMetricIds: string[]) {

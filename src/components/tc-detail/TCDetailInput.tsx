@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { cn } from "../../utils/styling/styles";
 import {
   getMetricDisplayId,
@@ -15,7 +13,7 @@ import {
   type TaskType,
 } from "../../data/evaluationData";
 import type { MetricDetailState, MetricDetailStateMap } from "../../types/workflow.types";
-import { parseNumericValue, getTargetValueRule } from "../../utils/domain/validation";
+import { parseNumericValue, getTargetValueRule, metricNeedsTargetValue } from "../../utils/domain/validation";
 
 interface TCDetailInputProps {
   taskType?: TaskType | "";
@@ -32,7 +30,6 @@ function createDefaultState(id: string, name: string): MetricDetailState {
     name,
     description: "",
     targetValue: "",
-    targetCondition: "above",
     beta: id === "TC5" ? "1.0" : "",
     positiveClass: "",
     completed: false,
@@ -79,16 +76,14 @@ export function TCDetailInput({
   const currentMetric = selectedMetrics[currentMetricIndex];
   const currentState = metricDetails[currentMetric.id] ?? createDefaultState(currentMetric.id, currentMetric.name);
   const requiredColumns = getRequiredColumnsForMetric(resolvedTaskType, currentMetric.id);
-  const needsPositiveClass = selectionNeedsField(resolvedTaskType, [currentMetric.id], "positiveClass");
   const needsBeta = selectionNeedsField(resolvedTaskType, [currentMetric.id], "beta");
+  const needsTargetValue = metricNeedsTargetValue(currentMetric.id);
   const targetValueRule = getTargetValueRule(currentMetric.id);
-  const targetValueHint =
-    currentMetric.id === "TC6"
-      ? "Enter the maximum acceptable divergence value for this metric."
-      : "Enter the minimum metric value you want this metric to achieve.";
+  const targetValueHint = getTargetValueHint(currentMetric.id);
   const parsedTargetValue = parseNumericValue(currentState.targetValue);
-  const targetValueError =
-    currentState.targetValue.trim() === ""
+  const targetValueError = !needsTargetValue
+    ? null
+    : currentState.targetValue.trim() === ""
       ? "Target value is required."
       : parsedTargetValue === null
         ? "Target value must be a valid number."
@@ -103,9 +98,6 @@ export function TCDetailInput({
         : parsedBeta <= 0
           ? "Beta must be greater than 0."
           : null;
-  const positiveClassError = needsPositiveClass && currentState.positiveClass.trim() === ""
-    ? "Positive class is required for this metric."
-    : null;
 
   const updateCurrent = (patch: Partial<MetricDetailState>) => {
     onMetricDetailsChange((prev) => ({
@@ -117,7 +109,7 @@ export function TCDetailInput({
     }));
   };
 
-  const isComplete = !targetValueError && !betaError && !positiveClassError;
+  const isComplete = !targetValueError && !betaError;
 
   return (
     <>
@@ -157,54 +149,35 @@ export function TCDetailInput({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">{getMetricDisplayId(currentMetric.id)} details</CardTitle>
+              <CardTitle className="text-lg font-semibold">
+                {getMetricDisplayId(currentMetric.id)}: {currentMetric.name}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">{currentMetric.description}</p>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="targetValue">Target value</Label>
-                <Input
-                  id="targetValue"
-                  value={currentState.targetValue}
-                  onChange={(e) => updateCurrent({ targetValue: e.target.value })}
-                  placeholder="e.g. 0.85"
-                  aria-invalid={Boolean(targetValueError)}
-                />
-                <p className="text-xs text-muted-foreground">{targetValueHint}</p>
-                <p className="text-xs text-muted-foreground">{targetValueRule.summary}</p>
-                {targetValueError && <p className="text-xs text-destructive">{targetValueError}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Target condition</Label>
-                <Select value={currentState.targetCondition} onValueChange={(value: "above" | "below" | "within") => updateCurrent({ targetCondition: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="above">Above</SelectItem>
-                    <SelectItem value="below">Below</SelectItem>
-                    <SelectItem value="within">Within range</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Choose how the target value should be evaluated, such as above 0.85 or below 0.10.
-                </p>
-              </div>
-
-              {needsPositiveClass && (
+              {needsTargetValue ? (
                 <div className="space-y-2">
-                  <Label htmlFor="positiveClass">Positive class</Label>
+                  <Label htmlFor="targetValue">Target value</Label>
                   <Input
-                    id="positiveClass"
-                    value={currentState.positiveClass}
-                    onChange={(e) => updateCurrent({ positiveClass: e.target.value })}
-                    placeholder="e.g. positive"
-                    aria-invalid={Boolean(positiveClassError)}
+                    id="targetValue"
+                    value={currentState.targetValue}
+                    onChange={(e) => updateCurrent({ targetValue: e.target.value })}
+                    placeholder="e.g. 0.85"
+                    aria-invalid={Boolean(targetValueError)}
                   />
+                  <p className="text-xs text-muted-foreground">{targetValueHint}</p>
                   <p className="text-xs text-muted-foreground">
-                    This is the class treated as the positive outcome when computing metrics like precision, recall, and specificity.
+                    This value becomes the acceptance criterion used later in the report. Higher-is-better metrics use it as the minimum acceptable score, while lower-is-better metrics use it as the maximum acceptable value.
                   </p>
-                  {positiveClassError && <p className="text-xs text-destructive">{positiveClassError}</p>}
+                  <p className="text-xs text-muted-foreground">{targetValueRule.summary}</p>
+                  {targetValueError && <p className="text-xs text-destructive">{targetValueError}</p>}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                  <div className="text-sm font-medium text-foreground">Target value is not required</div>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {getMetricDisplayId(currentMetric.id)} is reviewed as an informational output rather than a single pass/fail number, so no target value is collected here.
+                  </p>
                 </div>
               )}
 
@@ -259,13 +232,14 @@ export function isCurrentMetricValid(
   metricId: string,
   state: MetricDetailState
 ) {
-  const needsPositiveClass = selectionNeedsField(taskType || "multiclass", [metricId], "positiveClass");
   const needsBeta = selectionNeedsField(taskType || "multiclass", [metricId], "beta");
+  const needsTargetValue = metricNeedsTargetValue(metricId);
   
   const parsedTargetValue = parseNumericValue(state.targetValue);
   const targetValueRule = getTargetValueRule(metricId);
-  const targetValueError =
-    state.targetValue.trim() === ""
+  const targetValueError = !needsTargetValue
+    ? null
+    : state.targetValue.trim() === ""
       ? "Target value is required."
       : parsedTargetValue === null
         ? "Target value must be a valid number."
@@ -282,10 +256,21 @@ export function isCurrentMetricValid(
           ? "Beta must be greater than 0."
           : null;
 
-  const isComplete =
-    !targetValueError &&
-    !betaError &&
-    (!needsPositiveClass || state.positiveClass.trim() !== "");
+  const isComplete = !targetValueError && !betaError;
 
   return isComplete;
+}
+
+function getTargetValueHint(metricId: string): string {
+  const lowerIsBetter = new Set(["TC6", "TC8", "TC14", "TC15", "TC18", "TC19", "TC23"]);
+
+  if (lowerIsBetter.has(metricId)) {
+    return "Enter the largest value that is still acceptable for this metric.";
+  }
+
+  if (metricId === "TC20") {
+    return "Enter the minimum acceptable MCC value. MCC ranges from -1 to 1, where higher is better.";
+  }
+
+  return "Enter the minimum score this metric should reach to be considered acceptable.";
 }
