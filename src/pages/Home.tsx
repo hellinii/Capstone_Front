@@ -5,7 +5,6 @@ import { TCDetail } from "./TCDetail";
 import { DataUpload } from "./DataUpload";
 import { ColumnMapping } from "./ColumnMapping";
 import { DataValidation } from "./DataValidation";
-import { EvaluationReport } from "./EvaluationReport";
 
 /**
  * Home page — redirects to the first workflow step.
@@ -14,4 +13,4 @@ export function Home() {
   return <Navigate to="/step/basic-info" replace />;
 }
 
-export { BasicInfo, TestItems, TCDetail, DataUpload, ColumnMapping, DataValidation, EvaluationReport };
+export { BasicInfo, TestItems, TCDetail, DataUpload, ColumnMapping, DataValidation };

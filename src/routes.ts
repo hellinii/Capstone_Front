@@ -6,8 +6,9 @@ import {
   DataUpload,
   ColumnMapping,
   DataValidation,
-  EvaluationReport,
 } from "./pages/Home";
+import { Report } from "./pages/report/Report";
+import { ReportPrint } from "./pages/report/ReportPrint";
 
 export const routes = [
   { path: "/", Component: Home },
@@ -17,5 +18,6 @@ export const routes = [
   { path: "/step/data-upload", Component: DataUpload },
   { path: "/step/column-mapping", Component: ColumnMapping },
   { path: "/step/data-validation", Component: DataValidation },
-  { path: "/step/report", Component: EvaluationReport },
+  { path: "/report/:id", Component: Report },
+  { path: "/report/:id/print", Component: ReportPrint },
 ] as const;
