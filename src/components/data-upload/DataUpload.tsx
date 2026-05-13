@@ -32,10 +32,14 @@ interface DataUploadProps {
   ) => void;
   uploadedFile: UploadedFileInfo | null;
   onUploadedFileChange: (value: UploadedFileInfo | null) => void;
-  trainingExampleFile: UploadedFileInfo | null;
-  onTrainingExampleFileChange: (value: UploadedFileInfo | null) => void;
-  trainingUnsuitableExampleFile: UploadedFileInfo | null;
-  onTrainingUnsuitableExampleFileChange: (value: UploadedFileInfo | null) => void;
+  trainingExampleFiles: UploadedFileInfo[];
+  onTrainingExampleFilesChange: (
+    value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
+  ) => void;
+  trainingUnsuitableExampleFiles: UploadedFileInfo[];
+  onTrainingUnsuitableExampleFilesChange: (
+    value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
+  ) => void;
 }
 
 export function isEvaluationDataUploadValid(
@@ -62,10 +66,10 @@ export function DataUpload({
   onDatasetInfoChange,
   uploadedFile,
   onUploadedFileChange,
-  trainingExampleFile,
-  onTrainingExampleFileChange,
-  trainingUnsuitableExampleFile,
-  onTrainingUnsuitableExampleFileChange,
+  trainingExampleFiles,
+  onTrainingExampleFilesChange,
+  trainingUnsuitableExampleFiles,
+  onTrainingUnsuitableExampleFilesChange,
 }: DataUploadProps) {
   const evaluationInputRef = useRef<HTMLInputElement>(null);
   const trainingExampleInputRef = useRef<HTMLInputElement>(null);
@@ -107,7 +111,8 @@ export function DataUpload({
       return;
     }
 
-    onTrainingExampleFileChange(toUploadedFileInfo(file));
+    onTrainingExampleFilesChange((prev) => [...prev, toUploadedFileInfo(file)]);
+    event.target.value = "";
   };
 
   const handleTrainingUnsuitableExampleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -116,7 +121,8 @@ export function DataUpload({
       return;
     }
 
-    onTrainingUnsuitableExampleFileChange(toUploadedFileInfo(file));
+    onTrainingUnsuitableExampleFilesChange((prev) => [...prev, toUploadedFileInfo(file)]);
+    event.target.value = "";
   };
 
   const removeEvaluationFile = () => {
@@ -126,18 +132,12 @@ export function DataUpload({
     }
   };
 
-  const removeTrainingExampleFile = () => {
-    onTrainingExampleFileChange(null);
-    if (trainingExampleInputRef.current) {
-      trainingExampleInputRef.current.value = "";
-    }
+  const removeTrainingExampleFile = (index: number) => {
+    onTrainingExampleFilesChange((prev) => prev.filter((_, fileIndex) => fileIndex !== index));
   };
 
-  const removeTrainingUnsuitableExampleFile = () => {
-    onTrainingUnsuitableExampleFileChange(null);
-    if (trainingUnsuitableExampleInputRef.current) {
-      trainingUnsuitableExampleInputRef.current.value = "";
-    }
+  const removeTrainingUnsuitableExampleFile = (index: number) => {
+    onTrainingUnsuitableExampleFilesChange((prev) => prev.filter((_, fileIndex) => fileIndex !== index));
   };
 
   return (
@@ -185,7 +185,7 @@ export function DataUpload({
         <TrainingDatasetSection
           datasetInfo={datasetInfo}
           updateDatasetInfo={updateDatasetInfo}
-          trainingExampleFile={trainingExampleFile}
+          trainingExampleFiles={trainingExampleFiles}
           onFileChange={handleTrainingExampleFileChange}
           onFileRemove={removeTrainingExampleFile}
           openFilePicker={() => trainingExampleInputRef.current?.click()}
@@ -194,7 +194,7 @@ export function DataUpload({
           totalCount={totalCount}
           trainingRatio={trainingRatio}
           evaluationRatio={evaluationRatio}
-          trainingUnsuitableExampleFile={trainingUnsuitableExampleFile}
+          trainingUnsuitableExampleFiles={trainingUnsuitableExampleFiles}
           onUnsuitableFileChange={handleTrainingUnsuitableExampleFileChange}
           onUnsuitableFileRemove={removeTrainingUnsuitableExampleFile}
           openUnsuitableFilePicker={() => trainingUnsuitableExampleInputRef.current?.click()}
@@ -355,7 +355,7 @@ function EvaluationDataSection({
 function TrainingDatasetSection({
   datasetInfo,
   updateDatasetInfo,
-  trainingExampleFile,
+  trainingExampleFiles,
   onFileChange,
   onFileRemove,
   openFilePicker,
@@ -364,7 +364,7 @@ function TrainingDatasetSection({
   totalCount,
   trainingRatio,
   evaluationRatio,
-  trainingUnsuitableExampleFile,
+  trainingUnsuitableExampleFiles,
   onUnsuitableFileChange,
   onUnsuitableFileRemove,
   openUnsuitableFilePicker,
@@ -372,18 +372,18 @@ function TrainingDatasetSection({
 }: {
   datasetInfo: DatasetInfoFormData;
   updateDatasetInfo: <K extends keyof DatasetInfoFormData>(field: K, value: DatasetInfoFormData[K]) => void;
-  trainingExampleFile: UploadedFileInfo | null;
+  trainingExampleFiles: UploadedFileInfo[];
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onFileRemove: () => void;
+  onFileRemove: (index: number) => void;
   openFilePicker: () => void;
   inputRef: RefObject<HTMLInputElement | null>;
   hasDatasetCounts: boolean;
   totalCount: number | null;
   trainingRatio: number | null;
   evaluationRatio: number | null;
-  trainingUnsuitableExampleFile: UploadedFileInfo | null;
+  trainingUnsuitableExampleFiles: UploadedFileInfo[];
   onUnsuitableFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onUnsuitableFileRemove: () => void;
+  onUnsuitableFileRemove: (index: number) => void;
   openUnsuitableFilePicker: () => void;
   unsuitableInputRef: RefObject<HTMLInputElement | null>;
 }) {
@@ -486,14 +486,14 @@ function TrainingDatasetSection({
             <ExampleUploadSlot
               title="Representative valid example"
               description="A clear sample that should be included in the training dataset."
-              file={trainingExampleFile}
+              files={trainingExampleFiles}
               onChoose={openFilePicker}
               onRemove={onFileRemove}
             />
             <ExampleUploadSlot
               title="Edge or unsuitable example"
               description="Optional sample that should be excluded, reviewed, or treated with caution."
-              file={trainingUnsuitableExampleFile}
+              files={trainingUnsuitableExampleFiles}
               onChoose={openUnsuitableFilePicker}
               onRemove={onUnsuitableFileRemove}
               optional
@@ -549,16 +549,16 @@ function SampleCountCard({ label, value }: { label: string; value: string }) {
 function ExampleUploadSlot({
   title,
   description,
-  file,
+  files,
   onChoose,
   onRemove,
   optional = false,
 }: {
   title: string;
   description: string;
-  file: UploadedFileInfo | null;
+  files: UploadedFileInfo[];
   onChoose: () => void;
-  onRemove: () => void;
+  onRemove: (index: number) => void;
   optional?: boolean;
 }) {
   return (
@@ -573,7 +573,7 @@ function ExampleUploadSlot({
         </div>
       </div>
 
-      {!file ? (
+      {files.length === 0 ? (
         <button
           type="button"
           onClick={onChoose}
@@ -584,12 +584,21 @@ function ExampleUploadSlot({
           <span className="mt-1 text-xs text-muted-foreground">Image, CSV, or JSON sample</span>
         </button>
       ) : (
-        <SelectedFileCard
-          file={file}
-          icon={<FileImage className="h-10 w-10 text-primary" />}
-          onChooseAnother={onChoose}
-          onRemove={onRemove}
-        />
+        <div className="space-y-3">
+          {files.map((file, index) => (
+            <SelectedFileCard
+              key={`${file.name}-${index}`}
+              file={file}
+              icon={<FileImage className="h-10 w-10 text-primary" />}
+              onChooseAnother={undefined}
+              onRemove={() => onRemove(index)}
+            />
+          ))}
+          <Button variant="outline" size="sm" onClick={onChoose}>
+            <Upload className="mr-2 h-4 w-4" />
+            Add another file
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -628,7 +637,7 @@ function SelectedFileCard({
 }: {
   file: UploadedFileInfo;
   icon: ReactNode;
-  onChooseAnother: () => void;
+  onChooseAnother?: () => void;
   onRemove: () => void;
 }) {
   return (
@@ -641,13 +650,15 @@ function SelectedFileCard({
             <div className="text-xs text-muted-foreground mb-2">
               {file.size} {file.type !== "unknown" ? `| ${file.type}` : ""}
             </div>
-            <button
-              type="button"
-              onClick={onChooseAnother}
-              className="text-xs text-muted-foreground hover:text-foreground underline"
-            >
-              Choose another file
-            </button>
+            {onChooseAnother && (
+              <button
+                type="button"
+                onClick={onChooseAnother}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                Choose another file
+              </button>
+            )}
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={onRemove} className="h-8 w-8">
