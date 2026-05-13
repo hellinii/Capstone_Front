@@ -32,6 +32,7 @@ export type StepPath = (typeof STEP_PATHS)[number];
 
 /** Convert a 1-based step number to a route path */
 export function stepToPath(step: number): string {
+  if (step === 7) return "/report/preview";
   return `/step/${STEP_PATHS[step - 1] ?? STEP_PATHS[0]}`;
 }
 

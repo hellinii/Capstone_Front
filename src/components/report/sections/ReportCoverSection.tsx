@@ -1,0 +1,26 @@
+import type { FinalReportMeta } from "../../../types/finalReport.types";
+
+interface ReportCoverSectionProps {
+  meta: FinalReportMeta;
+}
+
+export function ReportCoverSection({ meta }: ReportCoverSectionProps) {
+  return (
+    <div className="mb-12 space-y-6 border-b border-slate-200 pb-10 text-center">
+      <p className="text-xs font-medium uppercase tracking-widest text-slate-400">
+        기준 표준: ISO/IEC TS 4213:2022
+      </p>
+      <h1 className="text-3xl font-bold text-slate-900">{meta.title}</h1>
+      <div className="inline-grid grid-cols-2 gap-x-8 gap-y-1 text-sm text-slate-600">
+        <span className="text-right font-medium text-slate-500">문서 번호</span>
+        <span className="text-left">{meta.reportId}</span>
+        <span className="text-right font-medium text-slate-500">발급 일시</span>
+        <span className="text-left">{meta.issuedAt}</span>
+        <span className="text-right font-medium text-slate-500">평가 유형</span>
+        <span className="text-left">{meta.taskTypeLabel}</span>
+        <span className="text-right font-medium text-slate-500">평가 기간</span>
+        <span className="text-left">{meta.evaluationPeriod.from} ~ {meta.evaluationPeriod.to}</span>
+      </div>
+    </div>
+  );
+}
