@@ -20,30 +20,35 @@ export function buildMockValidationResponse(
       result: "None",
       handling: "Exclude affected rows from evaluation",
       status: "pass",
+      group: "common",
     },
     {
       name: "Duplicate ID",
       result: "None",
       handling: "Keep the first row and exclude later duplicates",
       status: "pass",
+      group: "common",
     },
     {
       name: "Class mismatch",
       result: "None",
       handling: "Exclude affected rows from evaluation",
       status: "pass",
+      group: "common",
     },
     {
       name: "Missing required column",
       result: "None",
       handling: "Stop evaluation",
       status: "pass",
+      group: "common",
     },
     {
       name: "Excluded samples",
       result: "0 rows",
       handling: "Exclude only rows with missing or invalid values",
       status: "pass",
+      group: "common",
     },
   ];
 
@@ -54,24 +59,28 @@ export function buildMockValidationResponse(
         result: "None",
         handling: "Stop evaluation when required by selected metrics",
         status: "pass",
+        group: "multiclass",
       },
       {
         name: "Probability sum error",
         result: "0 rows",
         handling: "Warn and continue",
         status: "pass",
+        group: "multiclass",
       },
       {
         name: "Argmax and y_pred mismatch",
         result: "0 rows",
         handling: "Warn and continue",
         status: "pass",
+        group: "multiclass",
       },
       {
         name: "Unknown class detected",
         result: "None",
         handling: "Exclude affected rows from evaluation",
         status: "pass",
+        group: "multiclass",
       },
     );
   }
@@ -83,18 +92,21 @@ export function buildMockValidationResponse(
         result: hasPositiveClassRequirement ? "None" : "Not applicable",
         handling: hasPositiveClassRequirement ? "Stop evaluation" : "Skip this check",
         status: "pass",
+        group: "binary",
       },
       {
         name: "Score range error",
         result: "0 rows",
         handling: "Exclude affected rows from evaluation",
         status: "pass",
+        group: "binary",
       },
       {
         name: "Binary class system error",
         result: "None",
         handling: "Exclude affected rows from evaluation",
         status: "pass",
+        group: "binary",
       },
     );
   }
@@ -106,18 +118,21 @@ export function buildMockValidationResponse(
         result: "None",
         handling: "Exclude affected rows from evaluation",
         status: "pass",
+        group: "multilabel",
       },
       {
         name: "Missing prob_label_* column",
         result: "None",
         handling: "Stop evaluation when required by selected metrics",
         status: "pass",
+        group: "multilabel",
       },
       {
         name: "Label vocabulary mismatch",
         result: "None",
         handling: "Exclude affected rows from evaluation",
         status: "pass",
+        group: "multilabel",
       },
     );
   }
@@ -129,12 +144,14 @@ export function buildMockValidationResponse(
         result: "0 rows",
         handling: "Exclude from latency statistics",
         status: "pass",
+        group: "latency",
       },
       {
         name: "Latency missing value",
         result: "0 rows",
         handling: "Exclude from latency statistics",
         status: "pass",
+        group: "latency",
       },
     );
   }

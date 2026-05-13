@@ -150,35 +150,52 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
   // 6절: 시험 결과
   dataValidation: [
     {
-      checkName: "필수 컬럼 존재 여부 (id, y_true, y_pred, score)",
-      status: "pass",
-      detail: "모든 필수 컬럼 확인됨",
-    },
-    {
       checkName: "결측값 (Missing Value)",
       status: "pass",
       detail: "없음 (0 / 5,000)",
+      group: "common",
     },
     {
       checkName: "중복 ID",
       status: "pass",
       detail: "없음",
+      group: "common",
     },
     {
-      checkName: "레이블 유효성 (y_true, y_pred ∈ {0, 1})",
+      checkName: "클래스 불일치",
       status: "pass",
-      detail: "통과",
+      detail: "통과 — y_true와 y_pred가 동일한 클래스 체계 사용 확인됨",
+      group: "common",
     },
     {
-      checkName: "score 범위 ([0.00, 1.00])",
+      checkName: "필수 컬럼 누락",
       status: "pass",
-      detail: "통과",
+      detail: "모든 필수 컬럼 확인됨 (id, y_true, y_pred, score)",
+      group: "common",
     },
     {
-      checkName: "클래스 불균형 사전 검사",
+      checkName: "제외된 샘플 수",
+      status: "pass",
+      detail: "0건 — 누락값·오류로 인한 제외 없음",
+      group: "common",
+    },
+    {
+      checkName: "Positive 클래스 누락",
+      status: "pass",
+      detail: "통과 — positive_class 설정값 확인됨",
+      group: "binary",
+    },
+    {
+      checkName: "score 범위 오류",
+      status: "pass",
+      detail: "통과 — 모든 score 값이 [0.00, 1.00] 범위 내",
+      group: "binary",
+    },
+    {
+      checkName: "이진 클래스 체계 오류",
       status: "warning",
-      detail:
-        "Positive 비율 38.2% — 경미한 불균형이나 허용 범위 내 (Imbalance Ratio 1.14 ≤ 1.50)",
+      detail: "Positive 비율 38.2% — 경미한 불균형이나 허용 범위 내 (Imbalance Ratio 1.14 ≤ 1.50)",
+      group: "binary",
     },
   ],
 
