@@ -1,5 +1,6 @@
 import type { TaskType } from "../data/evaluationData";
 import type { ConfusionMatrixData, ReportRecommendation } from "./report.types";
+import type { ValidationGroup } from "./validation.types";
 
 export interface FinalReportMeta {
   reportId: string;
@@ -74,6 +75,7 @@ export interface ValidationResult {
   checkName: string;
   status: "pass" | "fail" | "warning";
   detail: string;
+  group: ValidationGroup;
 }
 
 export interface MetricFormula {

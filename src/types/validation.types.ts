@@ -1,6 +1,7 @@
 import type { TaskType } from "../data/evaluationData";
 
 export type ValidationStatus = "pass" | "warning" | "error";
+export type ValidationGroup = "common" | "multiclass" | "binary" | "multilabel" | "latency";
 
 export interface ExecutionSummaryItem {
   label: string;
@@ -13,11 +14,12 @@ export interface ValidationDetailItem {
   result: string;
   handling: string;
   status: ValidationStatus;
+  group: ValidationGroup;
 }
 
 export interface ValidationResponse {
   taskType: TaskType;
-  selectedTcIds: string[];
+  selectedMetricIds: string[];
   executionSummary: ExecutionSummaryItem[];
   validationDetails: ValidationDetailItem[];
   errorCount: number;
