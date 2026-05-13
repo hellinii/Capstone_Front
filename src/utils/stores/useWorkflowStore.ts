@@ -60,8 +60,8 @@ interface WorkflowState {
 
   // Step 4 — Data upload
   uploadedFile: UploadedFileInfo | null;
-  trainingExampleFile: UploadedFileInfo | null;
-  trainingUnsuitableExampleFile: UploadedFileInfo | null;
+  trainingExampleFiles: UploadedFileInfo[];
+  trainingUnsuitableExampleFiles: UploadedFileInfo[];
   datasetInfo: DatasetInfoFormData;
 
   // Actions — Navigation
@@ -84,8 +84,12 @@ interface WorkflowState {
 
   // Actions — Step 4
   setUploadedFile: (file: UploadedFileInfo | null) => void;
-  setTrainingExampleFile: (file: UploadedFileInfo | null) => void;
-  setTrainingUnsuitableExampleFile: (file: UploadedFileInfo | null) => void;
+  setTrainingExampleFiles: (
+    value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
+  ) => void;
+  setTrainingUnsuitableExampleFiles: (
+    value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
+  ) => void;
   setDatasetInfo: (
     value:
       | DatasetInfoFormData
@@ -107,8 +111,8 @@ const INITIAL_STATE = {
   selectedMetricIds: [] as string[],
   metricDetails: {} as MetricDetailStateMap,
   uploadedFile: null as UploadedFileInfo | null,
-  trainingExampleFile: null as UploadedFileInfo | null,
-  trainingUnsuitableExampleFile: null as UploadedFileInfo | null,
+  trainingExampleFiles: [] as UploadedFileInfo[],
+  trainingUnsuitableExampleFiles: [] as UploadedFileInfo[],
   datasetInfo: DEFAULT_DATASET_INFO,
 };
 
@@ -136,8 +140,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       selectedMetricIds: [],
       metricDetails: {},
       uploadedFile: null,
-      trainingExampleFile: null,
-      trainingUnsuitableExampleFile: null,
+      trainingExampleFiles: [],
+      trainingUnsuitableExampleFiles: [],
     }),
 
   // Step 2
@@ -153,9 +157,17 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   // Step 4
   setUploadedFile: (file) => set({ uploadedFile: file }),
 
-  setTrainingExampleFile: (file) => set({ trainingExampleFile: file }),
+  setTrainingExampleFiles: (value) =>
+    set((state) => ({
+      trainingExampleFiles:
+        typeof value === "function" ? value(state.trainingExampleFiles) : value,
+    })),
 
-  setTrainingUnsuitableExampleFile: (file) => set({ trainingUnsuitableExampleFile: file }),
+  setTrainingUnsuitableExampleFiles: (value) =>
+    set((state) => ({
+      trainingUnsuitableExampleFiles:
+        typeof value === "function" ? value(state.trainingUnsuitableExampleFiles) : value,
+    })),
 
   setDatasetInfo: (value) =>
     set((state) => ({

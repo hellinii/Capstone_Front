@@ -21,10 +21,16 @@ export function TCDetail() {
 
   const handleNext = () => {
     const currentMetric = selectedMetrics[currentMetricIndex];
-    if (currentMetric) {
+    const currentState = currentMetric ? store.metricDetails[currentMetric.id] : undefined;
+    const currentMetricIsValid =
+      currentMetric && currentState
+        ? isCurrentMetricValid(store.taskType, currentMetric.id, currentState)
+        : false;
+
+    if (currentMetric && currentState) {
       store.setMetricDetails((prev) => ({
         ...prev,
-        [currentMetric.id]: { ...prev[currentMetric.id], completed: true },
+        [currentMetric.id]: { ...prev[currentMetric.id], completed: currentMetricIsValid },
       }));
     }
 
@@ -44,6 +50,21 @@ export function TCDetail() {
       store.setCurrentStep(2);
       navigate(stepToPath(2));
     }
+  };
+
+  const handleMetricSelect = (nextIndex: number) => {
+    const currentMetric = selectedMetrics[currentMetricIndex];
+    const currentState = currentMetric ? store.metricDetails[currentMetric.id] : undefined;
+
+    if (currentMetric && currentState) {
+      const completed = isCurrentMetricValid(store.taskType, currentMetric.id, currentState);
+      store.setMetricDetails((prev) => ({
+        ...prev,
+        [currentMetric.id]: { ...prev[currentMetric.id], completed },
+      }));
+    }
+
+    setCurrentMetricIndex(nextIndex);
   };
 
   const currentMetric = selectedMetrics[currentMetricIndex];
@@ -69,7 +90,7 @@ export function TCDetail() {
         metricDetails={store.metricDetails}
         onMetricDetailsChange={store.setMetricDetails}
         currentMetricIndex={currentMetricIndex}
-        onCurrentMetricIndexChange={setCurrentMetricIndex}
+        onCurrentMetricIndexChange={handleMetricSelect}
       />
     </WorkflowShell>
   );

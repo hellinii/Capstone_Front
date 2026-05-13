@@ -62,10 +62,10 @@ export function DataUpload() {
         onDatasetInfoChange={store.setDatasetInfo}
         uploadedFile={store.uploadedFile}
         onUploadedFileChange={store.setUploadedFile}
-        trainingExampleFile={store.trainingExampleFile}
-        onTrainingExampleFileChange={store.setTrainingExampleFile}
-        trainingUnsuitableExampleFile={store.trainingUnsuitableExampleFile}
-        onTrainingUnsuitableExampleFileChange={store.setTrainingUnsuitableExampleFile}
+        trainingExampleFiles={store.trainingExampleFiles}
+        onTrainingExampleFilesChange={store.setTrainingExampleFiles}
+        trainingUnsuitableExampleFiles={store.trainingUnsuitableExampleFiles}
+        onTrainingUnsuitableExampleFilesChange={store.setTrainingUnsuitableExampleFiles}
       />
     </WorkflowShell>
   );
