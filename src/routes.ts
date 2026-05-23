@@ -9,9 +9,13 @@ import {
 } from "./pages/Home";
 import { Report } from "./pages/report/Report";
 import { ReportPrint } from "./pages/report/ReportPrint";
+import { WorkspaceDetail } from "./pages/workspaces/WorkspaceDetail";
+import { WorkspaceList } from "./pages/workspaces/WorkspaceList";
 
 export const routes = [
   { path: "/", Component: Home },
+  { path: "/workspaces", Component: WorkspaceList },
+  { path: "/workspaces/:workspaceId", Component: WorkspaceDetail },
   { path: "/step/basic-info", Component: BasicInfo },
   { path: "/step/test-items", Component: TestItems },
   { path: "/step/tc-detail", Component: TCDetail },
