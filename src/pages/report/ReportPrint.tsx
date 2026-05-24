@@ -36,18 +36,19 @@ export function ReportPrint() {
   return (
     <PrintLayout>
       <div ref={containerRef}>
-        <ReportCoverSection meta={data.meta} />
+        <ReportCoverSection meta={data.meta} performer={data.performer} />
         <CompanyInfoSection
           applicant={data.applicant}
           performer={data.performer}
           evalScope={data.evalScope}
         />
-        <EvalScopeSection meta={data.meta} evalScope={data.evalScope} />
+        <EvalScopeSection meta={data.meta} />
         <div style={{ pageBreakBefore: "always" }}>
           <DatasetSection
             datasetInfo={data.datasetInfo}
             datasetSamples={data.datasetSamples}
             datasetDiagnosis={data.datasetDiagnosis}
+            trainingDatasetInfo={data.trainingDatasetInfo}
           />
           <EvalEnvSection meta={data.meta} evalScope={data.evalScope} evalEnv={data.evalEnv} />
         </div>
@@ -69,8 +70,16 @@ export function ReportPrint() {
         <div style={{ pageBreakBefore: "always" }}>
           <InterpretSection interpretation={data.interpretation} />
           <ConclusionSection conclusion={data.conclusion} />
-          <RecommendSection recommendations={data.recommendations} />
-          <SignatureSection signature={data.signature} />
+          <RecommendSection
+            recommendations={data.recommendations}
+            narrative={data.recommendationNarrative}
+          />
+          <SignatureSection
+            signature={data.signature}
+            meta={data.meta}
+            evalScope={data.evalScope}
+            performer={data.performer}
+          />
         </div>
       </div>
     </PrintLayout>

@@ -5,7 +5,6 @@
  * 관리하며, 최종 평가 리포트 데이터를 생성하는 로직을 포함합니다.
  */
 import { create } from "zustand";
-import { createEvaluationReport } from "../../lib/report/createEvaluationReport";
 import type { TaskType } from "../../data/evaluationData";
 import {
   DEFAULT_BASIC_INFO,
@@ -15,7 +14,6 @@ import {
   type MetricDetailStateMap,
   type UploadedFileInfo,
 } from "../../types/workflow.types";
-import type { EvaluationReportData } from "../../types/report.types";
 
 /** Step path segments used in routing */
 export const STEP_PATHS = [
@@ -96,9 +94,6 @@ interface WorkflowState {
       | ((prev: DatasetInfoFormData) => DatasetInfoFormData),
   ) => void;
 
-  // Derived
-  getReport: () => EvaluationReportData;
-
   // Reset
   resetWorkflow: () => void;
 }
@@ -116,7 +111,7 @@ const INITIAL_STATE = {
   datasetInfo: DEFAULT_DATASET_INFO,
 };
 
-export const useWorkflowStore = create<WorkflowState>((set, get) => ({
+export const useWorkflowStore = create<WorkflowState>((set) => ({
   ...INITIAL_STATE,
 
   // Navigation
@@ -174,19 +169,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       datasetInfo:
         typeof value === "function" ? value(state.datasetInfo) : value,
     })),
-
-  // Derived
-  getReport: () => {
-    const state = get();
-    return createEvaluationReport({
-      basicInfo: state.basicInfo,
-      datasetInfo: state.datasetInfo,
-      taskType: state.taskType,
-      selectedMetricIds: state.selectedMetricIds,
-      metricDetails: state.metricDetails,
-      uploadedFile: state.uploadedFile,
-    });
-  },
 
   // Reset
   resetWorkflow: () => set(INITIAL_STATE),

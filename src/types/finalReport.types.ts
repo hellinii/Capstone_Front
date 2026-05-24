@@ -1,6 +1,9 @@
 import type { TaskType } from "../data/evaluationData";
 import type { ConfusionMatrixData, ReportRecommendation } from "./report.types";
 import type { ValidationGroup } from "./validation.types";
+import type { UploadedFileInfo } from "./workflow.types";
+
+export type ReportPurposeKey = "internal" | "external" | "project";
 
 export interface FinalReportMeta {
   reportId: string;
@@ -9,6 +12,7 @@ export interface FinalReportMeta {
   evaluationPeriod: { from: string; to: string };
   taskType: TaskType;
   taskTypeLabel: string;
+  contractDate?: string;
 }
 
 export interface ApplicantInfo {
@@ -32,6 +36,14 @@ export interface EvalScope {
   targetModel: string;
   version: string;
   scope: string;
+  reportPurposeKey: ReportPurposeKey;
+  modelPurpose?: string;
+  modelCategory?: string;
+  projectInfo?: {
+    name: string;
+    agency: string;
+    projectNumber?: string;
+  };
 }
 
 export interface EvalEnvironment {
@@ -130,6 +142,19 @@ export interface SignatureData {
   history: IssuanceRecord[];
 }
 
+export interface RecommendationNarrative {
+  dataQuality: string;
+  modelOps: string;
+}
+
+export interface TrainingDatasetInfo {
+  name: string;
+  trainingSampleCount: number;
+  evaluationSampleCount: number;
+  validExamples: UploadedFileInfo[];
+  edgeExamples: UploadedFileInfo[];
+}
+
 export interface FinalReportData {
   meta: FinalReportMeta;
   applicant: ApplicantInfo;
@@ -138,6 +163,7 @@ export interface FinalReportData {
   datasetInfo: DatasetInfo;
   datasetSamples: DatasetSampleRow[];
   datasetDiagnosis: string;
+  trainingDatasetInfo?: TrainingDatasetInfo;
   evalEnv: EvalEnvironment;
   tcList: TcItem[];
   metricFormulas: MetricFormula[];
@@ -151,6 +177,7 @@ export interface FinalReportData {
   latency: LatencyStats;
   interpretation: string;
   conclusion: ConclusionData;
+  recommendationNarrative: RecommendationNarrative;
   recommendations: ReportRecommendation[];
   signature: SignatureData;
 }
