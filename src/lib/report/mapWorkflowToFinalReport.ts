@@ -25,6 +25,7 @@ import type {
   TcItem,
   TrainingDatasetInfo,
 } from "../../types/finalReport.types";
+import type { MappingRow } from "../../types/mapping.types";
 import type {
   BasicInfoFormData,
   DatasetInfoFormData,
@@ -49,6 +50,7 @@ export interface MapWorkflowToReportInput {
   uploadedFile: UploadedFileInfo | null;
   trainingExampleFiles: UploadedFileInfo[];
   trainingUnsuitableExampleFiles: UploadedFileInfo[];
+  columnMapping: MappingRow[];
 }
 
 export function mapWorkflowToFinalReport(input: MapWorkflowToReportInput): FinalReportData {
@@ -141,7 +143,7 @@ function buildDatasetInfo(input: MapWorkflowToReportInput, taskType: TaskType): 
 
   return {
     format: inferFormat(input.uploadedFile),
-    inputColumns: inferInputColumns(taskType, input.selectedMetricIds),
+    inputColumns: inferInputColumns(taskType, input.selectedMetricIds, input.columnMapping),
     sampleCount: sampleCount ?? MOCK_FINAL_REPORT.datasetInfo.sampleCount,
     taskTypeLabel: TASK_TYPE_LABELS[taskType],
     classCount: classLabels.length,
@@ -262,8 +264,20 @@ function inferFormat(file: UploadedFileInfo | null): string {
   return file.type && file.type !== "unknown" ? file.type : "정형 데이터";
 }
 
-function inferInputColumns(taskType: TaskType, selectedMetricIds: string[]): string[] {
-  // ColumnMapping store가 도입되기 전까지 taskType 기반 기본 컬럼 셋 (Phase D에서 개선)
+function inferInputColumns(
+  taskType: TaskType,
+  selectedMetricIds: string[],
+  columnMapping: MappingRow[],
+): string[] {
+  // 사용자가 매핑한 컬럼이 있으면 그것을 그대로 사용 (ignore 역할 제외)
+  const assigned = columnMapping.filter(
+    (r) => r.confirmedRole && r.confirmedRole !== "ignore",
+  );
+  if (assigned.length > 0) {
+    return assigned.map((r) => r.originalName);
+  }
+
+  // 매핑 정보가 없을 때만 taskType 기반 기본 컬럼 셋으로 fallback
   const base = ["id", "y_true", "y_pred"];
   if (taskType === "binary") base.push("score");
   if (taskType === "multiclass" && selectedMetricIds.length > 0) base.push("prob_class_*");

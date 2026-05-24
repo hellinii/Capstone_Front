@@ -6,6 +6,7 @@
  */
 import { create } from "zustand";
 import type { TaskType } from "../../data/evaluationData";
+import type { MappingRow } from "../../types/mapping.types";
 import {
   DEFAULT_BASIC_INFO,
   DEFAULT_DATASET_INFO,
@@ -62,6 +63,9 @@ interface WorkflowState {
   trainingUnsuitableExampleFiles: UploadedFileInfo[];
   datasetInfo: DatasetInfoFormData;
 
+  // Step 5 — Column mapping
+  columnMapping: MappingRow[];
+
   // Actions — Navigation
   setCurrentStep: (step: number) => void;
   markStepCompleted: (step: number) => void;
@@ -94,6 +98,11 @@ interface WorkflowState {
       | ((prev: DatasetInfoFormData) => DatasetInfoFormData),
   ) => void;
 
+  // Actions — Step 5
+  setColumnMapping: (
+    value: MappingRow[] | ((prev: MappingRow[]) => MappingRow[]),
+  ) => void;
+
   // Reset
   resetWorkflow: () => void;
 }
@@ -109,6 +118,7 @@ const INITIAL_STATE = {
   trainingExampleFiles: [] as UploadedFileInfo[],
   trainingUnsuitableExampleFiles: [] as UploadedFileInfo[],
   datasetInfo: DEFAULT_DATASET_INFO,
+  columnMapping: [] as MappingRow[],
 };
 
 export const useWorkflowStore = create<WorkflowState>((set) => ({
@@ -137,6 +147,7 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
       uploadedFile: null,
       trainingExampleFiles: [],
       trainingUnsuitableExampleFiles: [],
+      columnMapping: [],
     }),
 
   // Step 2
@@ -168,6 +179,13 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
     set((state) => ({
       datasetInfo:
         typeof value === "function" ? value(state.datasetInfo) : value,
+    })),
+
+  // Step 5
+  setColumnMapping: (value) =>
+    set((state) => ({
+      columnMapping:
+        typeof value === "function" ? value(state.columnMapping) : value,
     })),
 
   // Reset

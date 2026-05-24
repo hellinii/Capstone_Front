@@ -28,6 +28,7 @@ export function useReportData(id: string): UseReportDataResult {
         uploadedFile: state.uploadedFile,
         trainingExampleFiles: state.trainingExampleFiles,
         trainingUnsuitableExampleFiles: state.trainingUnsuitableExampleFiles,
+        columnMapping: state.columnMapping,
       }),
       isLoading: false,
     };
