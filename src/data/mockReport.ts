@@ -8,6 +8,7 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
     evaluationPeriod: { from: "2025-04-01", to: "2025-05-10" },
     taskType: "binary",
     taskTypeLabel: "이진 분류 (Binary Classification)",
+    contractDate: "2025-04-01",
   },
 
   applicant: {
@@ -33,6 +34,9 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
     version: "v2.3.1",
     scope:
       "의뢰자가 제출한 평가 데이터셋을 기반으로 선택된 시험항목에 대해 정량적 성능 지표를 산출하고 합격 기준 충족 여부를 판정한다.",
+    reportPurposeKey: "external",
+    modelPurpose: "결제 거래 이상 탐지",
+    modelCategory: "이진 분류 신경망 (Binary Classification NN)",
   },
 
   // 3절: 데이터셋 개요
@@ -64,6 +68,18 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
     "Negative 클래스(61.8%)와 Positive 클래스(38.2%)로 경미한 불균형이 확인되었다. " +
     "Imbalance Ratio 1.14로 허용 기준(≤ 1.50) 이내이나, Positive 클래스 성능 지표 해석 시 " +
     "이 점을 참고할 것을 권장한다.",
+
+  trainingDatasetInfo: {
+    name: "결제 거래 이상 탐지 학습 데이터셋 v2",
+    trainingSampleCount: 20000,
+    evaluationSampleCount: 5000,
+    validExamples: [
+      { name: "valid_sample_001.csv", size: "12.4 KB", type: "text/csv" },
+    ],
+    edgeExamples: [
+      { name: "edge_case_001.csv", size: "8.7 KB", type: "text/csv" },
+    ],
+  },
 
   // 4절: 평가 수행 환경
   evalEnv: {
@@ -147,60 +163,29 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
     },
   ],
 
-  // 6절: 시험 결과
+  // 6절: 시험 결과 — 검증 항목은 사진 그룹 구조와 1:1 매칭
   dataValidation: [
-    {
-      checkName: "결측값 (Missing Value)",
-      status: "pass",
-      detail: "없음 (0 / 5,000)",
-      group: "common",
-    },
-    {
-      checkName: "중복 ID",
-      status: "pass",
-      detail: "없음",
-      group: "common",
-    },
-    {
-      checkName: "클래스 불일치",
-      status: "pass",
-      detail: "통과 — y_true와 y_pred가 동일한 클래스 체계 사용 확인됨",
-      group: "common",
-    },
-    {
-      checkName: "필수 컬럼 누락",
-      status: "pass",
-      detail: "모든 필수 컬럼 확인됨 (id, y_true, y_pred, score)",
-      group: "common",
-    },
-    {
-      checkName: "제외된 샘플 수",
-      status: "pass",
-      detail: "0건 — 누락값·오류로 인한 제외 없음",
-      group: "common",
-    },
-    {
-      checkName: "Positive 클래스 누락",
-      status: "pass",
-      detail: "통과 — positive_class 설정값 확인됨",
-      group: "binary",
-    },
-    {
-      checkName: "score 범위 오류",
-      status: "pass",
-      detail: "통과 — 모든 score 값이 [0.00, 1.00] 범위 내",
-      group: "binary",
-    },
-    {
-      checkName: "이진 클래스 체계 오류",
-      status: "warning",
-      detail: "Positive 비율 38.2% — 경미한 불균형이나 허용 범위 내 (Imbalance Ratio 1.14 ≤ 1.50)",
-      group: "binary",
-    },
+    // 공통 검증 항목 (모든 태스크 유형 공통)
+    { checkName: "누락값",         status: "pass",    detail: "없음 (0 / 5,000)",                                        group: "common" },
+    { checkName: "중복 ID",         status: "pass",    detail: "없음",                                                    group: "common" },
+    { checkName: "클래스 불일치",   status: "pass",    detail: "통과 — y_true와 y_pred가 동일한 클래스 체계 사용",        group: "common" },
+    { checkName: "필수 컬럼 누락",  status: "pass",    detail: "모든 필수 컬럼 확인됨 (id, y_true, y_pred, score)",      group: "common" },
+    { checkName: "제외된 샘플 수",  status: "pass",    detail: "0건 — 누락값·오류로 인한 제외 없음",                      group: "common" },
+
+    // 이진 분류 검증 항목 (binary일 때 추가)
+    { checkName: "positive class 누락", status: "pass",    detail: "통과 — positive_class 설정값 확인됨",                   group: "binary" },
+    { checkName: "score 범위 오류",     status: "pass",    detail: "통과 — 모든 score 값이 [0.00, 1.00] 범위 내",          group: "binary" },
+    { checkName: "이진 클래스 체계 오류", status: "warning", detail: "Positive 비율 38.2% — 경미한 불균형이나 허용 범위 내 (Imbalance Ratio 1.14 ≤ 1.50)", group: "binary" },
   ],
 
   kpiResults: [
-    { tcId: "M1",  name: "Accuracy",             value: 0.944, threshold: 0.85, status: "pass" },
+    // 6.1 종합 핵심 성능 (KPI): M1, M4, M20, M23
+    { tcId: "M1",  name: "Accuracy",              value: 0.944, threshold: 0.85, status: "pass" },
+    { tcId: "M4",  name: "F1 Score",              value: 0.925, threshold: 0.82, status: "pass" },
+    { tcId: "M20", name: "MCC",                   value: 0.887, threshold: 0,    status: "pass" },
+    { tcId: "M23", name: "Class Imbalance Ratio", value: 1.14,  threshold: 1.50, status: "pass" },
+
+    // 6.2 세부 시험항목: M2, M3, M9, M21, M22
     {
       tcId: "M2",
       name: "Precision",
@@ -223,9 +208,9 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
         { label: "Positive (1)", value: 0.897, status: "pass" },
       ],
     },
-    { tcId: "M4",  name: "F1 Score",             value: 0.925, threshold: 0.82, status: "pass" },
-    { tcId: "M9",  name: "AUROC",                value: 0.962, threshold: 0.80, status: "pass" },
-    { tcId: "M23", name: "Class Imbalance Ratio", value: 1.14,  threshold: 1.50, status: "pass" },
+    { tcId: "M9",  name: "AUROC",            value: 0.962, threshold: 0.80, status: "pass" },
+    { tcId: "M21", name: "Confusion Matrix", value: 0,     threshold: 0,    status: "pass" },
+    { tcId: "M22", name: "Class별 Metric",    value: 0,     threshold: 0,    status: "pass" },
   ],
 
   charts: {
@@ -284,7 +269,18 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
       "Positive 클래스 성능 하락 위험이 상존한다.",
   },
 
-  // 9절: 기술 개선 권고안
+  // 9절: 기술 개선 권고안 (LLM 자동 생성 서술)
+  recommendationNarrative: {
+    dataQuality:
+      "Positive 클래스 비율을 45~55%로 조정한 추가 평가 수행을 권고한다. " +
+      "현재 Imbalance Ratio 1.14 수준은 허용 범위 내이나, SMOTE 등 오버샘플링 전략 또는 " +
+      "클래스 가중치(Class Weight) 조정을 검토하여 Positive 클래스 Recall을 추가 향상시킬 수 있다.",
+    modelOps:
+      "ROC Curve 분석을 바탕으로 운영 환경에 맞는 임계값 튜닝 검토를 권장한다. " +
+      "Precision-Recall 트레이드오프를 조정하여 실용 성능을 향상시킬 수 있으며, " +
+      "운영 단계에서 P99 지연 시간 주기적 모니터링 설정을 통해 트래픽 급증 시 이상을 조기 감지할 것을 권고한다.",
+  },
+
   recommendations: [
     {
       priority: "MEDIUM",

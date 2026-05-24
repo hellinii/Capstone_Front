@@ -36,6 +36,8 @@ export function ColumnMapping() {
       <ColumnMappingContent
         taskType={store.taskType}
         selectedMetricIds={store.selectedMetricIds}
+        rows={store.columnMapping}
+        onRowsChange={store.setColumnMapping}
         onValidationChange={setIsValid}
       />
     </WorkflowShell>

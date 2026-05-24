@@ -9,6 +9,24 @@ export function ConfusionMatrixChart({ data }: ConfusionMatrixChartProps) {
   const { labels, matrix, totalSamples } = data;
   const maxVal = Math.max(...matrix.flat());
 
+  // 오분류 통계 (대각선 외 = 오분류)
+  let misclassified = 0;
+  let fp = 0; // 예측 Positive, 실제 Negative
+  let fn = 0; // 예측 Negative, 실제 Positive
+  matrix.forEach((row, ri) => {
+    row.forEach((count, ci) => {
+      if (ri !== ci) {
+        misclassified += count;
+        // 이진 분류 가정: 인덱스 0 = Negative, 1 = Positive
+        if (labels.length === 2) {
+          if (ri === 0 && ci === 1) fp += count;
+          if (ri === 1 && ci === 0) fn += count;
+        }
+      }
+    });
+  });
+  const misclassRate = totalSamples > 0 ? (misclassified / totalSamples) * 100 : 0;
+
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-slate-700">Confusion Matrix</h3>
@@ -58,7 +76,14 @@ export function ConfusionMatrixChart({ data }: ConfusionMatrixChartProps) {
           </>
         ))}
       </div>
-      <p className="text-xs text-slate-400">총 샘플 수: {totalSamples.toLocaleString()}건</p>
+      <ul className="space-y-0.5 text-xs text-slate-500">
+        <li>총 샘플 수: {totalSamples.toLocaleString()}건</li>
+        <li>
+          오분류 건수: {misclassified.toLocaleString()}건
+          {labels.length === 2 && ` (FP ${fp.toLocaleString()}건 + FN ${fn.toLocaleString()}건)`}
+        </li>
+        <li>오분류율: {misclassRate.toFixed(1)}%</li>
+      </ul>
     </div>
   );
 }

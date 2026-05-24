@@ -5,8 +5,8 @@
  * 관리하며, 최종 평가 리포트 데이터를 생성하는 로직을 포함합니다.
  */
 import { create } from "zustand";
-import { createEvaluationReport } from "../../lib/report/createEvaluationReport";
 import type { TaskType } from "../../data/evaluationData";
+import type { MappingRow } from "../../types/mapping.types";
 import {
   DEFAULT_BASIC_INFO,
   DEFAULT_DATASET_INFO,
@@ -15,7 +15,6 @@ import {
   type MetricDetailStateMap,
   type UploadedFileInfo,
 } from "../../types/workflow.types";
-import type { EvaluationReportData } from "../../types/report.types";
 
 /** Step path segments used in routing */
 export const STEP_PATHS = [
@@ -64,6 +63,9 @@ interface WorkflowState {
   trainingUnsuitableExampleFiles: UploadedFileInfo[];
   datasetInfo: DatasetInfoFormData;
 
+  // Step 5 — Column mapping
+  columnMapping: MappingRow[];
+
   // Actions — Navigation
   setCurrentStep: (step: number) => void;
   markStepCompleted: (step: number) => void;
@@ -96,8 +98,10 @@ interface WorkflowState {
       | ((prev: DatasetInfoFormData) => DatasetInfoFormData),
   ) => void;
 
-  // Derived
-  getReport: () => EvaluationReportData;
+  // Actions — Step 5
+  setColumnMapping: (
+    value: MappingRow[] | ((prev: MappingRow[]) => MappingRow[]),
+  ) => void;
 
   // Reset
   resetWorkflow: () => void;
@@ -114,9 +118,10 @@ const INITIAL_STATE = {
   trainingExampleFiles: [] as UploadedFileInfo[],
   trainingUnsuitableExampleFiles: [] as UploadedFileInfo[],
   datasetInfo: DEFAULT_DATASET_INFO,
+  columnMapping: [] as MappingRow[],
 };
 
-export const useWorkflowStore = create<WorkflowState>((set, get) => ({
+export const useWorkflowStore = create<WorkflowState>((set) => ({
   ...INITIAL_STATE,
 
   // Navigation
@@ -142,6 +147,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       uploadedFile: null,
       trainingExampleFiles: [],
       trainingUnsuitableExampleFiles: [],
+      columnMapping: [],
     }),
 
   // Step 2
@@ -175,18 +181,12 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         typeof value === "function" ? value(state.datasetInfo) : value,
     })),
 
-  // Derived
-  getReport: () => {
-    const state = get();
-    return createEvaluationReport({
-      basicInfo: state.basicInfo,
-      datasetInfo: state.datasetInfo,
-      taskType: state.taskType,
-      selectedMetricIds: state.selectedMetricIds,
-      metricDetails: state.metricDetails,
-      uploadedFile: state.uploadedFile,
-    });
-  },
+  // Step 5
+  setColumnMapping: (value) =>
+    set((state) => ({
+      columnMapping:
+        typeof value === "function" ? value(state.columnMapping) : value,
+    })),
 
   // Reset
   resetWorkflow: () => set(INITIAL_STATE),

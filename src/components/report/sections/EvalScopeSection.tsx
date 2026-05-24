@@ -1,6 +1,5 @@
-import type { EvalScope, FinalReportMeta } from "../../../types/finalReport.types";
+import type { FinalReportMeta } from "../../../types/finalReport.types";
 import { SectionTitle } from "../ui/SectionTitle";
-import { TwoColTable } from "../ui/TwoColTable";
 
 const EVAL_PROCEDURE_STEPS = [
   { step: "시험신청서 제출", desc: "신규 프로젝트 생성 및 요구되는 형식에 맞춘 데이터셋 업로드" },
@@ -14,30 +13,20 @@ const EVAL_PROCEDURE_STEPS = [
 
 interface EvalScopeSectionProps {
   meta: FinalReportMeta;
-  evalScope: EvalScope;
 }
 
-export function EvalScopeSection({ meta, evalScope }: EvalScopeSectionProps) {
+export function EvalScopeSection({ meta }: EvalScopeSectionProps) {
   return (
     <section className="space-y-6 border-t border-slate-200 py-10">
       <SectionTitle number={2} title="시험 목적 및 절차" />
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">시험 용도</h3>
-        <TwoColTable
-          rows={[{ label: "용도", value: "외부 제출용" }, { label: "개요", value: evalScope.purpose }]}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">평가 대상</h3>
-        <TwoColTable
-          rows={[
-            { label: "모델명", value: evalScope.targetModel },
-            { label: "버전",   value: evalScope.version },
-            { label: "평가 범위", value: evalScope.scope },
-          ]}
-        />
+        <h3 className="text-sm font-semibold text-slate-700">시험 목적</h3>
+        <p className="text-sm leading-relaxed text-slate-600">
+          본 시험의 목적은 의뢰자가 제출한 기계학습 분류 모델의 추론 결과 데이터(Inference Result Dataset)를
+          바탕으로, 국제 표준인 ISO/IEC TS 4213:2022에 명시된 평가 지표를 적용하여 객관적인 분류 성능을
+          측정하고 신뢰성 수준을 정량적으로 확인하는 데 있다.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -69,7 +58,7 @@ export function EvalScopeSection({ meta, evalScope }: EvalScopeSectionProps) {
             <tr className="border-b border-slate-100">
               <td className="py-2.5 pr-4 font-medium text-slate-700">신청·검토·계약</td>
               <td className="py-2.5 pr-4 text-slate-600">데이터셋 업로드, 데이터 구조 및 유효성 자동 검증, 서비스 이용 동의 및 평가 승인</td>
-              <td className="py-2.5 text-slate-600">{meta.evaluationPeriod.from}</td>
+              <td className="py-2.5 text-slate-600">{meta.contractDate ?? meta.evaluationPeriod.from}</td>
             </tr>
             <tr className="border-b border-slate-100">
               <td className="py-2.5 pr-4 font-medium text-slate-700">시험·평가·작성</td>

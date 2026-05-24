@@ -1,4 +1,5 @@
 import type { ReportRecommendation } from "../../../types/report.types";
+import type { RecommendationNarrative } from "../../../types/finalReport.types";
 import { SectionTitle } from "../ui/SectionTitle";
 import { cn } from "../../../utils/styling/styles";
 
@@ -10,12 +11,29 @@ const PRIORITY_CONFIG = {
 
 interface RecommendSectionProps {
   recommendations: ReportRecommendation[];
+  narrative: RecommendationNarrative;
 }
 
-export function RecommendSection({ recommendations }: RecommendSectionProps) {
+export function RecommendSection({ recommendations, narrative }: RecommendSectionProps) {
   return (
     <section className="space-y-6 border-t border-slate-200 py-10">
       <SectionTitle number={9} title="기술 개선 권고안" />
+
+      {/* 9.1 데이터셋 보완 및 품질 개선 전략 */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-slate-700">데이터셋 보완 및 품질 개선 전략</h3>
+        <blockquote className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
+          <p className="text-sm font-medium leading-relaxed text-slate-700">"{narrative.dataQuality}"</p>
+        </blockquote>
+      </div>
+
+      {/* 9.2 모델 고도화 및 운영 관리 가이드 */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold text-slate-700">모델 고도화 및 운영 관리 가이드</h3>
+        <blockquote className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
+          <p className="text-sm font-medium leading-relaxed text-slate-700">"{narrative.modelOps}"</p>
+        </blockquote>
+      </div>
 
       {/* 권고 표 요약 */}
       <table className="w-full text-sm border-collapse">
