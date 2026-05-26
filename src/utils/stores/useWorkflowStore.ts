@@ -19,8 +19,8 @@ import {
 /** Step path segments used in routing */
 export const STEP_PATHS = [
   "basic-info",
-  "test-items",
-  "tc-detail",
+  "metrics",
+  "metric-detail",
   "data-upload",
   "column-mapping",
   "data-validation",
@@ -32,13 +32,18 @@ export type StepPath = (typeof STEP_PATHS)[number];
 /** Convert a 1-based step number to a route path */
 export function stepToPath(step: number): string {
   if (step === 7) return "/report/preview";
-  return `/step/${STEP_PATHS[step - 1] ?? STEP_PATHS[0]}`;
+  return `/app/${STEP_PATHS[step - 1] ?? STEP_PATHS[0]}`;
 }
 
 /** Convert a route path segment to a 1-based step number */
 export function pathToStep(path: string): number {
-  const segment = path.replace("/step/", "");
-  const index = STEP_PATHS.indexOf(segment as StepPath);
+  const segment = path.replace("/step/", "").replace("/app/", "");
+  const legacySegments: Record<string, StepPath> = {
+    "test-items": "metrics",
+    "tc-detail": "metric-detail",
+  };
+  const normalizedSegment = legacySegments[segment] ?? segment;
+  const index = STEP_PATHS.indexOf(normalizedSegment as StepPath);
   return index >= 0 ? index + 1 : 1;
 }
 

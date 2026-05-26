@@ -1,4 +1,3 @@
-import { Check } from "lucide-react";
 import { useNavigate } from "react-router";
 import { cn } from "../../utils/styling/styles";
 import { useWorkflowStore, stepToPath } from "../../utils/stores/useWorkflowStore";
@@ -54,7 +53,7 @@ export function StepTabs() {
                     isUpcoming && "border border-border text-muted-foreground",
                   )}
                 >
-                  {isCompleted ? <Check className="h-4 w-4 text-primary" /> : stepNumber}
+                  {stepNumber}
                 </span>
 
                 <span

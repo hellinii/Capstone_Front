@@ -50,7 +50,7 @@ export function WorkspaceDetail() {
 
   const handleStartEvaluation = () => {
     setActiveWorkspace(workspaceId);
-    navigate("/step/basic-info");
+    navigate("/app/basic-info");
   };
 
   return (
