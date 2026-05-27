@@ -29,6 +29,7 @@ export function DataValidation() {
       trainingExampleFiles: store.trainingExampleFiles,
       trainingUnsuitableExampleFiles: store.trainingUnsuitableExampleFiles,
       columnMapping: store.columnMapping,
+      classLabelDescriptions: store.classLabelDescriptions,
     };
     const reportData = mapWorkflowToFinalReport(workflowSnapshot);
 

@@ -70,6 +70,8 @@ interface WorkflowState {
 
   // Step 5 — Column mapping
   columnMapping: MappingRow[];
+  // Step 5 — Class label descriptions (class value -> description)
+  classLabelDescriptions: Record<string, string>;
 
   // Actions — Navigation
   setCurrentStep: (step: number) => void;
@@ -107,6 +109,11 @@ interface WorkflowState {
   setColumnMapping: (
     value: MappingRow[] | ((prev: MappingRow[]) => MappingRow[]),
   ) => void;
+  setClassLabelDescriptions: (
+    value:
+      | Record<string, string>
+      | ((prev: Record<string, string>) => Record<string, string>),
+  ) => void;
 
   // Reset
   resetWorkflow: () => void;
@@ -124,6 +131,7 @@ const INITIAL_STATE = {
   trainingUnsuitableExampleFiles: [] as UploadedFileInfo[],
   datasetInfo: DEFAULT_DATASET_INFO,
   columnMapping: [] as MappingRow[],
+  classLabelDescriptions: {} as Record<string, string>,
 };
 
 export const useWorkflowStore = create<WorkflowState>((set) => ({
@@ -153,6 +161,7 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
       trainingExampleFiles: [],
       trainingUnsuitableExampleFiles: [],
       columnMapping: [],
+      classLabelDescriptions: {},
     }),
 
   // Step 2
@@ -191,6 +200,14 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
     set((state) => ({
       columnMapping:
         typeof value === "function" ? value(state.columnMapping) : value,
+    })),
+
+  setClassLabelDescriptions: (value) =>
+    set((state) => ({
+      classLabelDescriptions:
+        typeof value === "function"
+          ? value(state.classLabelDescriptions)
+          : value,
     })),
 
   // Reset

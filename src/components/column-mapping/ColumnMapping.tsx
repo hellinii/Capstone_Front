@@ -13,6 +13,7 @@ import { buildMockBackendResponse } from "../../data/mock/columnMappingMock";
 
 import { RequiredColumnsCard } from "./RequiredColumnsCard";
 import { BinaryClassificationCard } from "./BinaryClassificationCard";
+import { ClassLabelDescriptionCard } from "./ClassLabelDescriptionCard";
 import { DetectedMappingTable } from "./DetectedMappingTable";
 import { MappingStatusPanel } from "./MappingStatusPanel";
 
@@ -22,6 +23,12 @@ interface ColumnMappingProps {
   rows: MappingRow[];
   onRowsChange: (value: MappingRow[] | ((prev: MappingRow[]) => MappingRow[])) => void;
   onValidationChange?: (isValid: boolean) => void;
+  classLabelDescriptions?: Record<string, string>;
+  onClassLabelDescriptionsChange?: (
+    value:
+      | Record<string, string>
+      | ((prev: Record<string, string>) => Record<string, string>),
+  ) => void;
 }
 
 const roleOptions: Array<{ value: MappingRole; label: string }> = [
@@ -39,6 +46,8 @@ export function ColumnMapping({
   rows,
   onRowsChange,
   onValidationChange,
+  classLabelDescriptions = {},
+  onClassLabelDescriptionsChange,
 }: ColumnMappingProps) {
   const resolvedTaskType: TaskType = taskType || "multiclass";
   const selectedMetrics = useMemo(
@@ -173,6 +182,15 @@ export function ColumnMapping({
           yTrueRow={yTrueRow}
           yTrueValues={yTrueValues}
         />
+
+        {onClassLabelDescriptionsChange && (
+          <ClassLabelDescriptionCard
+            yTrueRow={yTrueRow}
+            yTrueValues={yTrueValues}
+            classLabelDescriptions={classLabelDescriptions}
+            onClassLabelDescriptionsChange={onClassLabelDescriptionsChange}
+          />
+        )}
 
         <DetectedMappingTable
           filterMode={filterMode}

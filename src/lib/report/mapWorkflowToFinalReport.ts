@@ -14,6 +14,7 @@ import {
 import { MOCK_FINAL_REPORT } from "../../data/mockReport";
 import type {
   ApplicantInfo,
+  ClassLabelInfo,
   DatasetInfo,
   EvalEnvironment,
   EvalScope,
@@ -51,6 +52,7 @@ export interface MapWorkflowToReportInput {
   trainingExampleFiles: UploadedFileInfo[];
   trainingUnsuitableExampleFiles: UploadedFileInfo[];
   columnMapping: MappingRow[];
+  classLabelDescriptions: Record<string, string>;
 }
 
 export function mapWorkflowToFinalReport(input: MapWorkflowToReportInput): FinalReportData {
@@ -139,7 +141,20 @@ function buildEvalScope(basicInfo: BasicInfoFormData): EvalScope {
 
 function buildDatasetInfo(input: MapWorkflowToReportInput, taskType: TaskType): DatasetInfo {
   const sampleCount = parseCount(input.datasetInfo.evaluationSampleCount);
-  const classLabels = inferClassLabels(taskType, input.metricDetails);
+
+  // y_true 컬럼에서 실제 클래스 값을 도출 (있으면 mock/추론 대신 실제 값 사용)
+  const yTrueRow = input.columnMapping.find((r) => r.confirmedRole === "y_true");
+  const classValues = yTrueRow ? [...new Set(yTrueRow.sampleValues)] : [];
+  const classLabels = classValues.length
+    ? classValues
+    : inferClassLabels(taskType, input.metricDetails);
+
+  const classLabelDescriptions: ClassLabelInfo[] | undefined = classValues.length
+    ? classValues.map((value) => ({
+        label: value,
+        description: input.classLabelDescriptions[value] ?? "",
+      }))
+    : undefined;
 
   return {
     format: inferFormat(input.uploadedFile),
@@ -148,6 +163,7 @@ function buildDatasetInfo(input: MapWorkflowToReportInput, taskType: TaskType): 
     taskTypeLabel: TASK_TYPE_LABELS[taskType],
     classCount: classLabels.length,
     classLabels,
+    classLabelDescriptions,
     fileName: input.uploadedFile?.name ?? "—",
   };
 }
@@ -156,12 +172,16 @@ function buildTrainingDatasetInfo(input: MapWorkflowToReportInput): TrainingData
   const { datasetInfo, trainingExampleFiles, trainingUnsuitableExampleFiles } = input;
   const training = parseCount(datasetInfo.trainingSampleCount);
   const evaluation = parseCount(datasetInfo.evaluationSampleCount);
+  const format = datasetInfo.trainingDataFormat.trim();
+  const classDistribution = datasetInfo.trainingClassDistribution.trim();
+  const description = datasetInfo.trainingDataDescription.trim();
   const hasName = datasetInfo.trainingDatasetName.trim() !== "";
   const hasCounts = training !== null && evaluation !== null;
   const hasExamples =
     trainingExampleFiles.length > 0 || trainingUnsuitableExampleFiles.length > 0;
+  const hasMeta = format !== "" || classDistribution !== "" || description !== "";
 
-  if (!hasName && !hasCounts && !hasExamples) {
+  if (!hasName && !hasCounts && !hasExamples && !hasMeta) {
     return undefined;
   }
 
@@ -169,6 +189,9 @@ function buildTrainingDatasetInfo(input: MapWorkflowToReportInput): TrainingData
     name: datasetInfo.trainingDatasetName || "—",
     trainingSampleCount: training ?? 0,
     evaluationSampleCount: evaluation ?? 0,
+    format: format || undefined,
+    classDistribution: classDistribution || undefined,
+    description: description || undefined,
     validExamples: trainingExampleFiles,
     edgeExamples: trainingUnsuitableExampleFiles,
   };

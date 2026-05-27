@@ -59,6 +59,11 @@ export interface EvalEnvironment {
   };
 }
 
+export interface ClassLabelInfo {
+  label: string;
+  description: string;
+}
+
 export interface DatasetInfo {
   format: string;
   inputColumns: string[];
@@ -66,6 +71,7 @@ export interface DatasetInfo {
   taskTypeLabel: string;
   classCount: number;
   classLabels: string[];
+  classLabelDescriptions?: ClassLabelInfo[];
   fileName: string;
 }
 
@@ -151,6 +157,9 @@ export interface TrainingDatasetInfo {
   name: string;
   trainingSampleCount: number;
   evaluationSampleCount: number;
+  format?: string;
+  classDistribution?: string;
+  description?: string;
   validExamples: UploadedFileInfo[];
   edgeExamples: UploadedFileInfo[];
 }
