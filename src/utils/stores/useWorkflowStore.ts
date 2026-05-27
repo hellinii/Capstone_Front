@@ -5,8 +5,8 @@
  * 관리하며, 최종 평가 리포트 데이터를 생성하는 로직을 포함합니다.
  */
 import { create } from "zustand";
-import { createEvaluationReport } from "../../lib/report/createEvaluationReport";
 import type { TaskType } from "../../data/evaluationData";
+import type { MappingRow } from "../../types/mapping.types";
 import {
   DEFAULT_BASIC_INFO,
   DEFAULT_DATASET_INFO,
@@ -15,13 +15,12 @@ import {
   type MetricDetailStateMap,
   type UploadedFileInfo,
 } from "../../types/workflow.types";
-import type { EvaluationReportData } from "../../types/report.types";
 
 /** Step path segments used in routing */
 export const STEP_PATHS = [
   "basic-info",
-  "test-items",
-  "tc-detail",
+  "metrics",
+  "metric-detail",
   "data-upload",
   "column-mapping",
   "data-validation",
@@ -33,13 +32,18 @@ export type StepPath = (typeof STEP_PATHS)[number];
 /** Convert a 1-based step number to a route path */
 export function stepToPath(step: number): string {
   if (step === 7) return "/report/preview";
-  return `/step/${STEP_PATHS[step - 1] ?? STEP_PATHS[0]}`;
+  return `/app/${STEP_PATHS[step - 1] ?? STEP_PATHS[0]}`;
 }
 
 /** Convert a route path segment to a 1-based step number */
 export function pathToStep(path: string): number {
-  const segment = path.replace("/step/", "");
-  const index = STEP_PATHS.indexOf(segment as StepPath);
+  const segment = path.replace("/step/", "").replace("/app/", "");
+  const legacySegments: Record<string, StepPath> = {
+    "test-items": "metrics",
+    "tc-detail": "metric-detail",
+  };
+  const normalizedSegment = legacySegments[segment] ?? segment;
+  const index = STEP_PATHS.indexOf(normalizedSegment as StepPath);
   return index >= 0 ? index + 1 : 1;
 }
 
@@ -60,9 +64,14 @@ interface WorkflowState {
 
   // Step 4 — Data upload
   uploadedFile: UploadedFileInfo | null;
-  trainingExampleFile: UploadedFileInfo | null;
-  trainingUnsuitableExampleFile: UploadedFileInfo | null;
+  trainingExampleFiles: UploadedFileInfo[];
+  trainingUnsuitableExampleFiles: UploadedFileInfo[];
   datasetInfo: DatasetInfoFormData;
+
+  // Step 5 — Column mapping
+  columnMapping: MappingRow[];
+  // Step 5 — Class label descriptions (class value -> description)
+  classLabelDescriptions: Record<string, string>;
 
   // Actions — Navigation
   setCurrentStep: (step: number) => void;
@@ -84,16 +93,27 @@ interface WorkflowState {
 
   // Actions — Step 4
   setUploadedFile: (file: UploadedFileInfo | null) => void;
-  setTrainingExampleFile: (file: UploadedFileInfo | null) => void;
-  setTrainingUnsuitableExampleFile: (file: UploadedFileInfo | null) => void;
+  setTrainingExampleFiles: (
+    value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
+  ) => void;
+  setTrainingUnsuitableExampleFiles: (
+    value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
+  ) => void;
   setDatasetInfo: (
     value:
       | DatasetInfoFormData
       | ((prev: DatasetInfoFormData) => DatasetInfoFormData),
   ) => void;
 
-  // Derived
-  getReport: () => EvaluationReportData;
+  // Actions — Step 5
+  setColumnMapping: (
+    value: MappingRow[] | ((prev: MappingRow[]) => MappingRow[]),
+  ) => void;
+  setClassLabelDescriptions: (
+    value:
+      | Record<string, string>
+      | ((prev: Record<string, string>) => Record<string, string>),
+  ) => void;
 
   // Reset
   resetWorkflow: () => void;
@@ -107,12 +127,14 @@ const INITIAL_STATE = {
   selectedMetricIds: [] as string[],
   metricDetails: {} as MetricDetailStateMap,
   uploadedFile: null as UploadedFileInfo | null,
-  trainingExampleFile: null as UploadedFileInfo | null,
-  trainingUnsuitableExampleFile: null as UploadedFileInfo | null,
+  trainingExampleFiles: [] as UploadedFileInfo[],
+  trainingUnsuitableExampleFiles: [] as UploadedFileInfo[],
   datasetInfo: DEFAULT_DATASET_INFO,
+  columnMapping: [] as MappingRow[],
+  classLabelDescriptions: {} as Record<string, string>,
 };
 
-export const useWorkflowStore = create<WorkflowState>((set, get) => ({
+export const useWorkflowStore = create<WorkflowState>((set) => ({
   ...INITIAL_STATE,
 
   // Navigation
@@ -136,8 +158,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       selectedMetricIds: [],
       metricDetails: {},
       uploadedFile: null,
-      trainingExampleFile: null,
-      trainingUnsuitableExampleFile: null,
+      trainingExampleFiles: [],
+      trainingUnsuitableExampleFiles: [],
+      columnMapping: [],
+      classLabelDescriptions: {},
     }),
 
   // Step 2
@@ -153,9 +177,17 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
   // Step 4
   setUploadedFile: (file) => set({ uploadedFile: file }),
 
-  setTrainingExampleFile: (file) => set({ trainingExampleFile: file }),
+  setTrainingExampleFiles: (value) =>
+    set((state) => ({
+      trainingExampleFiles:
+        typeof value === "function" ? value(state.trainingExampleFiles) : value,
+    })),
 
-  setTrainingUnsuitableExampleFile: (file) => set({ trainingUnsuitableExampleFile: file }),
+  setTrainingUnsuitableExampleFiles: (value) =>
+    set((state) => ({
+      trainingUnsuitableExampleFiles:
+        typeof value === "function" ? value(state.trainingUnsuitableExampleFiles) : value,
+    })),
 
   setDatasetInfo: (value) =>
     set((state) => ({
@@ -163,18 +195,20 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         typeof value === "function" ? value(state.datasetInfo) : value,
     })),
 
-  // Derived
-  getReport: () => {
-    const state = get();
-    return createEvaluationReport({
-      basicInfo: state.basicInfo,
-      datasetInfo: state.datasetInfo,
-      taskType: state.taskType,
-      selectedMetricIds: state.selectedMetricIds,
-      metricDetails: state.metricDetails,
-      uploadedFile: state.uploadedFile,
-    });
-  },
+  // Step 5
+  setColumnMapping: (value) =>
+    set((state) => ({
+      columnMapping:
+        typeof value === "function" ? value(state.columnMapping) : value,
+    })),
+
+  setClassLabelDescriptions: (value) =>
+    set((state) => ({
+      classLabelDescriptions:
+        typeof value === "function"
+          ? value(state.classLabelDescriptions)
+          : value,
+    })),
 
   // Reset
   resetWorkflow: () => set(INITIAL_STATE),

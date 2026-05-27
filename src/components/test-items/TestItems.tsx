@@ -13,6 +13,7 @@ import {
   getRequiredColumnsForMetric,
   getRequiredColumnsForTaskType,
   TASK_TYPE_LABELS,
+  type RequiredColumnCode,
   type TaskType,
 } from "../../data/evaluationData";
 
@@ -28,7 +29,8 @@ export function TestItems({
   const availableMetrics = useMemo(() => getAvailableMetrics(taskType), [taskType]);
   const resolvedTaskType = taskType || "";
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-  const [columnFilter, setColumnFilter] = useState("");
+  const [metricQuery, setMetricQuery] = useState("");
+  const [selectedColumns, setSelectedColumns] = useState<RequiredColumnCode[]>([]);
 
   const visibleColumns = useMemo(
     () => (resolvedTaskType ? getRequiredColumnsForTaskType(resolvedTaskType) : []),
@@ -36,14 +38,20 @@ export function TestItems({
   );
 
   const filteredMetrics = useMemo(() => {
-    const query = columnFilter.trim().toLowerCase();
+    const query = metricQuery.trim().toLowerCase();
+    const selectedColumnSet = new Set(selectedColumns);
 
-    if (!query || !resolvedTaskType) {
+    if (!resolvedTaskType) {
       return availableMetrics;
     }
 
     return availableMetrics.filter((metric) => {
       const requiredColumns = getRequiredColumnsForMetric(resolvedTaskType, metric.id);
+      const matchesSelectedColumns =
+        selectedColumnSet.size === 0 ||
+        [...selectedColumnSet].every((columnCode) =>
+          requiredColumns.some((column) => column.code === columnCode),
+        );
       const searchableText = [
         metric.id,
         getMetricDisplayId(metric.id),
@@ -55,12 +63,16 @@ export function TestItems({
         .join(" ")
         .toLowerCase();
 
-      return searchableText.includes(query);
+      const matchesQuery = !query || searchableText.includes(query);
+
+      return matchesSelectedColumns && matchesQuery;
     });
-  }, [availableMetrics, columnFilter, resolvedTaskType]);
+  }, [availableMetrics, metricQuery, resolvedTaskType, selectedColumns]);
 
   useEffect(() => {
     setSelectedMetrics([]);
+    setMetricQuery("");
+    setSelectedColumns([]);
     onSelectedMetricsChange?.([]);
   }, [taskType, onSelectedMetricsChange]);
 
@@ -87,6 +99,16 @@ export function TestItems({
   const handleClear = () => {
     setSelectedMetrics([]);
     onSelectedMetricsChange?.([]);
+  };
+
+  const handleToggleColumn = (columnCode: RequiredColumnCode) => {
+    setSelectedColumns((prev) =>
+      prev.includes(columnCode) ? prev.filter((code) => code !== columnCode) : [...prev, columnCode],
+    );
+  };
+
+  const handleClearColumns = () => {
+    setSelectedColumns([]);
   };
 
   return (
@@ -124,31 +146,74 @@ export function TestItems({
         {taskType && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold">Column guide</CardTitle>
+              <CardTitle className="text-lg font-semibold">Available columns</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                <div className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                  These columns can participate in metric calculation for the selected classifier type.
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {visibleColumns.map((column) => (
-                  <div key={column.code} className="rounded-lg border border-border bg-muted/20 p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-[11px]">
-                        {column.code}
-                      </Badge>
-                      <span className="text-sm font-medium text-foreground">{column.label}</span>
+                  <div key={column.code} className="min-h-[118px] rounded-lg border border-border bg-muted/20 p-4">
+                    <div className="min-w-0 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="font-mono text-[11px]">
+                          {column.code}
+                        </Badge>
+                        <span className="text-sm font-semibold text-foreground">{column.label}</span>
+                      </div>
+                      <p className="text-xs leading-5 text-muted-foreground">{column.description}</p>
                     </div>
-                    <p className="text-xs leading-5 text-muted-foreground">{column.description}</p>
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        )}
 
-              <div className="relative max-w-md">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={columnFilter}
-                  onChange={(event) => setColumnFilter(event.target.value)}
-                  placeholder="Filter by metric or column"
-                  className="pl-9"
-                />
+        {taskType && (
+          <Card>
+            <CardContent className="flex flex-col gap-4 py-4 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+              <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center">
+                <div className="relative w-full max-w-xs shrink-0">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={metricQuery}
+                    onChange={(event) => setMetricQuery(event.target.value)}
+                    placeholder="Search metrics"
+                    className="pl-9"
+                  />
+                </div>
+
+                <div className="flex min-w-0 flex-nowrap items-center gap-2">
+                  {visibleColumns.map((column) => (
+                    <label
+                      key={column.code}
+                      className={cn(
+                        "flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm transition-colors",
+                        selectedColumns.includes(column.code)
+                          ? "border-primary bg-blue-50 text-foreground"
+                          : "border-border bg-card text-muted-foreground hover:border-gray-400 hover:text-foreground",
+                      )}
+                    >
+                      <Checkbox
+                        checked={selectedColumns.includes(column.code)}
+                        onCheckedChange={() => handleToggleColumn(column.code)}
+                      />
+                      <span className="font-mono text-xs">{column.code}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">{filteredMetrics.length} matching metrics</Badge>
+                <Button variant="outline" size="sm" onClick={handleClearColumns} disabled={selectedColumns.length === 0}>
+                  Reset columns
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -202,8 +267,8 @@ export function TestItems({
             })}
             {filteredMetrics.length === 0 && (
               <Card className="md:col-span-2 lg:col-span-3 xl:col-span-4">
-                <CardContent className="py-10 text-sm text-muted-foreground">
-                  No metrics match the current filter.
+                  <CardContent className="py-10 text-sm text-muted-foreground">
+                  No metrics use the selected column combination.
                 </CardContent>
               </Card>
             )}

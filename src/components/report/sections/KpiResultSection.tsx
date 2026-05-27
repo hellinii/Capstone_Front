@@ -6,10 +6,12 @@ interface KpiResultSectionProps {
   kpiResults: KpiResult[];
 }
 
+// 예시본 6.1 종합 핵심 성능 (KPI) 화이트리스트
+const KPI_CORE_IDS = new Set(["M1", "M4", "M20", "M23"]);
+
 export function KpiResultSection({ kpiResults }: KpiResultSectionProps) {
-  // 종합 핵심 지표 (threshold 있는 것들, 정보제공 제외)
-  const kpiCore   = kpiResults.filter((r) => r.threshold > 0);
-  const kpiDetail = kpiResults.filter((r) => r.threshold === 0);
+  const kpiCore   = kpiResults.filter((r) => KPI_CORE_IDS.has(r.tcId));
+  const kpiDetail = kpiResults.filter((r) => !KPI_CORE_IDS.has(r.tcId));
 
   return (
     <div className="space-y-8 pt-8">

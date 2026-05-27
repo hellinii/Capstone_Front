@@ -13,13 +13,22 @@ import { buildMockBackendResponse } from "../../data/mock/columnMappingMock";
 
 import { RequiredColumnsCard } from "./RequiredColumnsCard";
 import { BinaryClassificationCard } from "./BinaryClassificationCard";
+import { ClassLabelDescriptionCard } from "./ClassLabelDescriptionCard";
 import { DetectedMappingTable } from "./DetectedMappingTable";
 import { MappingStatusPanel } from "./MappingStatusPanel";
 
 interface ColumnMappingProps {
   taskType?: TaskType | "";
   selectedMetricIds?: string[];
+  rows: MappingRow[];
+  onRowsChange: (value: MappingRow[] | ((prev: MappingRow[]) => MappingRow[])) => void;
   onValidationChange?: (isValid: boolean) => void;
+  classLabelDescriptions?: Record<string, string>;
+  onClassLabelDescriptionsChange?: (
+    value:
+      | Record<string, string>
+      | ((prev: Record<string, string>) => Record<string, string>),
+  ) => void;
 }
 
 const roleOptions: Array<{ value: MappingRole; label: string }> = [
@@ -34,7 +43,11 @@ const roleOptions: Array<{ value: MappingRole; label: string }> = [
 export function ColumnMapping({
   taskType = "",
   selectedMetricIds = [],
+  rows,
+  onRowsChange,
   onValidationChange,
+  classLabelDescriptions = {},
+  onClassLabelDescriptionsChange,
 }: ColumnMappingProps) {
   const resolvedTaskType: TaskType = taskType || "multiclass";
   const selectedMetrics = useMemo(
@@ -46,15 +59,17 @@ export function ColumnMapping({
     [resolvedTaskType, selectedMetricIds],
   );
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
-  const [rows, setRows] = useState<MappingRow[]>([]);
 
+  // 매핑이 비어있을 때만 mock backend로 초기화. 사용자가 수정한 매핑은 store에 영구화되어
+  // 다음 단계 갔다 돌아와도 보존됨. taskType 변경 시 store에서 [] 로 리셋되므로 재초기화 트리거됨.
   useEffect(() => {
+    if (rows.length > 0) return;
     const response = buildMockBackendResponse(
       resolvedTaskType,
       requiredRoles.map((role) => role.code),
     );
-    setRows(response.rows);
-  }, [resolvedTaskType, requiredRoles]);
+    onRowsChange(response.rows);
+  }, [rows.length, resolvedTaskType, requiredRoles, onRowsChange]);
 
   // Binary Positive Class UI State
   const [positiveClass, setPositiveClass] = useState<string>("");
@@ -118,7 +133,7 @@ export function ColumnMapping({
   }, [mappingSummary.isValid, onValidationChange]);
 
   const handleRoleChange = (index: number, newRole: string) => {
-    setRows((prev) =>
+    onRowsChange((prev) =>
       prev.map((row, rowIndex) =>
         rowIndex === index
           ? {
@@ -167,6 +182,15 @@ export function ColumnMapping({
           yTrueRow={yTrueRow}
           yTrueValues={yTrueValues}
         />
+
+        {onClassLabelDescriptionsChange && (
+          <ClassLabelDescriptionCard
+            yTrueRow={yTrueRow}
+            yTrueValues={yTrueValues}
+            classLabelDescriptions={classLabelDescriptions}
+            onClassLabelDescriptionsChange={onClassLabelDescriptionsChange}
+          />
+        )}
 
         <DetectedMappingTable
           filterMode={filterMode}

@@ -1,4 +1,5 @@
 import type { ApplicantInfo, EvalScope, PerformerInfo } from "../../../types/finalReport.types";
+import { REPORT_PURPOSE_LABEL, REPORT_PURPOSE_OVERVIEW } from "../../../lib/report/reportConstants";
 import { SectionTitle } from "../ui/SectionTitle";
 import { TwoColTable } from "../ui/TwoColTable";
 
@@ -38,6 +39,14 @@ export function CompanyInfoSection({ applicant, performer, evalScope }: CompanyI
         <p className="text-sm leading-relaxed text-slate-600">
           본 시험결과서는 <strong>"{evalScope.targetModel}"</strong> 을 대상으로 ISO/IEC TS 4213:2022 기준에
           따른 기계학습 분류 성능 및 신뢰성 시험을 수행한 결과를 기술한 문서이다.
+          {evalScope.modelCategory && (
+            <> 본 모델은 <strong>{evalScope.modelCategory}</strong> 형식으로 구현되었으며</>
+          )}
+          {evalScope.modelPurpose && (
+            <>{evalScope.modelCategory ? ", " : " 본 모델은 "}
+              <strong>{evalScope.modelPurpose}</strong> 목적으로 개발되었다.
+            </>
+          )}
         </p>
       </div>
 
@@ -77,8 +86,17 @@ export function CompanyInfoSection({ applicant, performer, evalScope }: CompanyI
         <h3 className="text-sm font-semibold text-slate-700">시험결과서 용도</h3>
         <TwoColTable
           rows={[
-            { label: "용도", value: "외부 제출용" },
-            { label: "개요", value: evalScope.purpose },
+            { label: "용도", value: REPORT_PURPOSE_LABEL[evalScope.reportPurposeKey] },
+            { label: "개요", value: evalScope.purpose || REPORT_PURPOSE_OVERVIEW[evalScope.reportPurposeKey] },
+            ...(evalScope.projectInfo
+              ? [
+                  { label: "프로젝트명", value: evalScope.projectInfo.name },
+                  { label: "주관기관", value: evalScope.projectInfo.agency },
+                  ...(evalScope.projectInfo.projectNumber
+                    ? [{ label: "과제번호", value: evalScope.projectInfo.projectNumber }]
+                    : []),
+                ]
+              : []),
           ]}
         />
       </div>

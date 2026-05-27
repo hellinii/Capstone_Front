@@ -47,6 +47,9 @@ export interface DatasetInfoFormData {
   trainingSampleCount: string;
   evaluationSampleCount: string;
   trainingDatasetName: string;
+  trainingDataFormat: string;
+  trainingClassDistribution: string;
+  trainingDataDescription: string;
 }
 
 export const DEFAULT_BASIC_INFO: BasicInfoFormData = {
@@ -78,5 +81,8 @@ export const DEFAULT_DATASET_INFO: DatasetInfoFormData = {
   trainingSampleCount: "",
   evaluationSampleCount: "",
   trainingDatasetName: "",
+  trainingDataFormat: "",
+  trainingClassDistribution: "",
+  trainingDataDescription: "",
 };
 

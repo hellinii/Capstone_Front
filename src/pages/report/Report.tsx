@@ -26,17 +26,18 @@ export function Report() {
 
   return (
     <ReportLayout onDownload={download}>
-      <ReportCoverSection meta={data.meta} />
+      <ReportCoverSection meta={data.meta} performer={data.performer} />
       <CompanyInfoSection
         applicant={data.applicant}
         performer={data.performer}
         evalScope={data.evalScope}
       />
-      <EvalScopeSection meta={data.meta} evalScope={data.evalScope} />
+      <EvalScopeSection meta={data.meta} />
       <DatasetSection
         datasetInfo={data.datasetInfo}
         datasetSamples={data.datasetSamples}
         datasetDiagnosis={data.datasetDiagnosis}
+        trainingDatasetInfo={data.trainingDatasetInfo}
       />
       <EvalEnvSection meta={data.meta} evalScope={data.evalScope} evalEnv={data.evalEnv} />
       <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} />
@@ -50,8 +51,16 @@ export function Report() {
       <LatencySection latency={data.latency} />
       <InterpretSection interpretation={data.interpretation} />
       <ConclusionSection conclusion={data.conclusion} />
-      <RecommendSection recommendations={data.recommendations} />
-      <SignatureSection signature={data.signature} />
+      <RecommendSection
+        recommendations={data.recommendations}
+        narrative={data.recommendationNarrative}
+      />
+      <SignatureSection
+        signature={data.signature}
+        meta={data.meta}
+        evalScope={data.evalScope}
+        performer={data.performer}
+      />
     </ReportLayout>
   );
 }
