@@ -21,6 +21,10 @@ import { formatFileSize } from "../../utils/format/format";
 
 export type DataUploadPhase = "evaluation" | "training";
 
+// 디자인 시스템에 Textarea 컴포넌트가 없어 Input 스타일을 모사한 textarea 클래스
+const TEXTAREA_CLASS =
+  "border-input placeholder:text-muted-foreground flex w-full min-h-[80px] rounded-md border px-3 py-2 text-base bg-input-background transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm";
+
 interface DataUploadProps {
   phase: DataUploadPhase;
   onPhaseChange: (phase: DataUploadPhase) => void;
@@ -428,6 +432,13 @@ function TrainingDatasetSection({
                 placeholder="e.g. Product defect image training set"
               />
             </Field>
+            <Field label="Training data format">
+              <Input
+                value={datasetInfo.trainingDataFormat}
+                onChange={(event) => updateDatasetInfo("trainingDataFormat", event.target.value)}
+                placeholder="e.g. Structured CSV, image (JPG/PNG), text"
+              />
+            </Field>
           </div>
 
           <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
@@ -466,6 +477,26 @@ function TrainingDatasetSection({
               </div>
             )}
           </div>
+
+          <Field label="Class distribution">
+            <textarea
+              className={TEXTAREA_CLASS}
+              rows={3}
+              value={datasetInfo.trainingClassDistribution}
+              onChange={(event) => updateDatasetInfo("trainingClassDistribution", event.target.value)}
+              placeholder="Per-class sample counts or ratios, e.g. cat 5,000 / dog 5,000 / bird 3,000"
+            />
+          </Field>
+
+          <Field label="Training data description / notes">
+            <textarea
+              className={TEXTAREA_CLASS}
+              rows={3}
+              value={datasetInfo.trainingDataDescription}
+              onChange={(event) => updateDatasetInfo("trainingDataDescription", event.target.value)}
+              placeholder="How the training data was collected, labeled, or preprocessed (optional)"
+            />
+          </Field>
         </CardContent>
       </Card>
 

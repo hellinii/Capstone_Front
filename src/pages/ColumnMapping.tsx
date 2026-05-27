@@ -39,6 +39,8 @@ export function ColumnMapping() {
         rows={store.columnMapping}
         onRowsChange={store.setColumnMapping}
         onValidationChange={setIsValid}
+        classLabelDescriptions={store.classLabelDescriptions}
+        onClassLabelDescriptionsChange={store.setClassLabelDescriptions}
       />
     </WorkflowShell>
   );

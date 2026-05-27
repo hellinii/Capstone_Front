@@ -37,6 +37,7 @@ export function useReportData(id: string): UseReportDataResult {
         trainingExampleFiles: workflowState.trainingExampleFiles,
         trainingUnsuitableExampleFiles: workflowState.trainingUnsuitableExampleFiles,
         columnMapping: workflowState.columnMapping,
+        classLabelDescriptions: workflowState.classLabelDescriptions,
       }),
       isLoading: false,
     };

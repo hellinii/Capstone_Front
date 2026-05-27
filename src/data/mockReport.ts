@@ -47,6 +47,10 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
     taskTypeLabel: "이진 분류 (Binary Classification)",
     classCount: 2,
     classLabels: ["Negative (0)", "Positive (1)"],
+    classLabelDescriptions: [
+      { label: "Negative (0)", description: "정상 거래 — 이상 징후가 없는 결제 트랜잭션" },
+      { label: "Positive (1)", description: "이상 거래 — 사기/이상 패턴이 감지된 결제 트랜잭션" },
+    ],
     fileName: "binary_eval_dataset_v2.csv",
   },
 
@@ -73,6 +77,10 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
     name: "결제 거래 이상 탐지 학습 데이터셋 v2",
     trainingSampleCount: 20000,
     evaluationSampleCount: 5000,
+    format: "정형 데이터 (CSV)",
+    classDistribution: "Negative(정상) 12,360건 / Positive(이상) 7,640건",
+    description:
+      "2024년 1~12월 실거래 로그에서 수집했으며, 규칙 기반 1차 필터 후 도메인 전문가 검수를 거쳐 라벨링했다. 결측·중복 트랜잭션은 전처리 단계에서 제거했다.",
     validExamples: [
       { name: "valid_sample_001.csv", size: "12.4 KB", type: "text/csv" },
     ],

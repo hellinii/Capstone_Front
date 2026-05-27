@@ -69,6 +69,10 @@ export function WorkflowShell({
         trainingDatasetName: "Binary review dataset",
         trainingSampleCount: "100",
         evaluationSampleCount: "100",
+        trainingDataFormat: "Structured JSON",
+        trainingClassDistribution: "Negative 52 / Positive 48",
+        trainingDataDescription:
+          "Customer review sentiment samples labeled by human annotators.",
       });
       store.setUploadedFile({
         name: "eval_result_1775625159458.json",
