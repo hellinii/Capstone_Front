@@ -8,6 +8,7 @@ import { MOCK_FINAL_REPORT } from "../data/mockReport";
 import { mapWorkflowToFinalReport } from "../lib/report/mapWorkflowToFinalReport";
 import type { FinalReportData } from "../types/finalReport.types";
 import { useWorkflowStore } from "../utils/stores/useWorkflowStore";
+import { useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
 
 interface UseReportDataResult {
   data: FinalReportData | null;
@@ -15,20 +16,27 @@ interface UseReportDataResult {
 }
 
 export function useReportData(id: string): UseReportDataResult {
-  const state = useWorkflowStore();
+  const workflowState = useWorkflowStore();
+  const run = useWorkspaceStore((state) =>
+    state.evaluationRuns.find((item) => item.id === id),
+  );
+
+  if (run?.reportData) {
+    return { data: run.reportData, isLoading: false };
+  }
 
   if (id === "preview") {
     return {
       data: mapWorkflowToFinalReport({
-        basicInfo: state.basicInfo,
-        datasetInfo: state.datasetInfo,
-        taskType: state.taskType,
-        selectedMetricIds: state.selectedMetricIds,
-        metricDetails: state.metricDetails,
-        uploadedFile: state.uploadedFile,
-        trainingExampleFiles: state.trainingExampleFiles,
-        trainingUnsuitableExampleFiles: state.trainingUnsuitableExampleFiles,
-        columnMapping: state.columnMapping,
+        basicInfo: workflowState.basicInfo,
+        datasetInfo: workflowState.datasetInfo,
+        taskType: workflowState.taskType,
+        selectedMetricIds: workflowState.selectedMetricIds,
+        metricDetails: workflowState.metricDetails,
+        uploadedFile: workflowState.uploadedFile,
+        trainingExampleFiles: workflowState.trainingExampleFiles,
+        trainingUnsuitableExampleFiles: workflowState.trainingUnsuitableExampleFiles,
+        columnMapping: workflowState.columnMapping,
       }),
       isLoading: false,
     };

@@ -1,3 +1,6 @@
+import type { FinalReportData } from "./finalReport.types";
+import type { MapWorkflowToReportInput } from "../lib/report/mapWorkflowToFinalReport";
+
 export interface Workspace {
   id: string;
   name: string;
@@ -10,5 +13,8 @@ export interface WorkspaceEvaluationRun {
   workspaceId: string;
   modelName: string;
   versionName: string;
+  reportId: string;
+  workflowSnapshot: MapWorkflowToReportInput;
+  reportData: FinalReportData;
   createdAt: string;
 }

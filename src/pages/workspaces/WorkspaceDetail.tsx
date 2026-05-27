@@ -1,5 +1,5 @@
 import { Link, Navigate, useNavigate, useParams } from "react-router";
-import { ArrowLeft, ClipboardList, Plus } from "lucide-react";
+import { ArrowLeft, ClipboardList, FileText, Plus } from "lucide-react";
 import { AppHeader } from "../../layout/components/AppHeader";
 import { Button } from "../../components/ui/button";
 import {
@@ -112,7 +112,9 @@ export function WorkspaceDetail() {
                   <TableRow>
                     <TableHead>Model Name</TableHead>
                     <TableHead>Version</TableHead>
+                    <TableHead>Report</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -122,7 +124,16 @@ export function WorkspaceDetail() {
                         {run.modelName}
                       </TableCell>
                       <TableCell>{run.versionName}</TableCell>
+                      <TableCell>{run.reportId || "-"}</TableCell>
                       <TableCell>{formatCreatedAt(run.createdAt)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={`/report/${run.id}`}>
+                            <FileText className="h-4 w-4" />
+                            View
+                          </Link>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
