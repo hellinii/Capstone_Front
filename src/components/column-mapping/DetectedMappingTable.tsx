@@ -70,12 +70,13 @@ export function DetectedMappingTable({
             </TableHeader>
             <TableBody>
               {visibleRows.map((row, index) => {
-                const duplicate =
+                const duplicate = Boolean(
                   row.confirmedRole &&
                   row.confirmedRole !== "ignore" &&
                   row.confirmedRole !== "prob_class_*" &&
                   row.confirmedRole !== "prob_label_*" &&
-                  (roleCounts[row.confirmedRole] ?? 0) > 1;
+                  (roleCounts[row.confirmedRole] ?? 0) > 1
+                );
                 const needsAttention = duplicate || row.confirmedRole === null || row.warnings.length > 0;
                 const matchState = getRowMatchState(row, duplicate);
 

@@ -140,7 +140,7 @@ function buildEvalScope(basicInfo: BasicInfoFormData): EvalScope {
 }
 
 function buildDatasetInfo(input: MapWorkflowToReportInput, taskType: TaskType): DatasetInfo {
-  const sampleCount = parseCount(input.datasetInfo.evaluationSampleCount);
+  const sampleCount = parseCount(input.datasetInfo.validationSampleCount);
 
   // y_true 컬럼에서 실제 클래스 값을 도출 (있으면 mock/추론 대신 실제 값 사용)
   const yTrueRow = input.columnMapping.find((r) => r.confirmedRole === "y_true");
@@ -171,12 +171,12 @@ function buildDatasetInfo(input: MapWorkflowToReportInput, taskType: TaskType): 
 function buildTrainingDatasetInfo(input: MapWorkflowToReportInput): TrainingDatasetInfo | undefined {
   const { datasetInfo, trainingExampleFiles, trainingUnsuitableExampleFiles } = input;
   const training = parseCount(datasetInfo.trainingSampleCount);
-  const evaluation = parseCount(datasetInfo.evaluationSampleCount);
+  const validation = parseCount(datasetInfo.validationSampleCount);
   const format = datasetInfo.trainingDataFormat.trim();
   const classDistribution = datasetInfo.trainingClassDistribution.trim();
   const description = datasetInfo.trainingDataDescription.trim();
   const hasName = datasetInfo.trainingDatasetName.trim() !== "";
-  const hasCounts = training !== null && evaluation !== null;
+  const hasCounts = training !== null && validation !== null;
   const hasExamples =
     trainingExampleFiles.length > 0 || trainingUnsuitableExampleFiles.length > 0;
   const hasMeta = format !== "" || classDistribution !== "" || description !== "";
@@ -188,7 +188,7 @@ function buildTrainingDatasetInfo(input: MapWorkflowToReportInput): TrainingData
   return {
     name: datasetInfo.trainingDatasetName || "—",
     trainingSampleCount: training ?? 0,
-    evaluationSampleCount: evaluation ?? 0,
+    validationSampleCount: validation ?? 0,
     format: format || undefined,
     classDistribution: classDistribution || undefined,
     description: description || undefined,

@@ -1036,9 +1036,6 @@ export function LandingPage() {
       <main>
         <section className="mx-auto flex max-w-[1200px] flex-col justify-center gap-12 px-6 py-20">
           <div className="landing-fade-up mx-auto max-w-3xl text-center">
-            <p className="text-sm font-medium text-primary">
-              Model evaluation workflow
-            </p>
             <h1 className="mt-4 max-w-full text-3xl font-semibold leading-tight text-foreground sm:text-4xl md:text-6xl">
               Evaluate ML models from dataset to final report.
             </h1>
@@ -1066,10 +1063,6 @@ export function LandingPage() {
               <h2 className="text-3xl font-semibold leading-tight text-foreground md:text-5xl">
                 See the full evaluation flow in motion.
               </h2>
-              <p className="mt-6 text-xl leading-8 text-primary md:text-2xl">
-                A browser-style demo shows the key actions users take from
-                setup to validation.
-              </p>
             </div>
             <LiveProcessDemo />
           </div>
