@@ -1,22 +1,129 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
-import { DataValidation as DataValidationContent } from "../components/data-validation/DataValidation";
+import {
+  DataValidation as DataValidationContent,
+  type ValidateDataResponseData,
+} from "../components/data-validation/DataValidation";
 import {
   mapWorkflowToFinalReport,
   type MapWorkflowToReportInput,
 } from "../lib/report/mapWorkflowToFinalReport";
 
 /**
- * Step 6 ??Data Validation page
+ * Step 6 — Data Validation page
+ *
+ * 페이지 진입 시 /api/validate-data 를 호출하여 실제 전처리 검증 결과를 표시합니다.
  */
 export function DataValidation() {
   const navigate = useNavigate();
   const store = useWorkflowStore();
   const { activeWorkspaceId, addEvaluationRun } = useWorkspaceStore();
-  const [hasError, setHasError] = useState(false);
+
+  const [validationData, setValidationData] = useState<ValidateDataResponseData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const hasBlockingError = (validationData?.error_count ?? 0) > 0;
+
+  // 역할 번역 헬퍼 (ColumnMapping 페이지와 동일)
+  const translateRoleToBackend = useCallback((role: string | null, taskType: string) => {
+    if (!role) return "ignore";
+    if (role === "id") return "sample_id";
+    if (role === "ignore") return "ignore";
+
+    if (taskType === "binary") {
+      if (role === "y_true") return "y_true";
+      if (role === "y_pred") return "y_pred";
+      if (role === "score") return "score_positive";
+    } else if (taskType === "multiclass") {
+      if (role === "y_true") return "y_true";
+      if (role === "y_pred") return "y_pred";
+      if (role === "prob_class_*") return "prob_per_class";
+    } else if (taskType === "multilabel") {
+      if (role === "y_true") return "true_labels";
+      if (role === "y_pred") return "pred_labels";
+      if (role === "prob_label_*") return "score_per_label";
+    }
+    return "ignore";
+  }, []);
+
+  // 페이지 진입 시 /api/validate-data 호출
+  useEffect(() => {
+    if (!store.rawFile) {
+      setError("업로드된 파일이 없습니다. 데이터 업로드 단계로 돌아가 주세요.");
+      return;
+    }
+
+    let active = true;
+    setIsLoading(true);
+    setError(null);
+
+    const runValidation = async () => {
+      try {
+        const backendMappings = store.columnMapping.map((row) => ({
+          column: row.originalName,
+          role: translateRoleToBackend(row.confirmedRole, store.taskType || "multiclass"),
+          sample_values: row.sampleValues,
+        }));
+
+        const metadata = {
+          positive_class: store.metadata?.positive_class || null,
+          negative_class: store.metadata?.negative_class || null,
+          positive_class_ambiguous: store.metadata?.positive_class_ambiguous || false,
+          detected_classes: store.metadata?.detected_classes || [],
+          detected_labels: store.metadata?.detected_labels || [],
+          class_distribution: store.metadata?.class_distribution || {},
+        };
+
+        const beta = parseFloat(store.metricDetails?.["TC5"]?.beta || "1.0");
+
+        const payload = {
+          task_type: store.taskType || "multiclass",
+          column_mappings: backendMappings,
+          selected_tcs: store.selectedMetricIds,
+          metadata: metadata,
+          beta: beta,
+        };
+
+        const formData = new FormData();
+        formData.append("file", store.rawFile!);
+        formData.append("data", JSON.stringify(payload));
+
+        const response = await fetch("/api/validate-data", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `Server error: ${response.status}`);
+        }
+
+        const result: ValidateDataResponseData = await response.json();
+        if (active) {
+          setValidationData(result);
+        }
+      } catch (err: any) {
+        console.error("Data validation failed:", err);
+        if (active) {
+          setError(err.message || String(err));
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    runValidation();
+
+    return () => {
+      active = false;
+    };
+  }, [store.rawFile, store.columnMapping, store.selectedMetricIds, store.taskType, translateRoleToBackend]);
 
   const handleNext = () => {
     const workflowSnapshot: MapWorkflowToReportInput = {
@@ -65,13 +172,13 @@ export function DataValidation() {
       showNext={true}
       onPrevious={handlePrevious}
       onNext={handleNext}
-      nextDisabled={hasError}
+      nextDisabled={hasBlockingError || isLoading}
       nextLabel="Run evaluation"
     >
       <DataValidationContent
-        taskType={store.taskType}
-        selectedMetricIds={store.selectedMetricIds}
-        onValidationChange={setHasError}
+        validationData={validationData}
+        isLoading={isLoading}
+        error={error}
       />
     </WorkflowShell>
   );

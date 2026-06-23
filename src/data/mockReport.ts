@@ -76,7 +76,7 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
   trainingDatasetInfo: {
     name: "결제 거래 이상 탐지 학습 데이터셋 v2",
     trainingSampleCount: 20000,
-    evaluationSampleCount: 5000,
+    validationSampleCount: 5000,
     format: "정형 데이터 (CSV)",
     classDistribution: "Negative(정상) 12,360건 / Positive(이상) 7,640건",
     description:

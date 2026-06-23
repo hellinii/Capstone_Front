@@ -1,5 +1,5 @@
 import { Link, Navigate, useNavigate, useParams } from "react-router";
-import { ArrowLeft, ClipboardList, FileText, Plus } from "lucide-react";
+import { ArrowLeft, ClipboardList, FileText, Plus, Edit, Trash2 } from "lucide-react";
 import { AppHeader } from "../../layout/components/AppHeader";
 import { Button } from "../../components/ui/button";
 import {
@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import { useWorkspaceStore } from "../../utils/stores/useWorkspaceStore";
+import { useWorkflowStore } from "../../utils/stores/useWorkflowStore";
 
 function formatCreatedAt(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -32,8 +33,9 @@ function formatCreatedAt(value: string) {
 export function WorkspaceDetail() {
   const navigate = useNavigate();
   const { workspaceId } = useParams();
-  const { workspaces, evaluationRuns, setActiveWorkspace } =
+  const { workspaces, evaluationRuns, setActiveWorkspace, deleteEvaluationRun } =
     useWorkspaceStore();
+  const loadWorkflowSnapshot = useWorkflowStore((state) => state.loadWorkflowSnapshot);
 
   const workspace = workspaces.find((item) => item.id === workspaceId);
 
@@ -51,6 +53,20 @@ export function WorkspaceDetail() {
   const handleStartEvaluation = () => {
     setActiveWorkspace(workspaceId);
     navigate("/app/basic-info");
+  };
+
+  const handleEditRun = (run: (typeof runs)[number]) => {
+    if (run.workflowSnapshot) {
+      loadWorkflowSnapshot(run.workflowSnapshot);
+      setActiveWorkspace(workspaceId);
+      navigate("/app/basic-info");
+    }
+  };
+
+  const handleDeleteRun = (runId: string) => {
+    if (confirm("정말 이 평가 결과를 삭제하시겠습니까?")) {
+      deleteEvaluationRun(runId);
+    }
   };
 
   return (
@@ -127,12 +143,27 @@ export function WorkspaceDetail() {
                       <TableCell>{run.reportId || "-"}</TableCell>
                       <TableCell>{formatCreatedAt(run.createdAt)}</TableCell>
                       <TableCell className="text-right">
-                        <Button asChild variant="outline" size="sm">
-                          <Link to={`/report/${run.id}`}>
-                            <FileText className="h-4 w-4" />
-                            View
-                          </Link>
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button asChild variant="outline" size="sm">
+                            <Link to={`/report/${run.id}`}>
+                              <FileText className="h-4 w-4" />
+                              View
+                            </Link>
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleEditRun(run)}>
+                            <Edit className="h-4 w-4" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive border-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteRun(run.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -22,11 +22,15 @@ export function ReportPrint() {
   const { data } = useReportData(id);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Puppeteer waits for data-pdf-ready attribute before capturing
+  // Puppeteer waits for data-pdf-ready attribute before capturing, and triggers browser print
   useEffect(() => {
     if (!data || !containerRef.current) return;
     const raf = requestAnimationFrame(() => {
       containerRef.current?.setAttribute("data-pdf-ready", "true");
+      // 레이아웃 렌더링이 완료된 후 자동으로 브라우저 인쇄 다이얼로그 호출
+      setTimeout(() => {
+        window.print();
+      }, 300);
     });
     return () => cancelAnimationFrame(raf);
   }, [data]);

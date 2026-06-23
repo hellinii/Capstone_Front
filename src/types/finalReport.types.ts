@@ -156,7 +156,7 @@ export interface RecommendationNarrative {
 export interface TrainingDatasetInfo {
   name: string;
   trainingSampleCount: number;
-  evaluationSampleCount: number;
+  validationSampleCount: number;
   format?: string;
   classDistribution?: string;
   description?: string;

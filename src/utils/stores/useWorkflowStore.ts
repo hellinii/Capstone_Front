@@ -7,6 +7,7 @@
 import { create } from "zustand";
 import type { TaskType } from "../../data/evaluationData";
 import type { MappingRow } from "../../types/mapping.types";
+import type { MapWorkflowToReportInput } from "../../lib/report/mapWorkflowToFinalReport";
 import {
   DEFAULT_BASIC_INFO,
   DEFAULT_DATASET_INFO,
@@ -64,6 +65,8 @@ interface WorkflowState {
 
   // Step 4 — Data upload
   uploadedFile: UploadedFileInfo | null;
+  rawFile: File | null;
+  metadata: any | null;
   trainingExampleFiles: UploadedFileInfo[];
   trainingUnsuitableExampleFiles: UploadedFileInfo[];
   datasetInfo: DatasetInfoFormData;
@@ -92,7 +95,9 @@ interface WorkflowState {
   ) => void;
 
   // Actions — Step 4
-  setUploadedFile: (file: UploadedFileInfo | null) => void;
+  setUploadedFile: (file: UploadedFileInfo | null, rawFile?: File) => void;
+  setRawFile: (file: File | null) => void;
+  setMetadata: (metadata: any | null) => void;
   setTrainingExampleFiles: (
     value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
   ) => void;
@@ -117,6 +122,7 @@ interface WorkflowState {
 
   // Reset
   resetWorkflow: () => void;
+  loadWorkflowSnapshot: (snapshot: MapWorkflowToReportInput) => void;
 }
 
 const INITIAL_STATE = {
@@ -127,6 +133,8 @@ const INITIAL_STATE = {
   selectedMetricIds: [] as string[],
   metricDetails: {} as MetricDetailStateMap,
   uploadedFile: null as UploadedFileInfo | null,
+  rawFile: null as File | null,
+  metadata: null as any | null,
   trainingExampleFiles: [] as UploadedFileInfo[],
   trainingUnsuitableExampleFiles: [] as UploadedFileInfo[],
   datasetInfo: DEFAULT_DATASET_INFO,
@@ -158,6 +166,8 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
       selectedMetricIds: [],
       metricDetails: {},
       uploadedFile: null,
+      rawFile: null,
+      metadata: null,
       trainingExampleFiles: [],
       trainingUnsuitableExampleFiles: [],
       columnMapping: [],
@@ -175,7 +185,9 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
     })),
 
   // Step 4
-  setUploadedFile: (file) => set({ uploadedFile: file }),
+  setUploadedFile: (file, rawFile) => set({ uploadedFile: file, rawFile: rawFile || null }),
+  setRawFile: (file) => set({ rawFile: file }),
+  setMetadata: (metadata) => set({ metadata: metadata }),
 
   setTrainingExampleFiles: (value) =>
     set((state) => ({
@@ -212,4 +224,22 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
 
   // Reset
   resetWorkflow: () => set(INITIAL_STATE),
+
+  loadWorkflowSnapshot: (snapshot) =>
+    set({
+      basicInfo: snapshot.basicInfo,
+      taskType: snapshot.taskType,
+      selectedMetricIds: snapshot.selectedMetricIds,
+      metricDetails: snapshot.metricDetails,
+      uploadedFile: snapshot.uploadedFile,
+      rawFile: null,
+      metadata: null,
+      trainingExampleFiles: snapshot.trainingExampleFiles,
+      trainingUnsuitableExampleFiles: snapshot.trainingUnsuitableExampleFiles,
+      datasetInfo: snapshot.datasetInfo,
+      columnMapping: snapshot.columnMapping,
+      classLabelDescriptions: snapshot.classLabelDescriptions,
+      currentStep: 1,
+      completedSteps: [1, 2, 3, 4, 5, 6],
+    }),
 }));

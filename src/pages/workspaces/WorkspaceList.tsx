@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { ArrowRight, FolderKanban } from "lucide-react";
+import { ArrowLeft, ArrowRight, FolderKanban, Trash2 } from "lucide-react";
 import { AppHeader } from "../../layout/components/AppHeader";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -17,9 +17,15 @@ import { useWorkspaceStore } from "../../utils/stores/useWorkspaceStore";
 
 export function WorkspaceList() {
   const navigate = useNavigate();
-  const { workspaces, createWorkspace } = useWorkspaceStore();
+  const { workspaces, createWorkspace, deleteWorkspace } = useWorkspaceStore();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+
+  const handleDeleteWorkspace = (id: string) => {
+    if (confirm("이 워크스페이스와 하위 평가 결과를 모두 삭제하시겠습니까?")) {
+      deleteWorkspace(id);
+    }
+  };
 
   const sortedWorkspaces = useMemo(
     () =>
@@ -47,8 +53,13 @@ export function WorkspaceList() {
 
       <main className="mx-auto flex w-full max-w-[1120px] flex-col gap-8 px-8 py-8">
         <section className="flex flex-col gap-4">
+          <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4" />
+              Home
+            </Link>
+          </Button>
           <div className="space-y-2">
-            <p className="text-sm font-medium text-primary">Workspaces</p>
             <h1 className="text-2xl font-semibold text-foreground">
               Evaluation Workspaces
             </h1>
@@ -119,12 +130,23 @@ export function WorkspaceList() {
                     <CardDescription>{workspace.description}</CardDescription>
                   )}
                   <CardAction>
-                    <Button asChild variant="outline" size="sm">
-                      <Link to={`/workspaces/${workspace.id}`}>
-                        Open
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/workspaces/${workspace.id}`}>
+                          Open
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive border-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteWorkspace(workspace.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </Button>
+                    </div>
                   </CardAction>
                 </CardHeader>
               </Card>

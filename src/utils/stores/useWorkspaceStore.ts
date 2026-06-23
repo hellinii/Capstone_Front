@@ -14,6 +14,8 @@ interface WorkspaceState {
   addEvaluationRun: (
     input: Omit<WorkspaceEvaluationRun, "id" | "createdAt">,
   ) => WorkspaceEvaluationRun;
+  deleteWorkspace: (id: string) => void;
+  deleteEvaluationRun: (id: string) => void;
 }
 
 function createId(prefix: string) {
@@ -64,6 +66,18 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
         return run;
       },
+
+      deleteWorkspace: (id) =>
+        set((state) => ({
+          workspaces: state.workspaces.filter((w) => w.id !== id),
+          evaluationRuns: state.evaluationRuns.filter((r) => r.workspaceId !== id),
+          activeWorkspaceId: state.activeWorkspaceId === id ? null : state.activeWorkspaceId,
+        })),
+
+      deleteEvaluationRun: (id) =>
+        set((state) => ({
+          evaluationRuns: state.evaluationRuns.filter((r) => r.id !== id),
+        })),
     }),
     {
       name: "ml-evaluation-workspaces",

@@ -1,11 +1,12 @@
 import { HelpCircle } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import { Link } from "react-router";
 
 export function AppHeader() {
   return (
     <header className="h-14 border-b border-border bg-card sticky top-0 z-50">
       <div className="h-full px-8 flex items-center justify-between max-w-[1344px] mx-auto">
-        <div className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3 hover:opacity-85 transition-opacity">
           <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
             <svg
               viewBox="0 0 24 24"
@@ -26,7 +27,7 @@ export function AppHeader() {
             <span className="text-base font-semibold leading-none">ML Evaluation</span>
             <span className="text-xs text-muted-foreground">ISO/IEC 4213 based</span>
           </div>
-        </div>
+        </Link>
 
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <HelpCircle className="h-5 w-5" />
