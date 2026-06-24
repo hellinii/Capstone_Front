@@ -72,11 +72,12 @@ export function ReportPrint() {
           <LatencySection latency={data.latency} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
-          <InterpretSection interpretation={data.interpretation} />
-          <ConclusionSection conclusion={data.conclusion} />
+          <InterpretSection interpretation={data.interpretation} source={data.narrativeSource} />
+          <ConclusionSection conclusion={data.conclusion} source={data.narrativeSource} />
           <RecommendSection
             recommendations={data.recommendations}
             narrative={data.recommendationNarrative}
+            source={data.narrativeSource}
           />
           <SignatureSection
             signature={data.signature}

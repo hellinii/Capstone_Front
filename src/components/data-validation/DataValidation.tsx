@@ -14,31 +14,13 @@ import {
   TASK_TYPE_LABELS,
   type TaskType,
 } from "../../data/evaluationData";
+import type {
+  ValidationDetailItem as ValidationCheckItem,
+  ValidateDataResponseData,
+} from "../../types/validation.types";
 
-// ── 백엔드 응답 타입 (ValidateDataResponse 스키마와 1:1 대응) ───────────────
-
-export interface ValidationCheckItem {
-  name: string;
-  result: string;
-  handling: string;
-  status: "pass" | "warning" | "error";
-  group: "common" | "multiclass" | "binary" | "multilabel" | "latency";
-}
-
-export interface ExecutionSummaryItem {
-  label: string;
-  value: string;
-  note: string;
-}
-
-export interface ValidateDataResponseData {
-  task_type: string;
-  selected_metric_ids: string[];
-  execution_summary: ExecutionSummaryItem[];
-  validation_details: ValidationCheckItem[];
-  error_count: number;
-  warning_count: number;
-}
+// ── 백엔드 응답 타입은 types/validation.types.ts 단일 진실에서 가져온다 ──────
+export type { ValidateDataResponseData };
 
 // ── 컴포넌트 Props ──────────────────────────────────────────────────────────
 
