@@ -1,6 +1,10 @@
 import type { ReportRecommendation } from "../../../types/report.types";
-import type { RecommendationNarrative } from "../../../types/finalReport.types";
+import type {
+  RecommendationNarrative,
+  NarrativeSource,
+} from "../../../types/finalReport.types";
 import { SectionTitle } from "../ui/SectionTitle";
+import { NarrativeSourceBadge } from "../ui/NarrativeSourceBadge";
 import { cn } from "../../../utils/styling/styles";
 
 const PRIORITY_CONFIG = {
@@ -12,30 +16,50 @@ const PRIORITY_CONFIG = {
 interface RecommendSectionProps {
   recommendations: ReportRecommendation[];
   narrative: RecommendationNarrative;
+  source?: NarrativeSource;
 }
 
-export function RecommendSection({ recommendations, narrative }: RecommendSectionProps) {
+const PLACEHOLDER = "자동 서술 생성(LLM) 연동 예정 — 계산된 지표를 바탕으로 한 권고가 표시됩니다.";
+
+/** 서술 블록: 텍스트가 있으면 인용, 없으면 "생성 예정" 플레이스홀더 */
+function NarrativeBlock({ title, text }: { title: string; text: string }) {
+  const hasText = (text ?? "").trim().length > 0;
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+      {hasText ? (
+        <blockquote className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
+          <p className="text-sm font-medium leading-relaxed text-slate-700">"{text}"</p>
+        </blockquote>
+      ) : (
+        <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-5 py-4 text-xs text-slate-400">
+          {PLACEHOLDER}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function RecommendSection({ recommendations, narrative, source }: RecommendSectionProps) {
   return (
     <section className="space-y-6 border-t border-slate-200 py-10">
-      <SectionTitle number={9} title="기술 개선 권고안" />
+      <div className="flex items-center justify-between gap-3">
+        <SectionTitle number={9} title="기술 개선 권고안" />
+        <NarrativeSourceBadge source={source} />
+      </div>
 
       {/* 9.1 데이터셋 보완 및 품질 개선 전략 */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">데이터셋 보완 및 품질 개선 전략</h3>
-        <blockquote className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
-          <p className="text-sm font-medium leading-relaxed text-slate-700">"{narrative.dataQuality}"</p>
-        </blockquote>
-      </div>
+      <NarrativeBlock title="데이터셋 보완 및 품질 개선 전략" text={narrative.dataQuality} />
 
       {/* 9.2 모델 고도화 및 운영 관리 가이드 */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">모델 고도화 및 운영 관리 가이드</h3>
-        <blockquote className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
-          <p className="text-sm font-medium leading-relaxed text-slate-700">"{narrative.modelOps}"</p>
-        </blockquote>
-      </div>
+      <NarrativeBlock title="모델 고도화 및 운영 관리 가이드" text={narrative.modelOps} />
 
       {/* 권고 표 요약 */}
+      {recommendations.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-5 py-4 text-xs text-slate-400">
+          권고 항목은 자동 서술 생성(LLM) 연동 시 표시됩니다.
+        </p>
+      ) : (
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b-2 border-slate-200">
@@ -68,6 +92,7 @@ export function RecommendSection({ recommendations, narrative }: RecommendSectio
           })}
         </tbody>
       </table>
+      )}
     </section>
   );
 }

@@ -88,15 +88,17 @@ export function Report() {
         dataValidation={data.dataValidation}
         kpiResults={data.kpiResults}
         totalSamples={data.datasetInfo.sampleCount}
+        validationSummary={data.validationSummary}
       />
       <KpiResultSection kpiResults={data.kpiResults} />
       <ChartSection charts={data.charts} />
       <LatencySection latency={data.latency} />
-      <InterpretSection interpretation={data.interpretation} />
-      <ConclusionSection conclusion={data.conclusion} />
+      <InterpretSection interpretation={data.interpretation} source={data.narrativeSource} />
+      <ConclusionSection conclusion={data.conclusion} source={data.narrativeSource} />
       <RecommendSection
         recommendations={data.recommendations}
         narrative={data.recommendationNarrative}
+        source={data.narrativeSource}
       />
       <SignatureSection
         signature={data.signature}

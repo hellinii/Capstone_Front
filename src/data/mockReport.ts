@@ -251,12 +251,15 @@ export const MOCK_FINAL_REPORT: FinalReportData = {
   },
 
   // 7절: 정밀 분석 (LLM 자동 생성)
-  interpretation:
-    "전체 오분류 329건 중 Positive→Negative 오분류(FN)가 173건(전체의 3.5%)으로 가장 높은 비중을 " +
-    "차지하였으며, 이는 Positive 클래스의 결정 경계(Decision Boundary) 근방에서 확률값이 임계값(0.5)에 " +
-    "근접한 샘플이 다수 존재함을 시사한다. Negative 클래스의 FP는 156건(3.1%)으로 안정적인 수준이다.\n\n" +
-    "평가 데이터셋의 Imbalance Ratio는 1.14로 경미한 불균형 상태이다. 다수 클래스 Negative(0)의 샘플 " +
-    "비중이 61.8%를 차지하나, F1 Score 0.925를 고려할 때 불균형에 의한 성능 왜곡은 미미한 수준으로 판단된다.",
+  interpretation: {
+    confusionAnalysis:
+      "전체 오분류 329건 중 Positive→Negative 오분류(FN)가 173건(전체의 3.5%)으로 가장 높은 비중을 " +
+      "차지하였으며, 이는 Positive 클래스의 결정 경계(Decision Boundary) 근방에서 확률값이 임계값(0.5)에 " +
+      "근접한 샘플이 다수 존재함을 시사한다. Negative 클래스의 FP는 156건(3.1%)으로 안정적인 수준이다.",
+    distributionAnalysis:
+      "평가 데이터셋의 Imbalance Ratio는 1.14로 경미한 불균형 상태이다. 다수 클래스 Negative(0)의 샘플 " +
+      "비중이 61.8%를 차지하나, F1 Score 0.925를 고려할 때 불균형에 의한 성능 왜곡은 미미한 수준으로 판단된다.",
+  },
 
   // 8절: 종합 진단 소견 (LLM + RAG 자동 생성)
   conclusion: {

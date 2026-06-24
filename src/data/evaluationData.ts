@@ -25,7 +25,8 @@ export type RequiredColumnCode =
   | "y_pred"
   | "score"
   | "prob_class_*"
-  | "prob_label_*";
+  | "prob_label_*"
+  | "latency";
 
 export interface RequiredColumnDisplay {
   code: RequiredColumnCode;
@@ -127,6 +128,7 @@ const COLUMN_ORDER: RequiredColumnCode[] = [
   "score",
   "prob_class_*",
   "prob_label_*",
+  "latency",
 ];
 
 const COLUMN_DISPLAY: Record<RequiredColumnCode, RequiredColumnDisplay> = {
@@ -159,6 +161,11 @@ const COLUMN_DISPLAY: Record<RequiredColumnCode, RequiredColumnDisplay> = {
     code: "prob_label_*",
     label: "Per-label probabilities",
     description: "One probability column per label.",
+  },
+  latency: {
+    code: "latency",
+    label: "Inference latency (ms)",
+    description: "Optional. Per-sample inference time in milliseconds; used to report latency statistics (mean/p50/p95/p99).",
   },
 };
 

@@ -27,6 +27,9 @@ import type {
   TrainingDatasetInfo,
 } from "../../types/finalReport.types";
 import type { MappingRow } from "../../types/mapping.types";
+import type { ValidateDataResponseData } from "../../types/validation.types";
+import { mapValidationResultToReport } from "./mapValidationResultToReport";
+import { buildConclusion } from "./computeVerdict";
 import type {
   BasicInfoFormData,
   DatasetInfoFormData,
@@ -55,8 +58,20 @@ export interface MapWorkflowToReportInput {
   classLabelDescriptions: Record<string, string>;
 }
 
-export function mapWorkflowToFinalReport(input: MapWorkflowToReportInput): FinalReportData {
+export function mapWorkflowToFinalReport(
+  input: MapWorkflowToReportInput,
+  validationResult?: ValidateDataResponseData | null,
+): FinalReportData {
   const resolvedTaskType: TaskType = input.taskType || "binary";
+
+  // 데이터 검증 결과: 백엔드 /api/validate-data 응답이 있으면 실제 값으로 채우고,
+  // 없으면 빈 배열(가짜 MOCK 8항목을 노출하지 않음 — 섹션이 "검증 미수행" 안내로 처리).
+  const sampleCountFallback =
+    parseCount(input.datasetInfo.validationSampleCount) ??
+    MOCK_FINAL_REPORT.datasetInfo.sampleCount;
+  const mappedValidation = validationResult
+    ? mapValidationResultToReport(validationResult, sampleCountFallback)
+    : null;
 
   return {
     meta: buildMeta(input, resolvedTaskType),
@@ -64,20 +79,28 @@ export function mapWorkflowToFinalReport(input: MapWorkflowToReportInput): Final
     performer: DEFAULT_PERFORMER,
     evalScope: buildEvalScope(input.basicInfo),
     datasetInfo: buildDatasetInfo(input, resolvedTaskType),
-    datasetSamples: MOCK_FINAL_REPORT.datasetSamples,
-    datasetDiagnosis: MOCK_FINAL_REPORT.datasetDiagnosis,
+    // 데이터 예시 행: 가짜 MOCK 10행 제거. 실제 샘플 렌더링은 백엔드 샘플 반환 + 타입 일반화 후속 작업(P1-7) 필요.
+    datasetSamples: [],
+    // datasetDiagnosis 는 실제 클래스 분포 기반으로 useReportData 에서 채운다(가짜 MOCK 제거).
+    datasetDiagnosis: "",
     trainingDatasetInfo: buildTrainingDatasetInfo(input),
     evalEnv: buildEvalEnv(input.basicInfo),
     tcList: buildTcList(resolvedTaskType, input.selectedMetricIds, input.metricDetails),
     metricFormulas: buildMetricFormulas(resolvedTaskType, input.selectedMetricIds),
-    dataValidation: MOCK_FINAL_REPORT.dataValidation,
+    dataValidation: mappedValidation ? mappedValidation.dataValidation : [],
+    validationSummary: mappedValidation ? mappedValidation.summary : undefined,
     kpiResults: MOCK_FINAL_REPORT.kpiResults,
-    charts: MOCK_FINAL_REPORT.charts,
-    latency: MOCK_FINAL_REPORT.latency,
-    interpretation: MOCK_FINAL_REPORT.interpretation,
-    conclusion: MOCK_FINAL_REPORT.conclusion,
-    recommendationNarrative: MOCK_FINAL_REPORT.recommendationNarrative,
-    recommendations: MOCK_FINAL_REPORT.recommendations,
+    // 차트는 백엔드 평가 결과(useReportData)에서 채운다. 미평가 경로에서는 가짜 곡선/행렬 대신 null.
+    charts: { confusionMatrix: null, rocCurve: null, prCurve: null },
+    // latency 는 평가 결과에서 latency 컬럼이 매핑된 경우만 채운다(useReportData). 가짜 MOCK 대신 null.
+    latency: null,
+    // 7·9절 서술은 LLM 서술 모듈(useReportData → /api/generate-narrative)에서 채운다.
+    // 그 전까지는 가짜 MOCK 대신 빈 값(섹션이 "생성 예정" 안내 표시).
+    interpretation: { confusionAnalysis: "", distributionAnalysis: "" },
+    // verdict/score 는 규칙으로 산출(MOCK 가짜 PASS/94.4 제거). 서술(benchmark/narrative/risks)은 LLM 모듈 전까지 빈 값.
+    conclusion: buildConclusion(MOCK_FINAL_REPORT.kpiResults, resolvedTaskType),
+    recommendationNarrative: { dataQuality: "", modelOps: "" },
+    recommendations: [],
     signature: buildSignature(),
   };
 }
