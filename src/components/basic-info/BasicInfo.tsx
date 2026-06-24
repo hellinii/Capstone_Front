@@ -114,7 +114,9 @@ export function BasicInfo({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">Report purpose</CardTitle>
+              <CardTitle className="text-lg font-semibold">
+                Report purpose <span className="text-red-600">*</span>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
               <RadioGroup value={formData.reportPurpose} onValueChange={(value) => update("reportPurpose", value)}>

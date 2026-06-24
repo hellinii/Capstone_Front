@@ -9,7 +9,6 @@ import {
   getRequiredColumnsForSelection,
 } from "../../data/evaluationData";
 import type { MappingRole, MappingRow, FilterMode } from "../../types/mapping.types";
-import { buildMockBackendResponse } from "../../data/mock/columnMappingMock";
 
 import { RequiredColumnsCard } from "./RequiredColumnsCard";
 import { BinaryClassificationCard } from "./BinaryClassificationCard";
@@ -29,6 +28,8 @@ interface ColumnMappingProps {
       | Record<string, string>
       | ((prev: Record<string, string>) => Record<string, string>),
   ) => void;
+  positiveClass?: string;
+  onPositiveClassChange?: (value: string) => void;
 }
 
 const roleOptions: Array<{ value: MappingRole; label: string }> = [
@@ -40,6 +41,7 @@ const roleOptions: Array<{ value: MappingRole; label: string }> = [
   { value: "prob_label_*", label: "prob_label_*" },
   { value: "ignore", label: "ignore" },
 ];
+
 export function ColumnMapping({
   taskType = "",
   selectedMetricIds = [],
@@ -48,6 +50,8 @@ export function ColumnMapping({
   onValidationChange,
   classLabelDescriptions = {},
   onClassLabelDescriptionsChange,
+  positiveClass = "",
+  onPositiveClassChange,
 }: ColumnMappingProps) {
   const resolvedTaskType: TaskType = taskType || "multiclass";
   const selectedMetrics = useMemo(
@@ -60,19 +64,6 @@ export function ColumnMapping({
   );
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
 
-  // 매핑이 비어있을 때만 mock backend로 초기화. 사용자가 수정한 매핑은 store에 영구화되어
-  // 다음 단계 갔다 돌아와도 보존됨. taskType 변경 시 store에서 [] 로 리셋되므로 재초기화 트리거됨.
-  useEffect(() => {
-    if (rows.length > 0) return;
-    const response = buildMockBackendResponse(
-      resolvedTaskType,
-      requiredRoles.map((role) => role.code),
-    );
-    onRowsChange(response.rows);
-  }, [rows.length, resolvedTaskType, requiredRoles, onRowsChange]);
-
-  // Binary Positive Class UI State
-  const [positiveClass, setPositiveClass] = useState<string>("");
   const yTrueRow = useMemo(() => rows.find((r) => r.confirmedRole === "y_true"), [rows]);
   const yTrueValues = useMemo(() => yTrueRow ? Array.from(new Set(yTrueRow.sampleValues)) : [], [yTrueRow]);
 
@@ -178,7 +169,7 @@ export function ColumnMapping({
         <BinaryClassificationCard
           resolvedTaskType={resolvedTaskType}
           positiveClass={positiveClass}
-          setPositiveClass={setPositiveClass}
+          setPositiveClass={onPositiveClassChange || (() => {})}
           yTrueRow={yTrueRow}
           yTrueValues={yTrueValues}
         />
