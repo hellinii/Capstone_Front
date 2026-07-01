@@ -5,7 +5,7 @@
  * - 그 외 id: 향후 백엔드 API 호출로 교체 (현재는 MOCK_FINAL_REPORT fallback)
  */
 import { useEffect, useState } from "react";
-import { MOCK_FINAL_REPORT } from "../data/mockReport";
+
 import { mapWorkflowToFinalReport } from "../lib/report/mapWorkflowToFinalReport";
 import type { FinalReportData, LatencyStats } from "../types/finalReport.types";
 import { useWorkflowStore } from "../utils/stores/useWorkflowStore";
@@ -46,7 +46,7 @@ export function useReportData(id: string): UseReportDataResult {
     }
 
     if (id !== "preview" && !workflowState.rawFile) {
-      setData(run?.reportData || MOCK_FINAL_REPORT);
+      setData(run?.reportData || null);
       return;
     }
 
@@ -142,13 +142,25 @@ export function useReportData(id: string): UseReportDataResult {
             if (!metric) return null;
 
             const val = success_metrics[tcId];
+            
+            // dict 반환 메트릭 (TC11/TC12/TC13): f1_score를 대표값으로, 세부값은 subMetrics로
+            let resolvedValue = 0;
+            let subMetrics: { precision: number; recall: number; f1Score: number } | undefined;
+
+            if (typeof val === "number") {
+              resolvedValue = val;
+            } else if (val && typeof val === "object" && "f1_score" in val) {
+              resolvedValue = val.f1_score;
+              subMetrics = { precision: val.precision, recall: val.recall, f1Score: val.f1_score };
+            }
+
             const detail = workflowState.metricDetails[tcId];
             const target = parseFloat(detail?.targetValue ?? "");
             const hasThreshold = Number.isFinite(target) && target > 0;
 
-            let status = "pass";
-            if (hasThreshold && typeof val === "number") {
-              status = val >= target ? "pass" : "fail";
+            let status: "pass" | "fail" | "warning" = "pass";
+            if (hasThreshold) {
+              status = resolvedValue >= target ? "pass" : "fail";
             }
 
             let perClass: Array<{ label: string; value: number; status: string }> | undefined;
@@ -184,10 +196,11 @@ export function useReportData(id: string): UseReportDataResult {
             return {
               tcId: getMetricDisplayId(tcId),
               name: metric.name,
-              value: typeof val === "number" ? val : 0,
+              value: resolvedValue,
               threshold: hasThreshold ? target : 0,
               status,
               perClass,
+              subMetrics,
             };
           })
           .filter((item): item is any => item !== null);

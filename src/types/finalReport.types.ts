@@ -13,6 +13,7 @@ export interface FinalReportMeta {
   taskType: TaskType;
   taskTypeLabel: string;
   contractDate?: string;
+  positiveClass?: string;
 }
 
 export interface ApplicantInfo {
@@ -123,6 +124,8 @@ export interface KpiResult {
   threshold: number;
   status: "pass" | "fail" | "warning";
   perClass?: PerClassKpi[];
+  /** TC11/12/13 등 dict 반환 메트릭의 세부 수치 (Precision / Recall / F1) */
+  subMetrics?: { precision: number; recall: number; f1Score: number };
 }
 
 export interface LatencyStats {

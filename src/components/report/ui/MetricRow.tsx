@@ -16,9 +16,9 @@ export function MetricRow({ tcId, name, formula, value, threshold, status, class
   // 1) threshold > 0           → 일반 KPI (값 + 기준 + 판정)
   // 2) threshold == 0 & value>0 → 정보 제공 (MCC 등 — 값은 표시, 기준 "—", "ℹ 정보 제공")
   // 3) threshold == 0 & value==0 → 시각화 참조 (CM/Class별 — 값 "—", 기준 "정보 제공", "ℹ 시각화 참조")
-  const isInfoWithValue = threshold === 0 && value > 0;
-  const isVisualOnly    = threshold === 0 && value === 0;
-  const isThresholded   = threshold > 0;
+  const isVisualOnly    = tcId === "M21" || tcId === "M22";
+  const isInfoWithValue = !isVisualOnly && threshold === 0;
+  const isThresholded   = !isVisualOnly && threshold > 0;
 
   return (
     <tr className={cn("border-b border-slate-100 last:border-b-0", className)}>
