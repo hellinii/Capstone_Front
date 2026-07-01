@@ -333,7 +333,8 @@ function inferClassLabels(taskType: TaskType, metricDetails: MetricDetailStateMa
     const positive = Object.values(metricDetails).find((d) => d.positiveClass)?.positiveClass;
     return ["Negative (0)", positive ? `${positive} (1)` : "Positive (1)"];
   }
-  // multiclass/multilabel은 컬럼 매핑 데이터가 없으므로 mock 그대로
+  // 다중 클래스/레이블은 사전에 라벨 목록을 알 수 없으므로,
+  // 실제 업로드된 데이터(y_true)에서 추출될 때까지 빈 배열을 반환합니다.
   return [];
 }
 
