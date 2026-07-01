@@ -57,7 +57,7 @@ export function ReportPrint() {
           <EvalEnvSection meta={data.meta} evalScope={data.evalScope} evalEnv={data.evalEnv} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
-          <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} />
+          <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} taskTypeLabel={data.meta.taskTypeLabel} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
           <DataValidationSection

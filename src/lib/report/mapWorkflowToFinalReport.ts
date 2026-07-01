@@ -66,9 +66,7 @@ export function mapWorkflowToFinalReport(
 
   // 데이터 검증 결과: 백엔드 /api/validate-data 응답이 있으면 실제 값으로 채우고,
   // 없으면 빈 배열(가짜 MOCK 8항목을 노출하지 않음 — 섹션이 "검증 미수행" 안내로 처리).
-  const sampleCountFallback =
-    parseCount(input.datasetInfo.validationSampleCount) ??
-    MOCK_FINAL_REPORT.datasetInfo.sampleCount;
+  const sampleCountFallback = parseCount(input.datasetInfo.validationSampleCount) ?? 0;
   const mappedValidation = validationResult
     ? mapValidationResultToReport(validationResult, sampleCountFallback)
     : null;
@@ -184,7 +182,7 @@ function buildDatasetInfo(input: MapWorkflowToReportInput, taskType: TaskType): 
   return {
     format: inferFormat(input.uploadedFile),
     inputColumns: inferInputColumns(taskType, input.selectedMetricIds, input.columnMapping),
-    sampleCount: sampleCount ?? MOCK_FINAL_REPORT.datasetInfo.sampleCount,
+    sampleCount: sampleCount ?? 0,
     taskTypeLabel: TASK_TYPE_LABELS[taskType],
     classCount: classLabels.length,
     classLabels,
@@ -241,7 +239,7 @@ function buildTcList(
   metricDetails: MetricDetailStateMap,
 ): TcItem[] {
   if (selectedMetricIds.length === 0) {
-    return MOCK_FINAL_REPORT.tcList;
+    return [];
   }
 
   return selectedMetricIds
@@ -265,9 +263,7 @@ function buildTcList(
 
 function buildMetricFormulas(taskType: TaskType, selectedMetricIds: string[]): MetricFormula[] {
   const ids = selectedMetricIds.length > 0 ? selectedMetricIds : [];
-  if (ids.length === 0) return MOCK_FINAL_REPORT.metricFormulas;
-
-  const fromMock = new Map(MOCK_FINAL_REPORT.metricFormulas.map((f) => [f.tcId, f]));
+  if (ids.length === 0) return [];
 
   return ids
     .map((tcId) => {
@@ -275,14 +271,13 @@ function buildMetricFormulas(taskType: TaskType, selectedMetricIds: string[]): M
       if (!metric || !metric.supportedTaskTypes.includes(taskType)) return null;
 
       const displayId = getMetricDisplayId(tcId);
-      const existing = fromMock.get(displayId);
-      if (existing) return existing;
 
       return {
         tcId: displayId,
         name: metric.name,
-        formula: "—",
+        formula: metric.formula || "—",
         description: metric.description,
+        isCommon: !!metric.isCommon,
       };
     })
     .filter((item): item is MetricFormula => item !== null);

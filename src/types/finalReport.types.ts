@@ -109,6 +109,7 @@ export interface MetricFormula {
   name: string;
   formula: string;
   description: string;
+  isCommon: boolean;
 }
 
 export interface PerClassKpi {

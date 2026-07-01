@@ -84,7 +84,7 @@ export function Report() {
         trainingDatasetInfo={data.trainingDatasetInfo}
       />
       <EvalEnvSection meta={data.meta} evalScope={data.evalScope} evalEnv={data.evalEnv} />
-      <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} />
+      <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} taskTypeLabel={data.meta.taskTypeLabel} />
       <DataValidationSection
         dataValidation={data.dataValidation}
         kpiResults={data.kpiResults}
