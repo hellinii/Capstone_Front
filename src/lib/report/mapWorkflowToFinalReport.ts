@@ -11,7 +11,7 @@ import {
   getMetricDisplayId,
   type TaskType,
 } from "../../data/evaluationData";
-import { MOCK_FINAL_REPORT } from "../../data/mockReport";
+
 import type {
   ApplicantInfo,
   ClassLabelInfo,
@@ -89,7 +89,7 @@ export function mapWorkflowToFinalReport(
     metricFormulas: buildMetricFormulas(resolvedTaskType, input.selectedMetricIds),
     dataValidation: mappedValidation ? mappedValidation.dataValidation : [],
     validationSummary: mappedValidation ? mappedValidation.summary : undefined,
-    kpiResults: MOCK_FINAL_REPORT.kpiResults,
+    kpiResults: [],
     // 차트는 백엔드 평가 결과(useReportData)에서 채운다. 미평가 경로에서는 가짜 곡선/행렬 대신 null.
     charts: { confusionMatrix: null, rocCurve: null, prCurve: null },
     // latency 는 평가 결과에서 latency 컬럼이 매핑된 경우만 채운다(useReportData). 가짜 MOCK 대신 null.
@@ -98,7 +98,7 @@ export function mapWorkflowToFinalReport(
     // 그 전까지는 가짜 MOCK 대신 빈 값(섹션이 "생성 예정" 안내 표시).
     interpretation: { confusionAnalysis: "", distributionAnalysis: "" },
     // verdict/score 는 규칙으로 산출(MOCK 가짜 PASS/94.4 제거). 서술(benchmark/narrative/risks)은 LLM 모듈 전까지 빈 값.
-    conclusion: buildConclusion(MOCK_FINAL_REPORT.kpiResults, resolvedTaskType),
+    conclusion: buildConclusion([], resolvedTaskType),
     recommendationNarrative: { dataQuality: "", modelOps: "" },
     recommendations: [],
     signature: buildSignature(),
@@ -109,6 +109,7 @@ export function mapWorkflowToFinalReport(
 
 function buildMeta(input: MapWorkflowToReportInput, taskType: TaskType): FinalReportMeta {
   const today = formatDate(new Date());
+  const now = formatDateTime(new Date());
   const contractDate = input.basicInfo.contractDate
     ? formatDate(input.basicInfo.contractDate)
     : undefined;
@@ -116,7 +117,7 @@ function buildMeta(input: MapWorkflowToReportInput, taskType: TaskType): FinalRe
   return {
     reportId: buildReportId(),
     title: "기계학습 분류 성능 시험결과서",
-    issuedAt: today,
+    issuedAt: now,
     evaluationPeriod: {
       from: contractDate ?? today,
       to: today,
@@ -124,6 +125,7 @@ function buildMeta(input: MapWorkflowToReportInput, taskType: TaskType): FinalRe
     taskType,
     taskTypeLabel: TASK_TYPE_LABELS[taskType],
     contractDate,
+    positiveClass: input.metricDetails["TC2"]?.positiveClass || undefined,
   };
 }
 
@@ -337,7 +339,7 @@ function inferClassLabels(taskType: TaskType, metricDetails: MetricDetailStateMa
     return ["Negative (0)", positive ? `${positive} (1)` : "Positive (1)"];
   }
   // multiclass/multilabel은 컬럼 매핑 데이터가 없으므로 mock 그대로
-  return MOCK_FINAL_REPORT.datasetInfo.classLabels;
+  return [];
 }
 
 function parseCount(value: string): number | null {
@@ -350,6 +352,15 @@ function formatDate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function formatDateTime(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${day} ${h}:${min}`;
 }
 
 function buildReportId(): string {

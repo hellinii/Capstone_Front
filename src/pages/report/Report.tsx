@@ -74,6 +74,7 @@ export function Report() {
         applicant={data.applicant}
         performer={data.performer}
         evalScope={data.evalScope}
+        meta={data.meta}
       />
       <EvalScopeSection meta={data.meta} />
       <DatasetSection
@@ -90,7 +91,7 @@ export function Report() {
         totalSamples={data.datasetInfo.sampleCount}
         validationSummary={data.validationSummary}
       />
-      <KpiResultSection kpiResults={data.kpiResults} />
+      <KpiResultSection kpiResults={data.kpiResults} taskType={data.meta.taskType} meta={data.meta} />
       <ChartSection charts={data.charts} />
       <LatencySection latency={data.latency} />
       <InterpretSection interpretation={data.interpretation} source={data.narrativeSource} />

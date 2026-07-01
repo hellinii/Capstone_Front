@@ -103,7 +103,7 @@ export function BasicInfo({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <DateField
-                  label="Contract date"
+                  label="Evaluation request date"
                   required
                   value={formData.contractDate}
                   onChange={(value) => update("contractDate", value)}
@@ -254,7 +254,7 @@ function DateField({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
-          <Calendar mode="single" selected={value} onSelect={onChange} initialFocus />
+          <Calendar mode="single" selected={value} onSelect={onChange} initialFocus disabled={(date) => date > new Date()} />
         </PopoverContent>
       </Popover>
     </div>

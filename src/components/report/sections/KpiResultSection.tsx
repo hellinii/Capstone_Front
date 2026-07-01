@@ -1,20 +1,42 @@
-import type { KpiResult } from "../../../types/finalReport.types";
+import type { FinalReportMeta, KpiResult } from "../../../types/finalReport.types";
 import { MetricRow } from "../ui/MetricRow";
 import { PassBadge } from "../ui/PassBadge";
 
+import type { TaskType } from "../../../data/evaluationData";
+
 interface KpiResultSectionProps {
   kpiResults: KpiResult[];
+  taskType: TaskType;
+  meta?: FinalReportMeta;
 }
 
-// 예시본 6.1 종합 핵심 성능 (KPI) 화이트리스트
-const KPI_CORE_IDS = new Set(["M1", "M4", "M20", "M23"]);
+const KPI_CORE_IDS_BY_TASK: Record<TaskType, Set<string>> = {
+  binary: new Set(["M1", "M4", "M20", "M23"]),
+  multiclass: new Set(["M1", "M4", "M11", "M23"]),
+  multilabel: new Set(["M4", "M15", "M17", "M23"]),
+};
 
-export function KpiResultSection({ kpiResults }: KpiResultSectionProps) {
-  const kpiCore   = kpiResults.filter((r) => KPI_CORE_IDS.has(r.tcId));
-  const kpiDetail = kpiResults.filter((r) => !KPI_CORE_IDS.has(r.tcId));
+export function KpiResultSection({ kpiResults, taskType, meta }: KpiResultSectionProps) {
+  const coreIds = KPI_CORE_IDS_BY_TASK[taskType] || KPI_CORE_IDS_BY_TASK.binary;
+  const kpiCore   = kpiResults.filter((r) => coreIds.has(r.tcId));
+  const kpiDetail = kpiResults.filter((r) => !coreIds.has(r.tcId));
 
   return (
     <div className="space-y-8 pt-8">
+      {/* 6.0 평가 기준 및 일러두기 */}
+      <div className="bg-slate-50 border border-slate-200 rounded-md p-4 text-sm text-slate-700 space-y-2">
+        <h4 className="font-semibold text-slate-800">성능 평가 산출 기준</h4>
+        <ul className="list-disc list-inside space-y-1">
+          <li>본 성적서의 모든 성능 산출 결과 및 기준 수치는 원본 데이터에서 소수점 셋째 자리로 반올림 표기되었습니다.</li>
+          {taskType === "binary" && (
+            <li>본 성적서의 이진 분류 평가 지표는 사용자가 매핑 단계에서 지정한 {meta?.positiveClass ? `[ ${meta.positiveClass} ]` : "Target"} 클래스 기준으로 산출되었습니다.</li>
+          )}
+          {kpiResults.some(r => r.tcId === "M6") && (
+            <li>KL Divergence(M6) 지표는 예측 확률(Probability) 분포가 아닌, 정답 레이블과 모델이 예측한 클래스 레이블 간의 분포 차이(Target Drift)를 기반으로 산출되었습니다.</li>
+          )}
+        </ul>
+      </div>
+
       {/* 6.1 종합 핵심 성능 */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-slate-700">종합 핵심 성능 (Key Performance Indicators)</h3>
@@ -72,8 +94,8 @@ export function KpiResultSection({ kpiResults }: KpiResultSectionProps) {
 
         {/* Per-class 세부 결과 */}
         {kpiResults.some((r) => r.perClass?.length) && (
-          <div className="space-y-4 pt-2">
-            <p className="text-xs font-semibold text-slate-600">Per-class 세부 결과 (M2 / M3)</p>
+          <div className="space-y-4 pt-4 border-t border-slate-100">
+            <p className="text-sm font-semibold text-slate-700">M22 — Class-wise Metric (클래스별 세부 성능)</p>
             {kpiResults
               .filter((r) => r.perClass?.length)
               .map((r) => (
@@ -99,6 +121,43 @@ export function KpiResultSection({ kpiResults }: KpiResultSectionProps) {
                           </td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+          </div>
+        )}
+        {/* Sub-metrics 세부 결과 */}
+        {kpiResults.some((r) => r.subMetrics) && (
+          <div className="space-y-4 pt-2">
+            <p className="text-xs font-semibold text-slate-600">Average 지표 세부 결과 (M11 / M12 / M13)</p>
+            {kpiResults
+              .filter((r) => r.subMetrics)
+              .map((r) => (
+                <div key={`${r.tcId}-sub`} className="space-y-1">
+                  <p className="text-xs font-medium text-slate-500">
+                    {r.tcId} — {r.name}
+                  </p>
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100">
+                        <th className="py-1.5 pr-4 text-left text-xs font-medium text-slate-400 w-32">Metric</th>
+                        <th className="py-1.5 pr-4 text-left text-xs font-medium text-slate-400">값</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-slate-50">
+                        <td className="py-1.5 pr-4 text-slate-700">Precision</td>
+                        <td className="py-1.5 pr-4 font-mono text-slate-900">{r.subMetrics!.precision.toFixed(3)}</td>
+                      </tr>
+                      <tr className="border-b border-slate-50">
+                        <td className="py-1.5 pr-4 text-slate-700">Recall</td>
+                        <td className="py-1.5 pr-4 font-mono text-slate-900">{r.subMetrics!.recall.toFixed(3)}</td>
+                      </tr>
+                      <tr className="border-b border-slate-50">
+                        <td className="py-1.5 pr-4 text-slate-700">F1 Score</td>
+                        <td className="py-1.5 pr-4 font-mono text-slate-900">{r.subMetrics!.f1Score.toFixed(3)}</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
