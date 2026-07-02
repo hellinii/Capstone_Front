@@ -6,6 +6,26 @@ interface ConfusionMatrixChartProps {
 }
 
 export function ConfusionMatrixChart({ data }: ConfusionMatrixChartProps) {
+  if (data.multilabelMatrices && data.multilabelMatrices.length > 0) {
+    return (
+      <div className="space-y-6">
+        {data.multilabelMatrices.map((m, idx) => (
+          <SingleMatrixChart
+            key={idx}
+            data={{
+              labels: [`Negative (${m.label})`, `Positive (${m.label})`],
+              matrix: m.matrix,
+              totalSamples: m.totalSamples,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+  return <SingleMatrixChart data={data} />;
+}
+
+function SingleMatrixChart({ data }: ConfusionMatrixChartProps) {
   const { labels, matrix, totalSamples } = data;
   const maxVal = Math.max(...matrix.flat());
 

@@ -166,8 +166,8 @@ export function useReportData(id: string): UseReportDataResult {
             let perClass: Array<{ label: string; value: number; status: string }> | undefined;
             if (["TC2", "TC3", "TC4"].includes(tcId) && success_metrics["TC22"]) {
               const classReport = success_metrics["TC22"];
-              const yTrueRow = workflowState.columnMapping.find((r) => r.confirmedRole === "y_true");
-              const classValues = yTrueRow ? [...new Set(yTrueRow.sampleValues)] : [];
+              const excludeKeys = ["accuracy", "macro avg", "weighted avg", "micro avg", "samples avg"];
+              const classValues = Object.keys(classReport).filter(k => !excludeKeys.includes(k));
               
               const metricKeyMap: Record<string, string> = {
                 "TC2": "precision",
@@ -210,13 +210,18 @@ export function useReportData(id: string): UseReportDataResult {
         if (success_metrics.TC21) {
           const cm = success_metrics.TC21;
           if (cm.type === "multilabel") {
-            const labelName = workflowState.metadata?.detected_labels?.[0] || "Label 0";
-            const matrix = cm.matrix[0] || [[0, 0], [0, 0]];
-            const total = matrix.reduce((acc: number, row: number[]) => acc + row.reduce((a, b) => a + b, 0), 0);
+            const classLabels = cm.labels || workflowState.metadata?.detected_labels || [];
+            const multilabelMatrices = cm.matrix.map((mat: number[][], idx: number) => {
+              const labelName = classLabels[idx] || `Label ${idx}`;
+              const total = mat.reduce((acc: number, row: number[]) => acc + row.reduce((a, b) => a + b, 0), 0);
+              return { label: labelName, matrix: mat, totalSamples: total };
+            });
+            const defaultMat = multilabelMatrices[0] || { label: "Label 0", matrix: [[0, 0], [0, 0]], totalSamples: 0 };
             confusionMatrix = {
-              labels: [`Negative (${labelName})`, `Positive (${labelName})`],
-              matrix: matrix,
-              totalSamples: total,
+              labels: [`Negative (${defaultMat.label})`, `Positive (${defaultMat.label})`],
+              matrix: defaultMat.matrix,
+              totalSamples: defaultMat.totalSamples,
+              multilabelMatrices,
             };
           } else {
             const total = cm.matrix.reduce((acc: number, row: number[]) => acc + row.reduce((a, b) => a + b, 0), 0);
@@ -261,14 +266,25 @@ export function useReportData(id: string): UseReportDataResult {
         // 3. 데이터셋 진단 문구 — 실제 클래스 분포 + 불균형비(TC23) + 제외 행수로 구성
         const imbalanceRatio =
           typeof success_metrics.TC23 === "number" ? success_metrics.TC23 : undefined;
+        
+        // 백엔드 EvaluateResponse 에서 최신 class_distribution 이 오면 우선 사용, 없으면 metadata 폴백
+        const resolvedClassDistribution = result.class_distribution && Object.keys(result.class_distribution).length > 0 
+          ? result.class_distribution 
+          : workflowState.metadata?.class_distribution || {};
+
+        const taskTypeResolved = workflowState.taskType || "binary";
+        // 혼동행렬의 totalSamples가 가장 정확한 평가 데이터의 row 수 (멀티레이블의 경우 200)
+        const datasetSize = confusionMatrix?.totalSamples || workflowState.datasetInfo?.datasetSize;
+
         const datasetDiagnosis = buildDatasetDiagnosis(
-          workflowState.metadata,
+          { class_distribution: resolvedClassDistribution },
           imbalanceRatio,
           result.dropped_rows,
+          datasetSize,
+          taskTypeResolved
         );
 
         // 4. verdict/score 규칙 산출 (서술의 권위 값 — 백엔드도 fact_sheet.verdict 로 강제)
-        const taskTypeResolved = workflowState.taskType || "binary";
         const ruleConclusion = buildConclusion(updatedKpiResults, taskTypeResolved);
 
         // 5. LLM 서술 생성 — 평가 결과로 fact_sheet 조립 후 /api/generate-narrative 호출.
@@ -288,7 +304,7 @@ export function useReportData(id: string): UseReportDataResult {
         const factSheet = buildFactSheet({
           kpiResults: updatedKpiResults,
           confusionMatrix,
-          classDistribution: workflowState.metadata?.class_distribution || {},
+          classDistribution: resolvedClassDistribution,
           imbalanceRatio,
           droppedRows: result.dropped_rows,
           verdict: ruleConclusion.verdict,
