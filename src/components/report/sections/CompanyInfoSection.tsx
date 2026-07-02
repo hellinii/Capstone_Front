@@ -26,9 +26,10 @@ interface CompanyInfoSectionProps {
   applicant: ApplicantInfo;
   performer: PerformerInfo;
   evalScope: EvalScope;
+  meta: FinalReportMeta;
 }
 
-export function CompanyInfoSection({ applicant, performer, evalScope }: CompanyInfoSectionProps) {
+export function CompanyInfoSection({ applicant, performer, evalScope, meta }: CompanyInfoSectionProps) {
   return (
     <section className="space-y-8 border-t border-slate-200 py-10">
       <SectionTitle number={1} title="개요" />
@@ -65,6 +66,7 @@ export function CompanyInfoSection({ applicant, performer, evalScope }: CompanyI
                 { label: "FAX번호",        value: applicant.fax },
                 { label: "홈페이지",       value: applicant.homepage },
                 { label: "주소",           value: applicant.address },
+                ...(meta.contractDate ? [{ label: "계약일자", value: meta.contractDate }] : []),
               ]}
             />
           </div>

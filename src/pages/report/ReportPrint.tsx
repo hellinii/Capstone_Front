@@ -57,7 +57,7 @@ export function ReportPrint() {
           <EvalEnvSection meta={data.meta} evalScope={data.evalScope} evalEnv={data.evalEnv} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
-          <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} />
+          <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} taskTypeLabel={data.meta.taskTypeLabel} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
           <DataValidationSection
@@ -72,11 +72,12 @@ export function ReportPrint() {
           <LatencySection latency={data.latency} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
-          <InterpretSection interpretation={data.interpretation} />
-          <ConclusionSection conclusion={data.conclusion} />
+          <InterpretSection interpretation={data.interpretation} source={data.narrativeSource} />
+          <ConclusionSection conclusion={data.conclusion} source={data.narrativeSource} />
           <RecommendSection
             recommendations={data.recommendations}
             narrative={data.recommendationNarrative}
+            source={data.narrativeSource}
           />
           <SignatureSection
             signature={data.signature}

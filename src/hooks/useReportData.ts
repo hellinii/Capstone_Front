@@ -5,12 +5,17 @@
  * - 그 외 id: 향후 백엔드 API 호출로 교체 (현재는 MOCK_FINAL_REPORT fallback)
  */
 import { useEffect, useState } from "react";
-import { MOCK_FINAL_REPORT } from "../data/mockReport";
+
 import { mapWorkflowToFinalReport } from "../lib/report/mapWorkflowToFinalReport";
-import type { FinalReportData } from "../types/finalReport.types";
+import type { FinalReportData, LatencyStats } from "../types/finalReport.types";
 import { useWorkflowStore } from "../utils/stores/useWorkflowStore";
 import { useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
 import { getMetricDisplayId, METRICS } from "../data/evaluationData";
+import { buildConclusion } from "../lib/report/computeVerdict";
+import { buildDatasetDiagnosis } from "../lib/report/buildDatasetDiagnosis";
+import { buildFactSheet } from "../lib/report/buildFactSheet";
+import { fetchNarrative } from "../lib/report/fetchNarrative";
+import { translateRoleToBackend } from "../lib/mapping/translateRoleToBackend";
 
 interface UseReportDataResult {
   data: FinalReportData | null;
@@ -41,7 +46,7 @@ export function useReportData(id: string): UseReportDataResult {
     }
 
     if (id !== "preview" && !workflowState.rawFile) {
-      setData(run?.reportData || MOCK_FINAL_REPORT);
+      setData(run?.reportData || null);
       return;
     }
 
@@ -58,8 +63,11 @@ export function useReportData(id: string): UseReportDataResult {
         trainingUnsuitableExampleFiles: workflowState.trainingUnsuitableExampleFiles,
         columnMapping: workflowState.columnMapping,
         classLabelDescriptions: workflowState.classLabelDescriptions,
+      }, workflowState.validationResult);
+      setData({
+        ...baseReport,
+        datasetDiagnosis: buildDatasetDiagnosis(workflowState.metadata),
       });
-      setData(baseReport);
       return;
     }
 
@@ -69,27 +77,6 @@ export function useReportData(id: string): UseReportDataResult {
 
     const runEvaluate = async () => {
       try {
-        const translateRoleToBackend = (role: string | null, taskType: string) => {
-          if (!role) return "ignore";
-          if (role === "id") return "sample_id";
-          if (role === "ignore") return "ignore";
-          
-          if (taskType === "binary") {
-            if (role === "y_true") return "y_true";
-            if (role === "y_pred") return "y_pred";
-            if (role === "score") return "score_positive";
-          } else if (taskType === "multiclass") {
-            if (role === "y_true") return "y_true";
-            if (role === "y_pred") return "y_pred";
-            if (role === "prob_class_*") return "prob_per_class";
-          } else if (taskType === "multilabel") {
-            if (role === "y_true") return "true_labels";
-            if (role === "y_pred") return "pred_labels";
-            if (role === "prob_label_*") return "score_per_label";
-          }
-          return "ignore";
-        };
-
         const backendMappings = workflowState.columnMapping.map((row) => ({
           column: row.originalName,
           role: translateRoleToBackend(row.confirmedRole, workflowState.taskType || "multiclass"),
@@ -144,7 +131,7 @@ export function useReportData(id: string): UseReportDataResult {
           trainingUnsuitableExampleFiles: workflowState.trainingUnsuitableExampleFiles,
           columnMapping: workflowState.columnMapping,
           classLabelDescriptions: workflowState.classLabelDescriptions,
-        });
+        }, workflowState.validationResult);
 
         const success_metrics = result.results.success_metrics || {};
 
@@ -155,13 +142,25 @@ export function useReportData(id: string): UseReportDataResult {
             if (!metric) return null;
 
             const val = success_metrics[tcId];
+            
+            // dict 반환 메트릭 (TC11/TC12/TC13): f1_score를 대표값으로, 세부값은 subMetrics로
+            let resolvedValue = 0;
+            let subMetrics: { precision: number; recall: number; f1Score: number } | undefined;
+
+            if (typeof val === "number") {
+              resolvedValue = val;
+            } else if (val && typeof val === "object" && "f1_score" in val) {
+              resolvedValue = val.f1_score;
+              subMetrics = { precision: val.precision, recall: val.recall, f1Score: val.f1_score };
+            }
+
             const detail = workflowState.metricDetails[tcId];
             const target = parseFloat(detail?.targetValue ?? "");
             const hasThreshold = Number.isFinite(target) && target > 0;
 
-            let status = "pass";
-            if (hasThreshold && typeof val === "number") {
-              status = val >= target ? "pass" : "fail";
+            let status: "pass" | "fail" | "warning" = "pass";
+            if (hasThreshold) {
+              status = resolvedValue >= target ? "pass" : "fail";
             }
 
             let perClass: Array<{ label: string; value: number; status: string }> | undefined;
@@ -197,10 +196,11 @@ export function useReportData(id: string): UseReportDataResult {
             return {
               tcId: getMetricDisplayId(tcId),
               name: metric.name,
-              value: typeof val === "number" ? val : 0,
+              value: resolvedValue,
               threshold: hasThreshold ? target : 0,
               status,
               perClass,
+              subMetrics,
             };
           })
           .filter((item): item is any => item !== null);
@@ -228,37 +228,104 @@ export function useReportData(id: string): UseReportDataResult {
           }
         }
 
-        // 3. 결측치 제외 안내 텍스트 구성
-        let datasetDiagnosis = baseReport.datasetDiagnosis;
-        if (result.dropped_rows > 0) {
-          datasetDiagnosis = `결측치(NaN) 제거 전처리로 인해 전체 행 중 ${result.dropped_rows}개 샘플이 평가에서 제외되었습니다. \n` + datasetDiagnosis;
-        }
+        // 2-1. ROC / PR 곡선 좌표 + 스칼라 AUC (binary, 백엔드 success_metrics)
+        const rocCurve = success_metrics.roc_curve
+          ? {
+              fpr: success_metrics.roc_curve.fpr,
+              tpr: success_metrics.roc_curve.tpr,
+              auroc: typeof success_metrics.TC9 === "number" ? success_metrics.TC9 : undefined,
+            }
+          : null;
+        const prCurve = success_metrics.pr_curve
+          ? {
+              recall: success_metrics.pr_curve.recall,
+              precision: success_metrics.pr_curve.precision,
+              auprc: typeof success_metrics.TC10 === "number" ? success_metrics.TC10 : undefined,
+            }
+          : null;
+
+        // 2-2. 지연시간 통계 — latency 컬럼이 매핑된 경우만 백엔드가 latency_stats 반환
+        const ls = success_metrics.latency_stats;
+        const latencyStats: LatencyStats | null = ls
+          ? {
+              mean: ls.mean,
+              min: ls.min,
+              p50: ls.p50,
+              p95: ls.p95,
+              p99: ls.p99,
+              max: ls.max,
+              unit: ls.unit === "s" ? "s" : "ms",
+            }
+          : null;
+
+        // 3. 데이터셋 진단 문구 — 실제 클래스 분포 + 불균형비(TC23) + 제외 행수로 구성
+        const imbalanceRatio =
+          typeof success_metrics.TC23 === "number" ? success_metrics.TC23 : undefined;
+        const datasetDiagnosis = buildDatasetDiagnosis(
+          workflowState.metadata,
+          imbalanceRatio,
+          result.dropped_rows,
+        );
+
+        // 4. verdict/score 규칙 산출 (서술의 권위 값 — 백엔드도 fact_sheet.verdict 로 강제)
+        const taskTypeResolved = workflowState.taskType || "binary";
+        const ruleConclusion = buildConclusion(updatedKpiResults, taskTypeResolved);
+
+        // 5. LLM 서술 생성 — 평가 결과로 fact_sheet 조립 후 /api/generate-narrative 호출.
+        //    실패/무키 시 빈 서술 반환(섹션이 "생성 예정" 안내). KPI·차트는 영향받지 않음.
+        const yTrueRow = workflowState.columnMapping.find(
+          (r) => r.confirmedRole === "y_true",
+        );
+        const classLabels: string[] =
+          workflowState.metadata?.detected_classes?.length
+            ? workflowState.metadata.detected_classes
+            : workflowState.metadata?.detected_labels?.length
+              ? workflowState.metadata.detected_labels
+              : yTrueRow
+                ? [...new Set(yTrueRow.sampleValues)]
+                : [];
+
+        const factSheet = buildFactSheet({
+          kpiResults: updatedKpiResults,
+          confusionMatrix,
+          classDistribution: workflowState.metadata?.class_distribution || {},
+          imbalanceRatio,
+          droppedRows: result.dropped_rows,
+          verdict: ruleConclusion.verdict,
+          score: ruleConclusion.score,
+          classReport: success_metrics.TC22 ?? null,
+          classLabels,
+          latencyStats,
+        });
+
+        const narrative = await fetchNarrative({
+          task_type: taskTypeResolved,
+          report_purpose: baseReport.evalScope.reportPurposeKey,
+          fact_sheet: factSheet,
+        });
+        if (!active) return;
 
         const mergedReport: FinalReportData = {
           ...baseReport,
           kpiResults: updatedKpiResults,
+          // verdict/score 는 규칙 산출값, 서술(benchmark/narrative/risks)은 LLM 결과로 병합
+          conclusion: { ...ruleConclusion, ...narrative.conclusionText },
+          interpretation: narrative.interpretation,
+          recommendationNarrative: narrative.recommendationNarrative,
+          recommendations: narrative.recommendations,
+          // 추적성: 규칙 폴백으로 생성된 경우 7·8·9절에 배지 표시
+          narrativeSource: narrative.source,
           datasetDiagnosis,
           charts: {
-            ...baseReport.charts,
             confusionMatrix,
+            rocCurve,
+            prCurve,
           },
-          dataValidation: baseReport.dataValidation.map((item) => {
-            if (item.group === "common" && item.checkName === "제외된 샘플 수") {
-              return {
-                ...item,
-                status: result.dropped_rows > 0 ? "warning" : "pass",
-                detail: result.dropped_rows > 0 ? `${result.dropped_rows}건 — 결측치 제외됨` : "0건 — 누락값·오류로 인한 제외 없음",
-              };
-            }
-            if (item.group === "common" && item.checkName === "누락값") {
-              return {
-                ...item,
-                status: result.dropped_rows > 0 ? "warning" : "pass",
-                detail: result.dropped_rows > 0 ? `결측치 감지 및 제거 (${result.dropped_rows}건)` : "없음 (0건)",
-              };
-            }
-            return item;
-          }),
+          // latency 컬럼이 매핑된 경우만 실측 통계, 아니면 null(섹션이 "미측정" 안내)
+          latency: latencyStats,
+          // dataValidation 은 baseReport(= /api/validate-data 실측)에서 그대로 사용한다.
+          // (이전에는 dropped_rows 기반으로 '제외된 샘플 수'/'누락값' 항목을 덮어썼으나,
+          //  검증 엔드포인트가 권위 있는 값을 제공하므로 중복 처리를 제거)
         };
 
         if (id !== "preview") {

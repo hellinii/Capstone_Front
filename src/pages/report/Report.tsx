@@ -74,6 +74,7 @@ export function Report() {
         applicant={data.applicant}
         performer={data.performer}
         evalScope={data.evalScope}
+        meta={data.meta}
       />
       <EvalScopeSection meta={data.meta} />
       <DatasetSection
@@ -83,20 +84,22 @@ export function Report() {
         trainingDatasetInfo={data.trainingDatasetInfo}
       />
       <EvalEnvSection meta={data.meta} evalScope={data.evalScope} evalEnv={data.evalEnv} />
-      <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} />
+      <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} taskTypeLabel={data.meta.taskTypeLabel} />
       <DataValidationSection
         dataValidation={data.dataValidation}
         kpiResults={data.kpiResults}
         totalSamples={data.datasetInfo.sampleCount}
+        validationSummary={data.validationSummary}
       />
-      <KpiResultSection kpiResults={data.kpiResults} />
+      <KpiResultSection kpiResults={data.kpiResults} taskType={data.meta.taskType} meta={data.meta} />
       <ChartSection charts={data.charts} />
       <LatencySection latency={data.latency} />
-      <InterpretSection interpretation={data.interpretation} />
-      <ConclusionSection conclusion={data.conclusion} />
+      <InterpretSection interpretation={data.interpretation} source={data.narrativeSource} />
+      <ConclusionSection conclusion={data.conclusion} source={data.narrativeSource} />
       <RecommendSection
         recommendations={data.recommendations}
         narrative={data.recommendationNarrative}
+        source={data.narrativeSource}
       />
       <SignatureSection
         signature={data.signature}

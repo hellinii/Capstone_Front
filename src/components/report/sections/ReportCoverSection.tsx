@@ -20,7 +20,7 @@ export function ReportCoverSection({ meta, performer }: ReportCoverSectionProps)
         <span className="text-left">{meta.issuedAt}</span>
         <span className="text-right font-medium text-slate-500">평가 유형</span>
         <span className="text-left">{meta.taskTypeLabel}</span>
-        <span className="text-right font-medium text-slate-500">평가 기간</span>
+        <span className="text-right font-medium text-slate-500">시험 기간</span>
         <span className="text-left">{meta.evaluationPeriod.from} ~ {meta.evaluationPeriod.to}</span>
       </div>
     </div>

@@ -7,6 +7,7 @@
 import { create } from "zustand";
 import type { TaskType } from "../../data/evaluationData";
 import type { MappingRow } from "../../types/mapping.types";
+import type { ValidateDataResponseData } from "../../types/validation.types";
 import type { MapWorkflowToReportInput } from "../../lib/report/mapWorkflowToFinalReport";
 import {
   DEFAULT_BASIC_INFO,
@@ -76,6 +77,9 @@ interface WorkflowState {
   // Step 5 — Class label descriptions (class value -> description)
   classLabelDescriptions: Record<string, string>;
 
+  // Step 6 — Data validation result (백엔드 /api/validate-data 응답, 리포트에서 재사용)
+  validationResult: ValidateDataResponseData | null;
+
   // Actions — Navigation
   setCurrentStep: (step: number) => void;
   markStepCompleted: (step: number) => void;
@@ -120,6 +124,9 @@ interface WorkflowState {
       | ((prev: Record<string, string>) => Record<string, string>),
   ) => void;
 
+  // Actions — Step 6
+  setValidationResult: (result: ValidateDataResponseData | null) => void;
+
   // Reset
   resetWorkflow: () => void;
   loadWorkflowSnapshot: (snapshot: MapWorkflowToReportInput) => void;
@@ -140,6 +147,7 @@ const INITIAL_STATE = {
   datasetInfo: DEFAULT_DATASET_INFO,
   columnMapping: [] as MappingRow[],
   classLabelDescriptions: {} as Record<string, string>,
+  validationResult: null as ValidateDataResponseData | null,
 };
 
 export const useWorkflowStore = create<WorkflowState>((set) => ({
@@ -172,6 +180,7 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
       trainingUnsuitableExampleFiles: [],
       columnMapping: [],
       classLabelDescriptions: {},
+      validationResult: null,
     }),
 
   // Step 2
@@ -222,6 +231,9 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
           : value,
     })),
 
+  // Step 6
+  setValidationResult: (result) => set({ validationResult: result }),
+
   // Reset
   resetWorkflow: () => set(INITIAL_STATE),
 
@@ -239,6 +251,7 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
       datasetInfo: snapshot.datasetInfo,
       columnMapping: snapshot.columnMapping,
       classLabelDescriptions: snapshot.classLabelDescriptions,
+      validationResult: null,
       currentStep: 1,
       completedSteps: [1, 2, 3, 4, 5, 6],
     }),

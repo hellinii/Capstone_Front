@@ -81,7 +81,29 @@ export const useWorkspaceStore = create<WorkspaceState>()(
     }),
     {
       name: "ml-evaluation-workspaces",
-      version: 1,
+      version: 2,
+      // v1 → v2: FinalReportData.interpretation 이 string → {confusionAnalysis, distributionAnalysis}
+      // 로 바뀌었다. 이전 버전으로 저장된 reportData 가 문자열 interpretation 을 갖고 있으면
+      // 리포트 렌더 시 interpretation.confusionAnalysis 가 undefined → .trim() 크래시가 난다.
+      // 저장된 각 run.reportData 의 문자열 interpretation 을 구조화 형태로 보정한다.
+      migrate: (persisted: any, version: number) => {
+        if (!persisted || version >= 2) return persisted;
+        const runs = persisted.evaluationRuns;
+        if (Array.isArray(runs)) {
+          for (const run of runs) {
+            const interp = run?.reportData?.interpretation;
+            if (typeof interp === "string") {
+              // 기존 문자열은 "\n\n" 로 두 문단(혼동행렬/분포)을 구분했었다 — 그 의미를 보존한다.
+              const [first = "", ...rest] = interp.split("\n\n");
+              run.reportData.interpretation = {
+                confusionAnalysis: first,
+                distributionAnalysis: rest.join("\n\n"),
+              };
+            }
+          }
+        }
+        return persisted;
+      },
     },
   ),
 );

@@ -13,6 +13,7 @@ export interface FinalReportMeta {
   taskType: TaskType;
   taskTypeLabel: string;
   contractDate?: string;
+  positiveClass?: string;
 }
 
 export interface ApplicantInfo {
@@ -96,11 +97,19 @@ export interface ValidationResult {
   group: ValidationGroup;
 }
 
+/** 데이터 검증 수행 요약 (백엔드 /api/validate-data 의 execution_summary 에서 도출) */
+export interface ValidationSummary {
+  totalRows: number;
+  validRows: number;
+  excludedRows: number;
+}
+
 export interface MetricFormula {
   tcId: string;
   name: string;
   formula: string;
   description: string;
+  isCommon: boolean;
 }
 
 export interface PerClassKpi {
@@ -116,6 +125,8 @@ export interface KpiResult {
   threshold: number;
   status: "pass" | "fail" | "warning";
   perClass?: PerClassKpi[];
+  /** TC11/12/13 등 dict 반환 메트릭의 세부 수치 (Precision / Recall / F1) */
+  subMetrics?: { precision: number; recall: number; f1Score: number };
 }
 
 export interface LatencyStats {
@@ -153,6 +164,17 @@ export interface RecommendationNarrative {
   modelOps: string;
 }
 
+/** 서술 출처 — 추적성 배지용. llm: LLM 생성, fallback: 규칙 기반, error: 호출 실패(빈 서술). */
+export type NarrativeSource = "llm" | "fallback" | "error";
+
+/** 7절 정밀 분석 서술 (LLM /api/generate-narrative 의 interpretation). */
+export interface InterpretationData {
+  /** 혼동 행렬 기반 클래스 간 간섭 분석 */
+  confusionAnalysis: string;
+  /** 데이터 분포 유의성 및 클래스 편향성 평가 */
+  distributionAnalysis: string;
+}
+
 export interface TrainingDatasetInfo {
   name: string;
   trainingSampleCount: number;
@@ -177,16 +199,21 @@ export interface FinalReportData {
   tcList: TcItem[];
   metricFormulas: MetricFormula[];
   dataValidation: ValidationResult[];
+  /** 검증 수행 요약 수치 (없으면 섹션이 fallback 처리) */
+  validationSummary?: ValidationSummary;
   kpiResults: KpiResult[];
   charts: {
     confusionMatrix: ConfusionMatrixData | null;
-    rocCurve: { fpr: number[]; tpr: number[] } | null;
-    prCurve: { recall: number[]; precision: number[] } | null;
+    rocCurve: { fpr: number[]; tpr: number[]; auroc?: number } | null;
+    prCurve: { recall: number[]; precision: number[]; auprc?: number } | null;
   };
-  latency: LatencyStats;
-  interpretation: string;
+  /** 지연시간 통계. latency 컬럼이 매핑/측정된 경우만 채워지며, 미측정이면 null. */
+  latency: LatencyStats | null;
+  interpretation: InterpretationData;
   conclusion: ConclusionData;
   recommendationNarrative: RecommendationNarrative;
   recommendations: ReportRecommendation[];
+  /** 7·8·9절 서술의 출처(추적성 배지). 미평가/미생성 시 undefined. */
+  narrativeSource?: NarrativeSource;
   signature: SignatureData;
 }

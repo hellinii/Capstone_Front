@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
+import { translateRoleToBackend } from "../lib/mapping/translateRoleToBackend";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import {
   DataValidation as DataValidationContent,
@@ -27,28 +28,6 @@ export function DataValidation() {
   const [error, setError] = useState<string | null>(null);
 
   const hasBlockingError = (validationData?.error_count ?? 0) > 0;
-
-  // 역할 번역 헬퍼 (ColumnMapping 페이지와 동일)
-  const translateRoleToBackend = useCallback((role: string | null, taskType: string) => {
-    if (!role) return "ignore";
-    if (role === "id") return "sample_id";
-    if (role === "ignore") return "ignore";
-
-    if (taskType === "binary") {
-      if (role === "y_true") return "y_true";
-      if (role === "y_pred") return "y_pred";
-      if (role === "score") return "score_positive";
-    } else if (taskType === "multiclass") {
-      if (role === "y_true") return "y_true";
-      if (role === "y_pred") return "y_pred";
-      if (role === "prob_class_*") return "prob_per_class";
-    } else if (taskType === "multilabel") {
-      if (role === "y_true") return "true_labels";
-      if (role === "y_pred") return "pred_labels";
-      if (role === "prob_label_*") return "score_per_label";
-    }
-    return "ignore";
-  }, []);
 
   // 페이지 진입 시 /api/validate-data 호출
   useEffect(() => {
@@ -105,6 +84,8 @@ export function DataValidation() {
         const result: ValidateDataResponseData = await response.json();
         if (active) {
           setValidationData(result);
+          // 리포트(6절 시험 결과)에서 재사용할 수 있도록 store에 보존
+          store.setValidationResult(result);
         }
       } catch (err: any) {
         console.error("Data validation failed:", err);
@@ -123,7 +104,7 @@ export function DataValidation() {
     return () => {
       active = false;
     };
-  }, [store.rawFile, store.columnMapping, store.selectedMetricIds, store.taskType, translateRoleToBackend]);
+  }, [store.rawFile, store.columnMapping, store.selectedMetricIds, store.taskType]);
 
   const handleNext = () => {
     const workflowSnapshot: MapWorkflowToReportInput = {
@@ -138,7 +119,7 @@ export function DataValidation() {
       columnMapping: store.columnMapping,
       classLabelDescriptions: store.classLabelDescriptions,
     };
-    const reportData = mapWorkflowToFinalReport(workflowSnapshot);
+    const reportData = mapWorkflowToFinalReport(workflowSnapshot, validationData);
 
     store.markStepCompleted(6);
     store.setCurrentStep(7);

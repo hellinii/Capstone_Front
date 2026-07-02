@@ -11,7 +11,7 @@ import {
   getMetricDisplayId,
   type TaskType,
 } from "../../data/evaluationData";
-import { MOCK_FINAL_REPORT } from "../../data/mockReport";
+
 import type {
   ApplicantInfo,
   ClassLabelInfo,
@@ -27,6 +27,9 @@ import type {
   TrainingDatasetInfo,
 } from "../../types/finalReport.types";
 import type { MappingRow } from "../../types/mapping.types";
+import type { ValidateDataResponseData } from "../../types/validation.types";
+import { mapValidationResultToReport } from "./mapValidationResultToReport";
+import { buildConclusion } from "./computeVerdict";
 import type {
   BasicInfoFormData,
   DatasetInfoFormData,
@@ -55,8 +58,18 @@ export interface MapWorkflowToReportInput {
   classLabelDescriptions: Record<string, string>;
 }
 
-export function mapWorkflowToFinalReport(input: MapWorkflowToReportInput): FinalReportData {
+export function mapWorkflowToFinalReport(
+  input: MapWorkflowToReportInput,
+  validationResult?: ValidateDataResponseData | null,
+): FinalReportData {
   const resolvedTaskType: TaskType = input.taskType || "binary";
+
+  // 데이터 검증 결과: 백엔드 /api/validate-data 응답이 있으면 실제 값으로 채우고,
+  // 없으면 빈 배열(가짜 MOCK 8항목을 노출하지 않음 — 섹션이 "검증 미수행" 안내로 처리).
+  const sampleCountFallback = parseCount(input.datasetInfo.validationSampleCount) ?? 0;
+  const mappedValidation = validationResult
+    ? mapValidationResultToReport(validationResult, sampleCountFallback)
+    : null;
 
   return {
     meta: buildMeta(input, resolvedTaskType),
@@ -64,20 +77,28 @@ export function mapWorkflowToFinalReport(input: MapWorkflowToReportInput): Final
     performer: DEFAULT_PERFORMER,
     evalScope: buildEvalScope(input.basicInfo),
     datasetInfo: buildDatasetInfo(input, resolvedTaskType),
-    datasetSamples: MOCK_FINAL_REPORT.datasetSamples,
-    datasetDiagnosis: MOCK_FINAL_REPORT.datasetDiagnosis,
+    // 데이터 예시 행: 가짜 MOCK 10행 제거. 실제 샘플 렌더링은 백엔드 샘플 반환 + 타입 일반화 후속 작업(P1-7) 필요.
+    datasetSamples: [],
+    // datasetDiagnosis 는 실제 클래스 분포 기반으로 useReportData 에서 채운다(가짜 MOCK 제거).
+    datasetDiagnosis: "",
     trainingDatasetInfo: buildTrainingDatasetInfo(input),
     evalEnv: buildEvalEnv(input.basicInfo),
     tcList: buildTcList(resolvedTaskType, input.selectedMetricIds, input.metricDetails),
     metricFormulas: buildMetricFormulas(resolvedTaskType, input.selectedMetricIds),
-    dataValidation: MOCK_FINAL_REPORT.dataValidation,
-    kpiResults: MOCK_FINAL_REPORT.kpiResults,
-    charts: MOCK_FINAL_REPORT.charts,
-    latency: MOCK_FINAL_REPORT.latency,
-    interpretation: MOCK_FINAL_REPORT.interpretation,
-    conclusion: MOCK_FINAL_REPORT.conclusion,
-    recommendationNarrative: MOCK_FINAL_REPORT.recommendationNarrative,
-    recommendations: MOCK_FINAL_REPORT.recommendations,
+    dataValidation: mappedValidation ? mappedValidation.dataValidation : [],
+    validationSummary: mappedValidation ? mappedValidation.summary : undefined,
+    kpiResults: [],
+    // 차트는 백엔드 평가 결과(useReportData)에서 채운다. 미평가 경로에서는 가짜 곡선/행렬 대신 null.
+    charts: { confusionMatrix: null, rocCurve: null, prCurve: null },
+    // latency 는 평가 결과에서 latency 컬럼이 매핑된 경우만 채운다(useReportData). 가짜 MOCK 대신 null.
+    latency: null,
+    // 7·9절 서술은 LLM 서술 모듈(useReportData → /api/generate-narrative)에서 채운다.
+    // 그 전까지는 가짜 MOCK 대신 빈 값(섹션이 "생성 예정" 안내 표시).
+    interpretation: { confusionAnalysis: "", distributionAnalysis: "" },
+    // verdict/score 는 규칙으로 산출(MOCK 가짜 PASS/94.4 제거). 서술(benchmark/narrative/risks)은 LLM 모듈 전까지 빈 값.
+    conclusion: buildConclusion([], resolvedTaskType),
+    recommendationNarrative: { dataQuality: "", modelOps: "" },
+    recommendations: [],
     signature: buildSignature(),
   };
 }
@@ -86,6 +107,7 @@ export function mapWorkflowToFinalReport(input: MapWorkflowToReportInput): Final
 
 function buildMeta(input: MapWorkflowToReportInput, taskType: TaskType): FinalReportMeta {
   const today = formatDate(new Date());
+  const now = formatDateTime(new Date());
   const contractDate = input.basicInfo.contractDate
     ? formatDate(input.basicInfo.contractDate)
     : undefined;
@@ -93,7 +115,7 @@ function buildMeta(input: MapWorkflowToReportInput, taskType: TaskType): FinalRe
   return {
     reportId: buildReportId(),
     title: "기계학습 분류 성능 시험결과서",
-    issuedAt: today,
+    issuedAt: now,
     evaluationPeriod: {
       from: contractDate ?? today,
       to: today,
@@ -101,6 +123,7 @@ function buildMeta(input: MapWorkflowToReportInput, taskType: TaskType): FinalRe
     taskType,
     taskTypeLabel: TASK_TYPE_LABELS[taskType],
     contractDate,
+    positiveClass: input.metricDetails["TC2"]?.positiveClass || undefined,
   };
 }
 
@@ -159,7 +182,7 @@ function buildDatasetInfo(input: MapWorkflowToReportInput, taskType: TaskType): 
   return {
     format: inferFormat(input.uploadedFile),
     inputColumns: inferInputColumns(taskType, input.selectedMetricIds, input.columnMapping),
-    sampleCount: sampleCount ?? MOCK_FINAL_REPORT.datasetInfo.sampleCount,
+    sampleCount: sampleCount ?? 0,
     taskTypeLabel: TASK_TYPE_LABELS[taskType],
     classCount: classLabels.length,
     classLabels,
@@ -216,7 +239,7 @@ function buildTcList(
   metricDetails: MetricDetailStateMap,
 ): TcItem[] {
   if (selectedMetricIds.length === 0) {
-    return MOCK_FINAL_REPORT.tcList;
+    return [];
   }
 
   return selectedMetricIds
@@ -240,9 +263,7 @@ function buildTcList(
 
 function buildMetricFormulas(taskType: TaskType, selectedMetricIds: string[]): MetricFormula[] {
   const ids = selectedMetricIds.length > 0 ? selectedMetricIds : [];
-  if (ids.length === 0) return MOCK_FINAL_REPORT.metricFormulas;
-
-  const fromMock = new Map(MOCK_FINAL_REPORT.metricFormulas.map((f) => [f.tcId, f]));
+  if (ids.length === 0) return [];
 
   return ids
     .map((tcId) => {
@@ -250,14 +271,13 @@ function buildMetricFormulas(taskType: TaskType, selectedMetricIds: string[]): M
       if (!metric || !metric.supportedTaskTypes.includes(taskType)) return null;
 
       const displayId = getMetricDisplayId(tcId);
-      const existing = fromMock.get(displayId);
-      if (existing) return existing;
 
       return {
         tcId: displayId,
         name: metric.name,
-        formula: "—",
+        formula: metric.formula || "—",
         description: metric.description,
+        isCommon: !!metric.isCommon,
       };
     })
     .filter((item): item is MetricFormula => item !== null);
@@ -313,8 +333,9 @@ function inferClassLabels(taskType: TaskType, metricDetails: MetricDetailStateMa
     const positive = Object.values(metricDetails).find((d) => d.positiveClass)?.positiveClass;
     return ["Negative (0)", positive ? `${positive} (1)` : "Positive (1)"];
   }
-  // multiclass/multilabel은 컬럼 매핑 데이터가 없으므로 mock 그대로
-  return MOCK_FINAL_REPORT.datasetInfo.classLabels;
+  // 다중 클래스/레이블은 사전에 라벨 목록을 알 수 없으므로,
+  // 실제 업로드된 데이터(y_true)에서 추출될 때까지 빈 배열을 반환합니다.
+  return [];
 }
 
 function parseCount(value: string): number | null {
@@ -327,6 +348,15 @@ function formatDate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function formatDateTime(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${day} ${h}:${min}`;
 }
 
 function buildReportId(): string {
