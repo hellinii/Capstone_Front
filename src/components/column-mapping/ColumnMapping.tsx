@@ -30,6 +30,8 @@ interface ColumnMappingProps {
   ) => void;
   positiveClass?: string;
   onPositiveClassChange?: (value: string) => void;
+  /** 백엔드가 양성 클래스 자동 판단에 실패한 경우 경고 표시(D5d). */
+  positiveClassAmbiguous?: boolean;
 }
 
 const roleOptions: Array<{ value: MappingRole; label: string }> = [
@@ -53,6 +55,7 @@ export function ColumnMapping({
   onClassLabelDescriptionsChange,
   positiveClass = "",
   onPositiveClassChange,
+  positiveClassAmbiguous,
 }: ColumnMappingProps) {
   const resolvedTaskType: TaskType = taskType || "multiclass";
   const selectedMetrics = useMemo(
@@ -173,6 +176,7 @@ export function ColumnMapping({
           setPositiveClass={onPositiveClassChange || (() => {})}
           yTrueRow={yTrueRow}
           yTrueValues={yTrueValues}
+          positiveClassAmbiguous={positiveClassAmbiguous}
         />
 
         {onClassLabelDescriptionsChange && (
