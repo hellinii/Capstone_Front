@@ -19,7 +19,7 @@ import { SignatureSection } from "../../components/report/sections/SignatureSect
 
 export function Report() {
   const { id = "preview" } = useParams();
-  const { data, isLoading, error } = useReportData(id);
+  const { data, isLoading, narrativePending, error } = useReportData(id);
   const { download } = usePdfDownload(id);
 
   if (isLoading) {
@@ -69,6 +69,12 @@ export function Report() {
 
   return (
     <ReportLayout onDownload={download}>
+      {narrativePending && (
+        <div className="mb-4 flex items-center gap-2 rounded-md border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm text-teal-700">
+          <span className="inline-block size-3 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+          AI 정성 서술(7·8·9절)을 생성하는 중입니다. 아래 지표·차트는 이미 확정된 결과이며, 서술은 완료되는 대로 채워집니다.
+        </div>
+      )}
       <ReportCoverSection meta={data.meta} performer={data.performer} />
       <CompanyInfoSection
         applicant={data.applicant}

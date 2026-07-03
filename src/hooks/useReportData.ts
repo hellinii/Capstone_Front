@@ -21,6 +21,8 @@ import { translateRoleToBackend } from "../lib/mapping/translateRoleToBackend";
 interface UseReportDataResult {
   data: FinalReportData | null;
   isLoading: boolean;
+  /** KPI·차트는 렌더됐으나 LLM 서술(7·8·9절)이 아직 병합 중인 상태(D6b). */
+  narrativePending: boolean;
   error?: string | null;
 }
 
@@ -37,6 +39,7 @@ export function useReportData(id: string): UseReportDataResult {
     return null;
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [narrativePending, setNarrativePending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,6 +80,8 @@ export function useReportData(id: string): UseReportDataResult {
     setError(null);
 
     const runEvaluate = async () => {
+      // stage1(KPI·차트) 렌더 이후 발생한 오류는 에러 화면으로 덮지 않기 위한 플래그(D6b).
+      let narrativeStarted = false;
       try {
         const backendMappings = workflowState.columnMapping.map((row) => ({
           column: row.originalName,
@@ -321,6 +326,24 @@ export function useReportData(id: string): UseReportDataResult {
           positiveClass: workflowState.metadata?.positive_class ?? null,
         });
 
+        // ── Stage 1: 서술과 무관한 결정론적 결과(KPI·차트·규칙 verdict)를 즉시 렌더한다.
+        //    느리거나 실패하는 LLM 서술이 성적서 전체 표시를 인질로 잡지 않도록 분리(D6b).
+        //    interpretation/recommendation* 은 baseReport 의 빈 기본값 유지, narrativeSource 미설정.
+        const stage1Report: FinalReportData = {
+          ...baseReport,
+          kpiResults: updatedKpiResults,
+          conclusion: ruleConclusion,  // full ConclusionData (verdict/score + 빈 서술)
+          datasetDiagnosis,
+          charts: { confusionMatrix, rocCurve, prCurve },
+          latency: latencyStats,
+        };
+        // id!=='preview' 라도 stage1(서술 없음)은 스토어에 저장하지 않는다(캐시 오염 방지) — 로컬 렌더만.
+        setData(stage1Report);
+        setIsLoading(false);
+        setNarrativePending(true);
+        narrativeStarted = true;
+
+        // ── Stage 2: LLM 서술을 받아 7·8·9절만 병합한다(KPI·차트는 이미 화면에 있음).
         const narrative = await fetchNarrative({
           task_type: taskTypeResolved,
           report_purpose: baseReport.evalScope.reportPurposeKey,
@@ -329,8 +352,7 @@ export function useReportData(id: string): UseReportDataResult {
         if (!active) return;
 
         const mergedReport: FinalReportData = {
-          ...baseReport,
-          kpiResults: updatedKpiResults,
+          ...stage1Report,
           // verdict/score 는 규칙 산출값, 서술(benchmark/narrative/risks)은 LLM 결과로 병합
           conclusion: { ...ruleConclusion, ...narrative.conclusionText },
           interpretation: narrative.interpretation,
@@ -338,24 +360,12 @@ export function useReportData(id: string): UseReportDataResult {
           recommendations: narrative.recommendations,
           // 추적성: 규칙 폴백으로 생성된 경우 7·8·9절에 배지 표시
           narrativeSource: narrative.source,
-          datasetDiagnosis,
-          charts: {
-            confusionMatrix,
-            rocCurve,
-            prCurve,
-          },
-          // latency 컬럼이 매핑된 경우만 실측 통계, 아니면 null(섹션이 "미측정" 안내)
-          latency: latencyStats,
           // dataValidation 은 baseReport(= /api/validate-data 실측)에서 그대로 사용한다.
-          // (이전에는 dropped_rows 기반으로 '제외된 샘플 수'/'누락값' 항목을 덮어썼으나,
-          //  검증 엔드포인트가 권위 있는 값을 제공하므로 중복 처리를 제거)
         };
 
+        // 완성본(서술 포함)만 isEvaluated=true 로 스토어에 저장한다(캐시 히트 시 완성본 서빙).
         if (id !== "preview") {
-          const evaluatedReport = {
-            ...mergedReport,
-            isEvaluated: true,
-          };
+          const evaluatedReport = { ...mergedReport, isEvaluated: true };
           useWorkspaceStore.setState((state) => ({
             evaluationRuns: state.evaluationRuns.map((r) =>
               r.id === id ? { ...r, reportData: evaluatedReport } : r
@@ -365,14 +375,18 @@ export function useReportData(id: string): UseReportDataResult {
         } else {
           setData(mergedReport);
         }
+        setNarrativePending(false);
       } catch (err: any) {
         console.error("Evaluation run failed:", err);
-        if (active) {
+        // stage1 이 이미 렌더된 뒤의 오류가 성적서를 에러 화면으로 덮지 않도록 가드.
+        // (fetchNarrative 는 내부에서 흡수하므로 여기 도달은 드묾)
+        if (active && !narrativeStarted) {
           setError(err.message || String(err));
         }
       } finally {
         if (active) {
           setIsLoading(false);
+          setNarrativePending(false);
         }
       }
     };
@@ -384,5 +398,5 @@ export function useReportData(id: string): UseReportDataResult {
     };
   }, [id, run, workflowState.rawFile, workflowState.columnMapping, workflowState.selectedMetricIds]);
 
-  return { data, isLoading, error };
+  return { data, isLoading, narrativePending, error };
 }
