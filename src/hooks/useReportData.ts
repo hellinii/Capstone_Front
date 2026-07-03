@@ -14,6 +14,7 @@ import { getMetricDisplayId, METRICS } from "../data/evaluationData";
 import { buildConclusion } from "../lib/report/computeVerdict";
 import { buildDatasetDiagnosis } from "../lib/report/buildDatasetDiagnosis";
 import { buildFactSheet } from "../lib/report/buildFactSheet";
+import { evaluateStatus } from "../lib/report/evaluateStatus";
 import { fetchNarrative } from "../lib/report/fetchNarrative";
 import { translateRoleToBackend } from "../lib/mapping/translateRoleToBackend";
 
@@ -134,6 +135,8 @@ export function useReportData(id: string): UseReportDataResult {
         }, workflowState.validationResult);
 
         const success_metrics = result.results.success_metrics || {};
+        // 계산 실패 지표({tcId: 에러문자열}). value 0/fail 위장 대신 'unavailable' 처리(D4).
+        const failed_metrics = result.results.failed_metrics || {};
 
         // 1. KPI 지표 계산값 치환
         const updatedKpiResults = workflowState.selectedMetricIds
@@ -141,8 +144,31 @@ export function useReportData(id: string): UseReportDataResult {
             const metric = METRICS.find((m) => m.id === tcId);
             if (!metric) return null;
 
+            // 방향성(높을수록/낮을수록 좋음) — 판정·기준 표기의 단일 출처(evaluationData.ts)
+            const higherIsBetter = metric.higherIsBetter !== false;
+            const detail = workflowState.metricDetails[tcId];
+            const target = parseFloat(detail?.targetValue ?? "");
+            const hasThreshold = Number.isFinite(target) && target > 0;
+            const displayId = getMetricDisplayId(tcId);
+
+            // 계산 실패 지표: 판정/집계에서 제외되도록 'unavailable' 로 표기(value 0/fail 위장 금지)
+            const failReason = failed_metrics[tcId];
+            if (failReason !== undefined) {
+              return {
+                tcId: displayId,
+                name: metric.name,
+                value: 0,
+                threshold: hasThreshold ? target : 0,
+                status: "unavailable" as const,
+                higherIsBetter,
+                errorMessage: typeof failReason === "string" ? failReason : String(failReason),
+                perClass: undefined,
+                subMetrics: undefined,
+              };
+            }
+
             const val = success_metrics[tcId];
-            
+
             // dict 반환 메트릭 (TC11/TC12/TC13): f1_score를 대표값으로, 세부값은 subMetrics로
             let resolvedValue = 0;
             let subMetrics: { precision: number; recall: number; f1Score: number } | undefined;
@@ -154,13 +180,9 @@ export function useReportData(id: string): UseReportDataResult {
               subMetrics = { precision: val.precision, recall: val.recall, f1Score: val.f1_score };
             }
 
-            const detail = workflowState.metricDetails[tcId];
-            const target = parseFloat(detail?.targetValue ?? "");
-            const hasThreshold = Number.isFinite(target) && target > 0;
-
-            let status: "pass" | "fail" | "warning" = "pass";
+            let status: "pass" | "fail" | "warning" | "unavailable" = "pass";
             if (hasThreshold) {
-              status = resolvedValue >= target ? "pass" : "fail";
+              status = evaluateStatus(resolvedValue, target, higherIsBetter);
             }
 
             let perClass: Array<{ label: string; value: number; status: string }> | undefined;
@@ -168,7 +190,7 @@ export function useReportData(id: string): UseReportDataResult {
               const classReport = success_metrics["TC22"];
               const yTrueRow = workflowState.columnMapping.find((r) => r.confirmedRole === "y_true");
               const classValues = yTrueRow ? [...new Set(yTrueRow.sampleValues)] : [];
-              
+
               const metricKeyMap: Record<string, string> = {
                 "TC2": "precision",
                 "TC3": "recall",
@@ -180,10 +202,9 @@ export function useReportData(id: string): UseReportDataResult {
                 perClass = classValues.map((val) => {
                   const classVal = classReport[val];
                   const score = classVal ? classVal[key] : 0;
-                  let classStatus = "pass";
-                  if (hasThreshold) {
-                    classStatus = score >= target ? "pass" : "fail";
-                  }
+                  const classStatus = hasThreshold
+                    ? evaluateStatus(score, target, higherIsBetter)
+                    : "pass";
                   return {
                     label: val,
                     value: score,
@@ -194,11 +215,12 @@ export function useReportData(id: string): UseReportDataResult {
             }
 
             return {
-              tcId: getMetricDisplayId(tcId),
+              tcId: displayId,
               name: metric.name,
               value: resolvedValue,
               threshold: hasThreshold ? target : 0,
               status,
+              higherIsBetter,
               perClass,
               subMetrics,
             };
@@ -296,6 +318,7 @@ export function useReportData(id: string): UseReportDataResult {
           classReport: success_metrics.TC22 ?? null,
           classLabels,
           latencyStats,
+          positiveClass: workflowState.metadata?.positive_class ?? null,
         });
 
         const narrative = await fetchNarrative({

@@ -251,11 +251,13 @@ function buildTcList(
       const target = parseFloat(detail?.targetValue ?? "");
       const hasThreshold = Number.isFinite(target) && target > 0;
 
+      // 방향성에 맞춰 합격 기준 표기(낮을수록 좋은 지표는 ≤). 6절 표(MetricRow)와 일관.
+      const criteriaOp = metric.higherIsBetter === false ? "≤" : "≥";
       return {
         tcId: getMetricDisplayId(tcId),
         name: metric.name,
         threshold: hasThreshold ? target : 0,
-        passCriteria: hasThreshold ? `≥ ${target.toFixed(2)}` : "정보 제공",
+        passCriteria: hasThreshold ? `${criteriaOp} ${target.toFixed(2)}` : "정보 제공",
       };
     })
     .filter((item): item is TcItem => item !== null);

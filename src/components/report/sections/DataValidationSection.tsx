@@ -93,6 +93,10 @@ export function DataValidationSection({
   const failCount    = dataValidation.filter((r) => r.status === "fail").length;
   const warningCount = dataValidation.filter((r) => r.status === "warning").length;
 
+  // '수행된' 시험항목 = 계산에 성공한 지표만. 측정 불가(unavailable)는 별도 표기(D4).
+  const performedKpis   = kpiResults.filter((r) => r.status !== "unavailable");
+  const unavailableKpis = kpiResults.filter((r) => r.status === "unavailable");
+
   // 검증 수행 요약 수치: 실측값(validationSummary)이 있으면 사용, 없으면 totalSamples로 fallback
   const totalRows    = validationSummary?.totalRows ?? totalSamples;
   const validRows    = validationSummary?.validRows ?? totalSamples;
@@ -136,9 +140,17 @@ export function DataValidationSection({
             </tr>
             <tr className="border-b border-slate-100">
               <td className="py-2.5 pr-4 font-semibold text-slate-700">수행된 시험항목 수</td>
-              <td className="py-2.5 pr-4 font-semibold text-slate-900">{kpiResults.length}개</td>
+              <td className="py-2.5 pr-4 font-semibold text-slate-900">
+                {performedKpis.length}개
+                {unavailableKpis.length > 0 && (
+                  <span className="ml-1 font-normal text-slate-400">/ 측정 불가 {unavailableKpis.length}개</span>
+                )}
+              </td>
               <td className="py-2.5 text-slate-500 text-xs">
-                선택된 Metric ID 목록: {kpiResults.map((r) => r.tcId).join(", ")}
+                선택된 Metric ID 목록: {performedKpis.map((r) => r.tcId).join(", ")}
+                {unavailableKpis.length > 0 && (
+                  <> · 측정 불가: {unavailableKpis.map((r) => r.tcId).join(", ")}</>
+                )}
               </td>
             </tr>
             <tr>
