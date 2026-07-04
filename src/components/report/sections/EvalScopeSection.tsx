@@ -68,7 +68,7 @@ export function EvalScopeSection({ meta }: EvalScopeSectionProps) {
             <tr>
               <td className="py-2.5 pr-4 font-medium text-slate-700">확인·확정·송부</td>
               <td className="py-2.5 pr-4 text-slate-600">대시보드를 통한 산출 결과 검토, 최종 확인 후 결과서(PDF) 생성 및 다운로드</td>
-              <td className="py-2.5 text-slate-600">{meta.issuedAt}</td>
+              <td className="py-2.5 text-slate-600">{meta.issuedAt || "(미발급)"}</td>
             </tr>
           </tbody>
         </table>

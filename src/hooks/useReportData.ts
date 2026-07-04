@@ -63,6 +63,7 @@ export function useReportData(id: string): UseReportDataResult {
         trainingUnsuitableExampleFiles: workflowState.trainingUnsuitableExampleFiles,
         columnMapping: workflowState.columnMapping,
         classLabelDescriptions: workflowState.classLabelDescriptions,
+        metadata: workflowState.metadata,
       }, workflowState.validationResult);
       setData({
         ...baseReport,
@@ -131,6 +132,7 @@ export function useReportData(id: string): UseReportDataResult {
           trainingUnsuitableExampleFiles: workflowState.trainingUnsuitableExampleFiles,
           columnMapping: workflowState.columnMapping,
           classLabelDescriptions: workflowState.classLabelDescriptions,
+          metadata: workflowState.metadata,
         }, workflowState.validationResult);
 
         const success_metrics = result.results.success_metrics || {};

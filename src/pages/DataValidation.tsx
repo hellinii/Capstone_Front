@@ -118,6 +118,7 @@ export function DataValidation() {
       trainingUnsuitableExampleFiles: store.trainingUnsuitableExampleFiles,
       columnMapping: store.columnMapping,
       classLabelDescriptions: store.classLabelDescriptions,
+      metadata: store.metadata,
     };
     const reportData = mapWorkflowToFinalReport(workflowSnapshot, validationData);
 

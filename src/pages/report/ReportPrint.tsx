@@ -45,6 +45,7 @@ export function ReportPrint() {
           applicant={data.applicant}
           performer={data.performer}
           evalScope={data.evalScope}
+          meta={data.meta}
         />
         <EvalScopeSection meta={data.meta} />
         <div style={{ pageBreakBefore: "always" }}>
@@ -65,7 +66,7 @@ export function ReportPrint() {
             kpiResults={data.kpiResults}
             totalSamples={data.datasetInfo.sampleCount}
           />
-          <KpiResultSection kpiResults={data.kpiResults} />
+          <KpiResultSection kpiResults={data.kpiResults} taskType={data.meta.taskType} meta={data.meta} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
           <ChartSection charts={data.charts} />

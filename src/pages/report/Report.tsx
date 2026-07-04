@@ -1,5 +1,6 @@
 import { useParams } from "react-router";
 import { useReportData } from "../../hooks/useReportData";
+import { useIssuance } from "../../hooks/useIssuance";
 import { usePdfDownload } from "../../hooks/usePdfDownload";
 import { ReportLayout } from "../../components/report/layout/ReportLayout";
 import { ReportCoverSection } from "../../components/report/sections/ReportCoverSection";
@@ -19,7 +20,9 @@ import { SignatureSection } from "../../components/report/sections/SignatureSect
 
 export function Report() {
   const { id = "preview" } = useParams();
-  const { data, isLoading, error } = useReportData(id);
+  const { data: reportData, isLoading, error } = useReportData(id);
+  const issuance = useIssuance(id, reportData);
+  const data = issuance.data; // 발급 반영본(있으면) — 섹션은 이 값을 렌더한다
   const { download } = usePdfDownload(id);
 
   if (isLoading) {
@@ -68,7 +71,15 @@ export function Report() {
   if (!data) return null;
 
   return (
-    <ReportLayout onDownload={download}>
+    <ReportLayout
+      onDownload={download}
+      issued={issuance.issued}
+      canIssue={issuance.canIssue}
+      reportId={data.meta.reportId}
+      busy={issuance.busy}
+      onIssue={issuance.issue}
+      onReissue={issuance.reissue}
+    >
       <ReportCoverSection meta={data.meta} performer={data.performer} />
       <CompanyInfoSection
         applicant={data.applicant}

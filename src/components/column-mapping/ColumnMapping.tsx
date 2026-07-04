@@ -66,7 +66,18 @@ export function ColumnMapping({
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
 
   const yTrueRow = useMemo(() => rows.find((r) => r.confirmedRole === "y_true"), [rows]);
-  const yTrueValues = useMemo(() => yTrueRow ? Array.from(new Set(yTrueRow.sampleValues)) : [], [yTrueRow]);
+  const yTrueValues = useMemo(() => {
+    if (!yTrueRow) return [];
+    // 멀티레이블은 "sports|news" 처럼 결합된 값 → 원자 라벨로 분리해야 성적서 매퍼(동일하게 /[|,]/ 분리)와
+    // 클래스 설명 키가 일치한다(분리 안 하면 설명이 매칭 안 돼 "설명 미입력"으로 유실됨).
+    if (resolvedTaskType === "multilabel") {
+      const atoms = yTrueRow.sampleValues.flatMap((v) =>
+        v.split(/[|,]/).map((s) => s.trim()).filter(Boolean),
+      );
+      return Array.from(new Set(atoms));
+    }
+    return Array.from(new Set(yTrueRow.sampleValues));
+  }, [yTrueRow, resolvedTaskType]);
 
   const roleCounts = useMemo(() => {
     const counts: Partial<Record<MappingRole, number>> = {};

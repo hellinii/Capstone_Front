@@ -56,6 +56,8 @@ export interface MapWorkflowToReportInput {
   trainingUnsuitableExampleFiles: UploadedFileInfo[];
   columnMapping: MappingRow[];
   classLabelDescriptions: Record<string, string>;
+  /** 컬럼 매핑 단계 메타데이터(사용자가 고른 positive_class 등). 성적서 표시용 소스. */
+  metadata?: { positive_class?: string } | null;
 }
 
 export function mapWorkflowToFinalReport(
@@ -99,7 +101,8 @@ export function mapWorkflowToFinalReport(
     conclusion: buildConclusion([], resolvedTaskType),
     recommendationNarrative: { dataQuality: "", modelOps: "" },
     recommendations: [],
-    signature: buildSignature(),
+    // 서명/발급 이력은 발급 시점에 백엔드 IssuanceOut 으로 채운다(초안은 빈 값 → "미발급" 표기).
+    signature: { issuer: "", signedAt: "", history: [] },
   };
 }
 
@@ -107,15 +110,15 @@ export function mapWorkflowToFinalReport(
 
 function buildMeta(input: MapWorkflowToReportInput, taskType: TaskType): FinalReportMeta {
   const today = formatDate(new Date());
-  const now = formatDateTime(new Date());
   const contractDate = input.basicInfo.contractDate
     ? formatDate(input.basicInfo.contractDate)
     : undefined;
 
   return {
-    reportId: buildReportId(),
+    // 미발급(초안). 발급 시 백엔드 IssuanceOut 의 report_no / issued_at(KST)으로 채운다(P2-11).
+    reportId: "",
     title: "기계학습 분류 성능 시험결과서",
-    issuedAt: now,
+    issuedAt: "",
     evaluationPeriod: {
       from: contractDate ?? today,
       to: today,
@@ -123,7 +126,11 @@ function buildMeta(input: MapWorkflowToReportInput, taskType: TaskType): FinalRe
     taskType,
     taskTypeLabel: TASK_TYPE_LABELS[taskType],
     contractDate,
-    positiveClass: input.metricDetails["TC2"]?.positiveClass || undefined,
+    // 사용자가 매핑 단계에서 고른 값은 metadata.positive_class 에 저장됨(metricDetails 는 미기입).
+    positiveClass:
+      input.metadata?.positive_class ||
+      input.metricDetails["TC2"]?.positiveClass ||
+      undefined,
   };
 }
 
@@ -262,9 +269,14 @@ function buildTcList(
       const target = parseFloat(detail?.targetValue ?? "");
       const hasThreshold = Number.isFinite(target) && target > 0;
 
+      // β 를 입력받는 지표(F-beta 등)는 사용자가 지정한 β 를 지표명에 함께 표기(입력값이 성적서에 드러나도록).
+      const betaVal = detail?.beta?.trim();
+      const showsBeta = metric.additionalFields?.includes("beta") && betaVal;
+      const displayName = showsBeta ? `${metric.name} (β=${betaVal})` : metric.name;
+
       return {
         tcId: getMetricDisplayId(tcId),
-        name: metric.name,
+        name: displayName,
         threshold: hasThreshold ? target : 0,
         passCriteria: hasThreshold ? `≥ ${target.toFixed(2)}` : "정보 제공",
       };
@@ -292,15 +304,6 @@ function buildMetricFormulas(taskType: TaskType, selectedMetricIds: string[]): M
       };
     })
     .filter((item): item is MetricFormula => item !== null);
-}
-
-function buildSignature(): SignatureData {
-  const today = formatDate(new Date());
-  return {
-    issuer: `${DEFAULT_PERFORMER.orgName} 평가부`,
-    signedAt: today,
-    history: [{ version: "v1.0", issuedAt: today, note: "최초 발급" }],
-  };
 }
 
 // ---------- pure helpers ----------
@@ -368,11 +371,4 @@ function formatDateTime(d: Date): string {
   const h = String(d.getHours()).padStart(2, "0");
   const min = String(d.getMinutes()).padStart(2, "0");
   return `${y}-${m}-${day} ${h}:${min}`;
-}
-
-function buildReportId(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const seq = String(Math.floor(d.getTime() / 1000) % 10000).padStart(4, "0");
-  return `RPT-${y}-${seq}`;
 }
