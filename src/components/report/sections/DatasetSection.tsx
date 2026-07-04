@@ -27,6 +27,12 @@ export function DatasetSection({
           label: "학습 샘플 수",
           value: `${trainingDatasetInfo.trainingSampleCount.toLocaleString()}개`,
         },
+        ...(trainingDatasetInfo.validationSampleCount > 0
+          ? [{
+              label: "검증 샘플 수",
+              value: `${trainingDatasetInfo.validationSampleCount.toLocaleString()}개`,
+            }]
+          : []),
         ...(trainingDatasetInfo.format
           ? [{ label: "학습 데이터 형식", value: trainingDatasetInfo.format }]
           : []),

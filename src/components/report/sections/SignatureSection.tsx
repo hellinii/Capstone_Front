@@ -13,6 +13,19 @@ interface SignatureSectionProps {
 }
 
 export function SignatureSection({ signature, meta, evalScope, performer }: SignatureSectionProps) {
+  // 문서 번호가 없으면 미발급(초안) — 발급 전에는 서명/이력 대신 안내를 표시한다(설계 §6·§10).
+  const issued = !!meta.reportId;
+  if (!issued) {
+    return (
+      <section className="space-y-3 border-t border-slate-200 py-10 text-center">
+        <p className="text-sm font-semibold text-slate-700">[ 초안 — 미발급 ]</p>
+        <p className="text-xs text-slate-500">
+          평가 결과는 확정되었으나 아직 발급되지 않았습니다. 상단의 “발급” 버튼으로 성적서 번호와 서명을 확정하세요.
+        </p>
+      </section>
+    );
+  }
+
   const issuanceFields: { label: string; value: string }[] = [
     { label: "발급 기관",      value: signature.issuer },
     { label: "발급 일시",      value: meta.issuedAt },

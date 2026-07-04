@@ -15,9 +15,9 @@ export function ReportCoverSection({ meta, performer }: ReportCoverSectionProps)
       <p className="text-sm text-slate-500">발급 기관: {performer.orgName} AI 평가 플랫폼</p>
       <div className="inline-grid grid-cols-2 gap-x-8 gap-y-1 text-sm text-slate-600">
         <span className="text-right font-medium text-slate-500">문서 번호</span>
-        <span className="text-left">{meta.reportId}</span>
+        <span className="text-left">{meta.reportId || "(미발급)"}</span>
         <span className="text-right font-medium text-slate-500">발급 일시</span>
-        <span className="text-left">{meta.issuedAt}</span>
+        <span className="text-left">{meta.issuedAt || "(미발급)"}</span>
         <span className="text-right font-medium text-slate-500">평가 유형</span>
         <span className="text-left">{meta.taskTypeLabel}</span>
         <span className="text-right font-medium text-slate-500">시험 기간</span>
