@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
 import { translateRoleToBackend } from "../lib/mapping/translateRoleToBackend";
@@ -20,6 +20,7 @@ import {
  */
 export function DataValidation() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const store = useWorkflowStore();
   const { activeWorkspaceId, addEvaluationRun } = useWorkspaceStore();
 
@@ -31,6 +32,24 @@ export function DataValidation() {
 
   // 페이지 진입 시 /api/validate-data 호출
   useEffect(() => {
+    if (searchParams.get("showcase") === "1") {
+      setValidationData({
+        task_type: "binary",
+        selected_metric_ids: ["M1", "M2"],
+        execution_summary: [
+          { label: "총 샘플 수", value: "1,200", note: "건" },
+          { label: "결측치 처리", value: "0", note: "건" },
+        ],
+        validation_details: [
+          { name: "필수 컬럼 검사", result: "모든 필수 컬럼이 존재합니다.", handling: "통과", status: "pass", group: "common" },
+          { name: "레이블 형식", result: "이진 분류 레이블 형식이 올바릅니다.", handling: "통과", status: "pass", group: "binary" },
+        ],
+        error_count: 0,
+        warning_count: 0,
+      });
+      return;
+    }
+
     if (!store.rawFile) {
       setError("업로드된 파일이 없습니다. 데이터 업로드 단계로 돌아가 주세요.");
       return;
