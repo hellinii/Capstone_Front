@@ -10,6 +10,8 @@ export function buildDatasetDiagnosis(
   metadata: { class_distribution?: Record<string, number> } | null | undefined,
   imbalanceRatio?: number,
   droppedRows: number = 0,
+  datasetSize?: number,
+  taskType?: "binary" | "multiclass" | "multilabel",
 ): string {
   const dist: Record<string, number> = metadata?.class_distribution ?? {};
   const entries = Object.entries(dist).filter(([, count]) => typeof count === "number");
@@ -23,14 +25,22 @@ export function buildDatasetDiagnosis(
   }
 
   if (entries.length > 0) {
-    const total = entries.reduce((sum, [, count]) => sum + count, 0);
+    const sumOfCounts = entries.reduce((sum, [, count]) => sum + count, 0);
+    // 멀티레이블이면 datasetSize를 사용하거나, 주어지지 않은 경우 sumOfCounts 사용
+    const total = datasetSize && datasetSize > 0 ? datasetSize : sumOfCounts;
+    
+    // 멀티레이블의 경우, 백분율은 해당 클래스의 출현 빈도 / 전체 샘플 수 (즉 총합이 100%가 넘을 수 있음)
+    // 멀티클래스/바이너리의 경우 기존처럼 count / sumOfCounts 로 하여 정확히 100%가 되게 함
+    const denominator = taskType === "multilabel" ? total : sumOfCounts;
+    
     const distText = entries
       .map(
         ([label, count]) =>
-          `${label} ${count.toLocaleString()}건(${total > 0 ? ((count / total) * 100).toFixed(1) : "0.0"}%)`,
+          `${label} ${count.toLocaleString()}건(${denominator > 0 ? ((count / denominator) * 100).toFixed(1) : "0.0"}%)`,
       )
       .join(", ");
-    parts.push(`평가 데이터셋은 총 ${total.toLocaleString()}건이며, 클래스별 분포는 ${distText}이다.`);
+      
+    parts.push(`평가 데이터셋은 총 ${total.toLocaleString()}건이며, 클래스(레이블)별 분포는 ${distText}이다.`);
 
     const counts = entries.map(([, count]) => count);
     const minCount = Math.min(...counts);

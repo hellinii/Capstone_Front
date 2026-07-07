@@ -473,17 +473,19 @@ function TrainingDatasetSection({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Field label="Training samples" required>
                 <Input
+                  type="text"
                   inputMode="numeric"
                   value={datasetInfo.trainingSampleCount}
-                  onChange={(event) => updateDatasetInfo("trainingSampleCount", event.target.value)}
+                  onChange={(event) => updateDatasetInfo("trainingSampleCount", event.target.value.replace(/\D/g, ''))}
                   placeholder="1161"
                 />
               </Field>
               <Field label="Validation samples" required>
                 <Input
+                  type="text"
                   inputMode="numeric"
                   value={datasetInfo.validationSampleCount}
-                  onChange={(event) => updateDatasetInfo("validationSampleCount", event.target.value)}
+                  onChange={(event) => updateDatasetInfo("validationSampleCount", event.target.value.replace(/\D/g, ''))}
                   placeholder="291"
                 />
               </Field>

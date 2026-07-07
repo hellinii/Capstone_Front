@@ -1,5 +1,6 @@
 import { useParams } from "react-router";
 import { useReportData } from "../../hooks/useReportData";
+import { useIssuance } from "../../hooks/useIssuance";
 import { usePdfDownload } from "../../hooks/usePdfDownload";
 import { ReportLayout } from "../../components/report/layout/ReportLayout";
 import { ReportCoverSection } from "../../components/report/sections/ReportCoverSection";
@@ -19,7 +20,9 @@ import { SignatureSection } from "../../components/report/sections/SignatureSect
 
 export function Report() {
   const { id = "preview" } = useParams();
-  const { data, isLoading, narrativePending, error } = useReportData(id);
+  const { data: reportData, isLoading, narrativePending, error } = useReportData(id);
+  const issuance = useIssuance(id, reportData);
+  const data = issuance.data; // 발급 반영본(있으면) — 섹션은 이 값을 렌더한다
   const { download } = usePdfDownload(id);
 
   if (isLoading) {
@@ -68,7 +71,15 @@ export function Report() {
   if (!data) return null;
 
   return (
-    <ReportLayout onDownload={download}>
+    <ReportLayout
+      onDownload={download}
+      issued={issuance.issued}
+      canIssue={issuance.canIssue}
+      reportId={data.meta.reportId}
+      busy={issuance.busy}
+      onIssue={issuance.issue}
+      onReissue={issuance.reissue}
+    >
       {narrativePending && (
         <div className="mb-4 flex items-center gap-2 rounded-md border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm text-teal-700">
           <span className="inline-block size-3 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
