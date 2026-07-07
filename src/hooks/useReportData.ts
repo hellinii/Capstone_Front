@@ -303,7 +303,7 @@ export function useReportData(id: string): UseReportDataResult {
 
         const taskTypeResolved = workflowState.taskType || "binary";
         // 혼동행렬의 totalSamples가 가장 정확한 평가 데이터의 row 수 (멀티레이블의 경우 200)
-        const datasetSize = confusionMatrix?.totalSamples || workflowState.datasetInfo?.datasetSize;
+        const datasetSize = confusionMatrix?.totalSamples || Number(workflowState.datasetInfo?.validationSampleCount) || undefined;
 
         const datasetDiagnosis = buildDatasetDiagnosis(
           { class_distribution: resolvedClassDistribution },

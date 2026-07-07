@@ -12,7 +12,6 @@ import { cn } from "../../utils/styling/styles";
 import type { BasicInfoFormData } from "../../types/workflow.types";
 
 interface BasicInfoProps {
-  onNext: () => void;
   formData: BasicInfoFormData;
   onFormDataChange: (value: BasicInfoFormData | ((prev: BasicInfoFormData) => BasicInfoFormData)) => void;
   onTaskTypeChange?: (type: string) => void;
