@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev, main]
+
+# PR은 최신 커밋만 검사(이전 실행 취소). main 푸시 run은 취소 금지 —
+# 포크 미러 푸시 도중 취소되면 Vercel이 stale 상태로 남는다.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # 순서 중요: setup-node의 cache:pnpm이 pnpm 바이너리를 필요로 함
+      - uses: pnpm/action-setup@v4 # version 미지정 → package.json packageManager(pnpm@10.34.4) 사용
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # Vite 6·Vitest 4 요구 충족, Vercel 빌드 환경과 일치
+          cache: pnpm
+      - name: 의존성 설치
+        run: pnpm install --frozen-lockfile
+      - name: 타입체크
+        run: pnpm typecheck
+      - name: 테스트
+        run: pnpm test
+      - name: 빌드
+        run: pnpm build
+
+  # 팀 main 푸시가 CI를 통과했을 때만 포크(hellinii) main 미러 —
+  # Vercel이 hellinii/Capstone_Front main을 추적하므로 이 푸시가 곧 배포 트리거.
+  # 포크 main은 순수 배포 미러 — 직접 커밋 금지.
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # shallow clone에서의 push는 GitHub이 거부
+      - name: 팀 main → 포크 main 미러
+        run: |
+          git push --force \
+            "https://x-access-token:${FORK_SYNC_TOKEN}@github.com/hellinii/Capstone_Front.git" \
+            HEAD:main
+        env:
+          FORK_SYNC_TOKEN: ${{ secrets.FORK_SYNC_TOKEN }}
