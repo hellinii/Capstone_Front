@@ -65,10 +65,58 @@ export function WorkflowShell({
       }));
       store.setTaskType("binary");
       store.setSelectedMetricIds(["TC1", "TC2", "TC3", "TC4", "TC9", "TC21", "TC22", "TC23"]);
+      store.setColumnMapping([
+        {
+          originalName: "row_id",
+          sampleValues: ["S001", "S002", "S003"],
+          inferredRole: "id",
+          confirmedRole: "id",
+          modified: false,
+          warnings: [],
+        },
+        {
+          originalName: "actual_result",
+          sampleValues: ["1", "0", "1"],
+          inferredRole: "y_true",
+          confirmedRole: "y_true",
+          modified: false,
+          warnings: [],
+        },
+        {
+          originalName: "predicted_result",
+          sampleValues: ["1", "1", "1"],
+          inferredRole: "y_pred",
+          confirmedRole: "y_pred",
+          modified: false,
+          warnings: [],
+        },
+        {
+          originalName: "positive_score",
+          sampleValues: ["0.92", "0.67", "0.88"],
+          inferredRole: "score",
+          confirmedRole: "score",
+          modified: false,
+          warnings: ["Please review this mapping. The column may contain score or probability values."],
+        },
+        {
+          originalName: "comment",
+          sampleValues: ["pass", "review", "retry"],
+          inferredRole: "ignore",
+          confirmedRole: "ignore",
+          modified: false,
+          warnings: [],
+        },
+      ]);
+      store.setMetadata({
+        positive_class: "1",
+        negative_class: "0",
+        positive_class_ambiguous: false,
+        class_distribution: { "0": 52, "1": 48 },
+      });
       store.setDatasetInfo({
         trainingDatasetName: "Binary review dataset",
         trainingSampleCount: "100",
-        evaluationSampleCount: "100",
+        validationSampleCount: "100",
         trainingDataFormat: "Structured JSON",
         trainingClassDistribution: "Negative 52 / Positive 48",
         trainingDataDescription:

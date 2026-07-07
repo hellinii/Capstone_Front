@@ -1,6 +1,7 @@
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
-import type { ConclusionData } from "../../../types/finalReport.types";
+import type { ConclusionData, NarrativeSource } from "../../../types/finalReport.types";
 import { SectionTitle } from "../ui/SectionTitle";
+import { NarrativeSourceBadge } from "../ui/NarrativeSourceBadge";
 import { cn } from "../../../utils/styling/styles";
 
 const VERDICT_CONFIG = {
@@ -29,15 +30,38 @@ const VERDICT_CONFIG = {
 
 interface ConclusionSectionProps {
   conclusion: ConclusionData;
+  source?: NarrativeSource;
 }
 
-export function ConclusionSection({ conclusion }: ConclusionSectionProps) {
+/** 서술 블록: LLM이 채울 텍스트가 있으면 인용, 없으면 "생성 예정" 플레이스홀더 표시 */
+function NarrativeBlock({ title, text }: { title: string; text: string }) {
+  const hasText = (text ?? "").trim().length > 0;
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+      {hasText ? (
+        <blockquote className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
+          <p className="text-sm font-medium leading-relaxed text-slate-700">"{text}"</p>
+        </blockquote>
+      ) : (
+        <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-5 py-4 text-xs text-slate-400">
+          자동 서술 생성(LLM) 연동 예정 — 현재는 규칙 기반 판정·점수만 표시됩니다.
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function ConclusionSection({ conclusion, source }: ConclusionSectionProps) {
   const config = VERDICT_CONFIG[conclusion.verdict];
   const Icon = config.icon;
 
   return (
     <section className="space-y-8 border-t border-slate-200 py-10">
-      <SectionTitle number={8} title="종합 진단 소견" />
+      <div className="flex items-center justify-between gap-3">
+        <SectionTitle number={8} title="종합 진단 소견" />
+        <NarrativeSourceBadge source={source} />
+      </div>
 
       {/* 판정 배너 */}
       <div className={cn("rounded-xl border p-5 flex items-center gap-4", config.bg)}>
@@ -51,34 +75,13 @@ export function ConclusionSection({ conclusion }: ConclusionSectionProps) {
       </div>
 
       {/* 8.1 도메인 성능 벤치마크 */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">도메인 성능 벤치마크</h3>
-        <blockquote className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
-          <p className="text-sm font-medium leading-relaxed text-slate-700">
-            "{conclusion.benchmark}"
-          </p>
-        </blockquote>
-      </div>
+      <NarrativeBlock title="도메인 성능 벤치마크" text={conclusion.benchmark} />
 
       {/* 8.2 전반적 성능 및 일반화 능력 총평 */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">전반적 성능 및 일반화 능력 총평</h3>
-        <blockquote className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
-          <p className="text-sm font-medium leading-relaxed text-slate-700">
-            "{conclusion.narrative}"
-          </p>
-        </blockquote>
-      </div>
+      <NarrativeBlock title="전반적 성능 및 일반화 능력 총평" text={conclusion.narrative} />
 
       {/* 8.3 기술적 취약점 및 잠재적 리스크 요약 */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">기술적 취약점 및 잠재적 리스크 요약</h3>
-        <blockquote className="rounded-lg border border-slate-200 bg-slate-50 px-5 py-4">
-          <p className="text-sm font-medium leading-relaxed text-slate-700">
-            "{conclusion.risks}"
-          </p>
-        </blockquote>
-      </div>
+      <NarrativeBlock title="기술적 취약점 및 잠재적 리스크 요약" text={conclusion.risks} />
     </section>
   );
 }

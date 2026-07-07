@@ -12,7 +12,6 @@ import { cn } from "../../utils/styling/styles";
 import type { BasicInfoFormData } from "../../types/workflow.types";
 
 interface BasicInfoProps {
-  onNext: () => void;
   formData: BasicInfoFormData;
   onFormDataChange: (value: BasicInfoFormData | ((prev: BasicInfoFormData) => BasicInfoFormData)) => void;
   onTaskTypeChange?: (type: string) => void;
@@ -103,7 +102,7 @@ export function BasicInfo({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <DateField
-                  label="Contract date"
+                  label="Evaluation request date"
                   required
                   value={formData.contractDate}
                   onChange={(value) => update("contractDate", value)}
@@ -114,7 +113,9 @@ export function BasicInfo({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">Report purpose</CardTitle>
+              <CardTitle className="text-lg font-semibold">
+                Report purpose <span className="text-red-600">*</span>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
               <RadioGroup value={formData.reportPurpose} onValueChange={(value) => update("reportPurpose", value)}>
@@ -252,7 +253,7 @@ function DateField({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
-          <Calendar mode="single" selected={value} onSelect={onChange} initialFocus />
+          <Calendar mode="single" selected={value} onSelect={onChange} initialFocus disabled={(date) => date > new Date()} />
         </PopoverContent>
       </Popover>
     </div>

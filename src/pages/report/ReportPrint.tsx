@@ -19,17 +19,22 @@ import { SignatureSection } from "../../components/report/sections/SignatureSect
 
 export function ReportPrint() {
   const { id = "preview" } = useParams();
-  const { data } = useReportData(id);
+  const { data, narrativePending } = useReportData(id);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Puppeteer waits for data-pdf-ready attribute before capturing
+  // Puppeteer waits for data-pdf-ready attribute before capturing, and triggers browser print.
+  // 서술(7·8·9절) 병합이 끝날 때까지(narrativePending=false) 캡처/인쇄를 미뤄 PDF 완결성 유지(D6b).
   useEffect(() => {
-    if (!data || !containerRef.current) return;
+    if (!data || narrativePending || !containerRef.current) return;
     const raf = requestAnimationFrame(() => {
       containerRef.current?.setAttribute("data-pdf-ready", "true");
+      // 레이아웃 렌더링이 완료된 후 자동으로 브라우저 인쇄 다이얼로그 호출
+      setTimeout(() => {
+        window.print();
+      }, 300);
     });
     return () => cancelAnimationFrame(raf);
-  }, [data]);
+  }, [data, narrativePending]);
 
   if (!data) return null;
 
@@ -41,6 +46,7 @@ export function ReportPrint() {
           applicant={data.applicant}
           performer={data.performer}
           evalScope={data.evalScope}
+          meta={data.meta}
         />
         <EvalScopeSection meta={data.meta} />
         <div style={{ pageBreakBefore: "always" }}>
@@ -53,7 +59,7 @@ export function ReportPrint() {
           <EvalEnvSection meta={data.meta} evalScope={data.evalScope} evalEnv={data.evalEnv} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
-          <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} />
+          <TcListSection tcList={data.tcList} metricFormulas={data.metricFormulas} taskTypeLabel={data.meta.taskTypeLabel} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
           <DataValidationSection
@@ -61,18 +67,19 @@ export function ReportPrint() {
             kpiResults={data.kpiResults}
             totalSamples={data.datasetInfo.sampleCount}
           />
-          <KpiResultSection kpiResults={data.kpiResults} />
+          <KpiResultSection kpiResults={data.kpiResults} taskType={data.meta.taskType} meta={data.meta} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
           <ChartSection charts={data.charts} />
           <LatencySection latency={data.latency} />
         </div>
         <div style={{ pageBreakBefore: "always" }}>
-          <InterpretSection interpretation={data.interpretation} />
-          <ConclusionSection conclusion={data.conclusion} />
+          <InterpretSection interpretation={data.interpretation} source={data.narrativeSource} />
+          <ConclusionSection conclusion={data.conclusion} source={data.narrativeSource} />
           <RecommendSection
             recommendations={data.recommendations}
             narrative={data.recommendationNarrative}
+            source={data.narrativeSource}
           />
           <SignatureSection
             signature={data.signature}

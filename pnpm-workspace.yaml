@@ -1,2 +1,7 @@
 packages:
   - '.'
+allowBuilds:
+  '0': '@tailwindcss/oxide'
+  '1': esbuild
+  '@tailwindcss/oxide': true
+  esbuild: true

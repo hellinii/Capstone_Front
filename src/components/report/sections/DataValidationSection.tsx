@@ -1,5 +1,9 @@
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
-import type { KpiResult, ValidationResult } from "../../../types/finalReport.types";
+import type {
+  KpiResult,
+  ValidationResult,
+  ValidationSummary,
+} from "../../../types/finalReport.types";
 import type { ValidationGroup } from "../../../types/validation.types";
 import { SectionTitle } from "../ui/SectionTitle";
 import { cn } from "../../../utils/styling/styles";
@@ -24,6 +28,7 @@ interface DataValidationSectionProps {
   dataValidation: ValidationResult[];
   kpiResults: KpiResult[];
   totalSamples: number;
+  validationSummary?: ValidationSummary;
 }
 
 function GroupBlock({ group, items }: { group: ValidationGroup; items: ValidationResult[] }) {
@@ -83,10 +88,21 @@ export function DataValidationSection({
   dataValidation,
   kpiResults,
   totalSamples,
+  validationSummary,
 }: DataValidationSectionProps) {
   const failCount    = dataValidation.filter((r) => r.status === "fail").length;
   const warningCount = dataValidation.filter((r) => r.status === "warning").length;
 
+  // '수행된' 시험항목 = 계산에 성공한 지표만. 측정 불가(unavailable)는 별도 표기(D4).
+  const performedKpis   = kpiResults.filter((r) => r.status !== "unavailable");
+  const unavailableKpis = kpiResults.filter((r) => r.status === "unavailable");
+
+  // 검증 수행 요약 수치: 실측값(validationSummary)이 있으면 사용, 없으면 totalSamples로 fallback
+  const totalRows    = validationSummary?.totalRows ?? totalSamples;
+  const validRows    = validationSummary?.validRows ?? totalSamples;
+  const excludedRows = validationSummary?.excludedRows ?? 0;
+
+  const hasValidation = dataValidation.length > 0;
   const groupedSections = GROUP_ORDER
     .map((group) => ({ group, items: dataValidation.filter((i) => i.group === group) }))
     .filter(({ items }) => items.length > 0);
@@ -109,24 +125,32 @@ export function DataValidationSection({
           <tbody>
             <tr className="border-b border-slate-100">
               <td className="py-2.5 pr-4 font-semibold text-slate-700">총 검증 수행 건수</td>
-              <td className="py-2.5 pr-4 font-semibold text-slate-900">{totalSamples.toLocaleString()}건</td>
+              <td className="py-2.5 pr-4 font-semibold text-slate-900">{totalRows.toLocaleString()}건</td>
               <td className="py-2.5 text-slate-500 text-xs">업로드 데이터 전체 행(row) 수 = 고유 ID 수</td>
             </tr>
             <tr className="border-b border-slate-100">
               <td className="py-2.5 pr-4 font-semibold text-slate-700">유효 예측 건수</td>
-              <td className="py-2.5 pr-4 font-semibold text-slate-900">{totalSamples.toLocaleString()}건</td>
+              <td className="py-2.5 pr-4 font-semibold text-slate-900">{validRows.toLocaleString()}건</td>
               <td className="py-2.5 text-slate-500 text-xs">누락값·오류 제외 후 실제 metric 산출에 사용된 건수</td>
             </tr>
             <tr className="border-b border-slate-100">
               <td className="py-2.5 pr-4 font-semibold text-slate-700">제외된 샘플 수</td>
-              <td className="py-2.5 pr-4 text-slate-900">0건</td>
+              <td className="py-2.5 pr-4 text-slate-900">{excludedRows.toLocaleString()}건</td>
               <td className="py-2.5 text-slate-500 text-xs">누락값/오류로 인해 평가에서 제외된 건수</td>
             </tr>
             <tr className="border-b border-slate-100">
               <td className="py-2.5 pr-4 font-semibold text-slate-700">수행된 시험항목 수</td>
-              <td className="py-2.5 pr-4 font-semibold text-slate-900">{kpiResults.length}개</td>
+              <td className="py-2.5 pr-4 font-semibold text-slate-900">
+                {performedKpis.length}개
+                {unavailableKpis.length > 0 && (
+                  <span className="ml-1 font-normal text-slate-400">/ 측정 불가 {unavailableKpis.length}개</span>
+                )}
+              </td>
               <td className="py-2.5 text-slate-500 text-xs">
-                선택된 Metric ID 목록: {kpiResults.map((r) => r.tcId).join(", ")}
+                선택된 Metric ID 목록: {performedKpis.map((r) => r.tcId).join(", ")}
+                {unavailableKpis.length > 0 && (
+                  <> · 측정 불가: {unavailableKpis.map((r) => r.tcId).join(", ")}</>
+                )}
               </td>
             </tr>
             <tr>
@@ -143,11 +167,17 @@ export function DataValidationSection({
       {/* 6.0.1 데이터 검증 상세 */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-slate-700">데이터 검증 상세 내역</h3>
-        <div className="space-y-3">
-          {groupedSections.map(({ group, items }) => (
-            <GroupBlock key={group} group={group} items={items} />
-          ))}
-        </div>
+        {hasValidation ? (
+          <div className="space-y-3">
+            {groupedSections.map(({ group, items }) => (
+              <GroupBlock key={group} group={group} items={items} />
+            ))}
+          </div>
+        ) : (
+          <p className="rounded border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-400">
+            데이터 검증 결과가 없습니다. (검증 단계를 수행한 평가에서만 표시됩니다.)
+          </p>
+        )}
       </div>
     </section>
   );

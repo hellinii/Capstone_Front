@@ -9,7 +9,6 @@ import {
   getRequiredColumnsForSelection,
 } from "../../data/evaluationData";
 import type { MappingRole, MappingRow, FilterMode } from "../../types/mapping.types";
-import { buildMockBackendResponse } from "../../data/mock/columnMappingMock";
 
 import { RequiredColumnsCard } from "./RequiredColumnsCard";
 import { BinaryClassificationCard } from "./BinaryClassificationCard";
@@ -29,6 +28,10 @@ interface ColumnMappingProps {
       | Record<string, string>
       | ((prev: Record<string, string>) => Record<string, string>),
   ) => void;
+  positiveClass?: string;
+  onPositiveClassChange?: (value: string) => void;
+  /** 백엔드가 양성 클래스 자동 판단에 실패한 경우 경고 표시(D5d). */
+  positiveClassAmbiguous?: boolean;
 }
 
 const roleOptions: Array<{ value: MappingRole; label: string }> = [
@@ -38,8 +41,10 @@ const roleOptions: Array<{ value: MappingRole; label: string }> = [
   { value: "score", label: "score" },
   { value: "prob_class_*", label: "prob_class_*" },
   { value: "prob_label_*", label: "prob_label_*" },
+  { value: "latency", label: "latency" },
   { value: "ignore", label: "ignore" },
 ];
+
 export function ColumnMapping({
   taskType = "",
   selectedMetricIds = [],
@@ -48,6 +53,9 @@ export function ColumnMapping({
   onValidationChange,
   classLabelDescriptions = {},
   onClassLabelDescriptionsChange,
+  positiveClass = "",
+  onPositiveClassChange,
+  positiveClassAmbiguous,
 }: ColumnMappingProps) {
   const resolvedTaskType: TaskType = taskType || "multiclass";
   const selectedMetrics = useMemo(
@@ -60,21 +68,19 @@ export function ColumnMapping({
   );
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
 
-  // 매핑이 비어있을 때만 mock backend로 초기화. 사용자가 수정한 매핑은 store에 영구화되어
-  // 다음 단계 갔다 돌아와도 보존됨. taskType 변경 시 store에서 [] 로 리셋되므로 재초기화 트리거됨.
-  useEffect(() => {
-    if (rows.length > 0) return;
-    const response = buildMockBackendResponse(
-      resolvedTaskType,
-      requiredRoles.map((role) => role.code),
-    );
-    onRowsChange(response.rows);
-  }, [rows.length, resolvedTaskType, requiredRoles, onRowsChange]);
-
-  // Binary Positive Class UI State
-  const [positiveClass, setPositiveClass] = useState<string>("");
   const yTrueRow = useMemo(() => rows.find((r) => r.confirmedRole === "y_true"), [rows]);
-  const yTrueValues = useMemo(() => yTrueRow ? Array.from(new Set(yTrueRow.sampleValues)) : [], [yTrueRow]);
+  const yTrueValues = useMemo(() => {
+    if (!yTrueRow) return [];
+    // 멀티레이블은 "sports|news" 처럼 결합된 값 → 원자 라벨로 분리해야 성적서 매퍼(동일하게 /[|,]/ 분리)와
+    // 클래스 설명 키가 일치한다(분리 안 하면 설명이 매칭 안 돼 "설명 미입력"으로 유실됨).
+    if (resolvedTaskType === "multilabel") {
+      const atoms = yTrueRow.sampleValues.flatMap((v) =>
+        v.split(/[|,]/).map((s) => s.trim()).filter(Boolean),
+      );
+      return Array.from(new Set(atoms));
+    }
+    return Array.from(new Set(yTrueRow.sampleValues));
+  }, [yTrueRow, resolvedTaskType]);
 
   const roleCounts = useMemo(() => {
     const counts: Partial<Record<MappingRole, number>> = {};
@@ -178,9 +184,10 @@ export function ColumnMapping({
         <BinaryClassificationCard
           resolvedTaskType={resolvedTaskType}
           positiveClass={positiveClass}
-          setPositiveClass={setPositiveClass}
+          setPositiveClass={onPositiveClassChange || (() => {})}
           yTrueRow={yTrueRow}
           yTrueValues={yTrueValues}
+          positiveClassAmbiguous={positiveClassAmbiguous}
         />
 
         {onClassLabelDescriptionsChange && (

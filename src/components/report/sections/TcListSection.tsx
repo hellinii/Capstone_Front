@@ -4,15 +4,14 @@ import { SectionTitle } from "../ui/SectionTitle";
 interface TcListSectionProps {
   tcList: TcItem[];
   metricFormulas: MetricFormula[];
+  taskTypeLabel: string;
 }
 
-export function TcListSection({ tcList, metricFormulas }: TcListSectionProps) {
+export function TcListSection({ tcList, metricFormulas, taskTypeLabel }: TcListSectionProps) {
   const formulaMap = new Map(metricFormulas.map((f) => [f.tcId, f]));
 
-  // 공통 지표: M1~M4, M21, M22, M23
-  const COMMON_IDS = new Set(["M1", "M2", "M3", "M4", "M21", "M22", "M23"]);
-  const commonItems = tcList.filter((tc) => COMMON_IDS.has(tc.tcId));
-  const specialItems = tcList.filter((tc) => !COMMON_IDS.has(tc.tcId));
+  const commonItems = tcList.filter((tc) => formulaMap.get(tc.tcId)?.isCommon);
+  const specialItems = tcList.filter((tc) => !formulaMap.get(tc.tcId)?.isCommon);
 
   return (
     <section className="space-y-8 border-t border-slate-200 py-10">
@@ -30,7 +29,7 @@ export function TcListSection({ tcList, metricFormulas }: TcListSectionProps) {
       {/* 5.2 태스크 전용 지표 (선택된 경우만 표시) */}
       {specialItems.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-slate-700">Binary 전용 지표</h3>
+          <h3 className="text-sm font-semibold text-slate-700">{taskTypeLabel} 전용 지표</h3>
           <MetricTable items={specialItems} formulaMap={formulaMap} />
         </div>
       )}

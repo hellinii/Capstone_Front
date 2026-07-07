@@ -7,6 +7,8 @@
 import { create } from "zustand";
 import type { TaskType } from "../../data/evaluationData";
 import type { MappingRow } from "../../types/mapping.types";
+import type { ValidateDataResponseData } from "../../types/validation.types";
+import type { MapWorkflowToReportInput } from "../../lib/report/mapWorkflowToFinalReport";
 import {
   DEFAULT_BASIC_INFO,
   DEFAULT_DATASET_INFO,
@@ -64,6 +66,8 @@ interface WorkflowState {
 
   // Step 4 — Data upload
   uploadedFile: UploadedFileInfo | null;
+  rawFile: File | null;
+  metadata: any | null;
   trainingExampleFiles: UploadedFileInfo[];
   trainingUnsuitableExampleFiles: UploadedFileInfo[];
   datasetInfo: DatasetInfoFormData;
@@ -72,6 +76,9 @@ interface WorkflowState {
   columnMapping: MappingRow[];
   // Step 5 — Class label descriptions (class value -> description)
   classLabelDescriptions: Record<string, string>;
+
+  // Step 6 — Data validation result (백엔드 /api/validate-data 응답, 리포트에서 재사용)
+  validationResult: ValidateDataResponseData | null;
 
   // Actions — Navigation
   setCurrentStep: (step: number) => void;
@@ -92,7 +99,9 @@ interface WorkflowState {
   ) => void;
 
   // Actions — Step 4
-  setUploadedFile: (file: UploadedFileInfo | null) => void;
+  setUploadedFile: (file: UploadedFileInfo | null, rawFile?: File) => void;
+  setRawFile: (file: File | null) => void;
+  setMetadata: (metadata: any | null) => void;
   setTrainingExampleFiles: (
     value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
   ) => void;
@@ -115,8 +124,12 @@ interface WorkflowState {
       | ((prev: Record<string, string>) => Record<string, string>),
   ) => void;
 
+  // Actions — Step 6
+  setValidationResult: (result: ValidateDataResponseData | null) => void;
+
   // Reset
   resetWorkflow: () => void;
+  loadWorkflowSnapshot: (snapshot: MapWorkflowToReportInput) => void;
 }
 
 const INITIAL_STATE = {
@@ -127,11 +140,14 @@ const INITIAL_STATE = {
   selectedMetricIds: [] as string[],
   metricDetails: {} as MetricDetailStateMap,
   uploadedFile: null as UploadedFileInfo | null,
+  rawFile: null as File | null,
+  metadata: null as any | null,
   trainingExampleFiles: [] as UploadedFileInfo[],
   trainingUnsuitableExampleFiles: [] as UploadedFileInfo[],
   datasetInfo: DEFAULT_DATASET_INFO,
   columnMapping: [] as MappingRow[],
   classLabelDescriptions: {} as Record<string, string>,
+  validationResult: null as ValidateDataResponseData | null,
 };
 
 export const useWorkflowStore = create<WorkflowState>((set) => ({
@@ -158,10 +174,13 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
       selectedMetricIds: [],
       metricDetails: {},
       uploadedFile: null,
+      rawFile: null,
+      metadata: null,
       trainingExampleFiles: [],
       trainingUnsuitableExampleFiles: [],
       columnMapping: [],
       classLabelDescriptions: {},
+      validationResult: null,
     }),
 
   // Step 2
@@ -175,7 +194,9 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
     })),
 
   // Step 4
-  setUploadedFile: (file) => set({ uploadedFile: file }),
+  setUploadedFile: (file, rawFile) => set({ uploadedFile: file, rawFile: rawFile || null }),
+  setRawFile: (file) => set({ rawFile: file }),
+  setMetadata: (metadata) => set({ metadata: metadata }),
 
   setTrainingExampleFiles: (value) =>
     set((state) => ({
@@ -210,6 +231,28 @@ export const useWorkflowStore = create<WorkflowState>((set) => ({
           : value,
     })),
 
+  // Step 6
+  setValidationResult: (result) => set({ validationResult: result }),
+
   // Reset
   resetWorkflow: () => set(INITIAL_STATE),
+
+  loadWorkflowSnapshot: (snapshot) =>
+    set({
+      basicInfo: snapshot.basicInfo,
+      taskType: snapshot.taskType,
+      selectedMetricIds: snapshot.selectedMetricIds,
+      metricDetails: snapshot.metricDetails,
+      uploadedFile: snapshot.uploadedFile,
+      rawFile: null,
+      metadata: null,
+      trainingExampleFiles: snapshot.trainingExampleFiles,
+      trainingUnsuitableExampleFiles: snapshot.trainingUnsuitableExampleFiles,
+      datasetInfo: snapshot.datasetInfo,
+      columnMapping: snapshot.columnMapping,
+      classLabelDescriptions: snapshot.classLabelDescriptions,
+      validationResult: null,
+      currentStep: 1,
+      completedSteps: [1, 2, 3, 4, 5, 6],
+    }),
 }));

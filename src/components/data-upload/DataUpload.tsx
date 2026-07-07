@@ -1,4 +1,4 @@
-import { useMemo, useRef, type ChangeEvent, type ReactNode, type RefObject } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from "react";
 import { CheckCircle2, FileImage, FileText, Lightbulb, Upload, X } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -35,7 +35,7 @@ interface DataUploadProps {
     value: DatasetInfoFormData | ((prev: DatasetInfoFormData) => DatasetInfoFormData),
   ) => void;
   uploadedFile: UploadedFileInfo | null;
-  onUploadedFileChange: (value: UploadedFileInfo | null) => void;
+  onUploadedFileChange: (value: UploadedFileInfo | null, rawFile?: File) => void;
   trainingExampleFiles: UploadedFileInfo[];
   onTrainingExampleFilesChange: (
     value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
@@ -57,7 +57,7 @@ export function isTrainingDatasetInfoValid(datasetInfo: DatasetInfoFormData) {
   return (
     datasetInfo.trainingDatasetName.trim() !== "" &&
     datasetInfo.trainingSampleCount.trim() !== "" &&
-    datasetInfo.evaluationSampleCount.trim() !== ""
+    datasetInfo.validationSampleCount.trim() !== ""
   );
 }
 
@@ -87,11 +87,11 @@ export function DataUpload({
   const csvExample = getCsvExample(resolvedTaskType, requiresProb);
   const jsonExample = getJsonExample(resolvedTaskType, requiresProb);
   const trainingCount = Number(datasetInfo.trainingSampleCount);
-  const evaluationCount = Number(datasetInfo.evaluationSampleCount);
-  const hasDatasetCounts = Number.isFinite(trainingCount) && Number.isFinite(evaluationCount) && trainingCount >= 0 && evaluationCount >= 0;
-  const totalCount = hasDatasetCounts ? trainingCount + evaluationCount : null;
+  const validationCount = Number(datasetInfo.validationSampleCount);
+  const hasDatasetCounts = Number.isFinite(trainingCount) && Number.isFinite(validationCount) && trainingCount >= 0 && validationCount >= 0;
+  const totalCount = hasDatasetCounts ? trainingCount + validationCount : null;
   const trainingRatio = hasDatasetCounts && totalCount ? trainingCount / totalCount : null;
-  const evaluationRatio = hasDatasetCounts && totalCount ? evaluationCount / totalCount : null;
+  const validationRatio = hasDatasetCounts && totalCount ? validationCount / totalCount : null;
 
   const updateDatasetInfo = <K extends keyof DatasetInfoFormData>(
     field: K,
@@ -106,7 +106,7 @@ export function DataUpload({
       return;
     }
 
-    onUploadedFileChange(toUploadedFileInfo(file));
+    onUploadedFileChange(toUploadedFileInfo(file), file);
   };
 
   const handleTrainingExampleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -144,6 +144,18 @@ export function DataUpload({
     onTrainingUnsuitableExampleFilesChange((prev) => prev.filter((_, fileIndex) => fileIndex !== index));
   };
 
+  const handleEvaluationFileDrop = (file: File) => {
+    onUploadedFileChange(toUploadedFileInfo(file), file);
+  };
+
+  const handleTrainingExampleFileDrop = (file: File) => {
+    onTrainingExampleFilesChange((prev) => [...prev, toUploadedFileInfo(file)]);
+  };
+
+  const handleTrainingUnsuitableFileDrop = (file: File) => {
+    onTrainingUnsuitableExampleFilesChange((prev) => [...prev, toUploadedFileInfo(file)]);
+  };
+
   return (
     <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto space-y-6">
       <div>
@@ -178,6 +190,7 @@ export function DataUpload({
           onFileChange={handleEvaluationFileChange}
           onFileRemove={removeEvaluationFile}
           openFilePicker={() => evaluationInputRef.current?.click()}
+          onFileDrop={handleEvaluationFileDrop}
           inputRef={evaluationInputRef}
           requiredColumns={requiredColumns}
           csvExample={csvExample}
@@ -193,15 +206,17 @@ export function DataUpload({
           onFileChange={handleTrainingExampleFileChange}
           onFileRemove={removeTrainingExampleFile}
           openFilePicker={() => trainingExampleInputRef.current?.click()}
+          onExampleFileDrop={handleTrainingExampleFileDrop}
           inputRef={trainingExampleInputRef}
           hasDatasetCounts={hasDatasetCounts}
           totalCount={totalCount}
           trainingRatio={trainingRatio}
-          evaluationRatio={evaluationRatio}
+          validationRatio={validationRatio}
           trainingUnsuitableExampleFiles={trainingUnsuitableExampleFiles}
           onUnsuitableFileChange={handleTrainingUnsuitableExampleFileChange}
           onUnsuitableFileRemove={removeTrainingUnsuitableExampleFile}
           openUnsuitableFilePicker={() => trainingUnsuitableExampleInputRef.current?.click()}
+          onUnsuitableFileDrop={handleTrainingUnsuitableFileDrop}
           unsuitableInputRef={trainingUnsuitableExampleInputRef}
         />
       )}
@@ -216,6 +231,7 @@ function EvaluationDataSection({
   onFileChange,
   onFileRemove,
   openFilePicker,
+  onFileDrop,
   inputRef,
   requiredColumns,
   csvExample,
@@ -229,6 +245,7 @@ function EvaluationDataSection({
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onFileRemove: () => void;
   openFilePicker: () => void;
+  onFileDrop: (file: File) => void;
   inputRef: RefObject<HTMLInputElement | null>;
   requiredColumns: Array<{ code: string; label: string; description: string }>;
   csvExample: string;
@@ -297,6 +314,7 @@ function EvaluationDataSection({
           title="Click to choose evaluation data"
           description="CSV or JSON, up to 100MB"
           onClick={openFilePicker}
+          onFileDrop={onFileDrop}
         />
       ) : (
         <SelectedFileCard
@@ -363,15 +381,17 @@ function TrainingDatasetSection({
   onFileChange,
   onFileRemove,
   openFilePicker,
+  onExampleFileDrop,
   inputRef,
   hasDatasetCounts,
   totalCount,
   trainingRatio,
-  evaluationRatio,
+  validationRatio,
   trainingUnsuitableExampleFiles,
   onUnsuitableFileChange,
   onUnsuitableFileRemove,
   openUnsuitableFilePicker,
+  onUnsuitableFileDrop,
   unsuitableInputRef,
 }: {
   datasetInfo: DatasetInfoFormData;
@@ -380,22 +400,24 @@ function TrainingDatasetSection({
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onFileRemove: (index: number) => void;
   openFilePicker: () => void;
+  onExampleFileDrop: (file: File) => void;
   inputRef: RefObject<HTMLInputElement | null>;
   hasDatasetCounts: boolean;
   totalCount: number | null;
   trainingRatio: number | null;
-  evaluationRatio: number | null;
+  validationRatio: number | null;
   trainingUnsuitableExampleFiles: UploadedFileInfo[];
   onUnsuitableFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onUnsuitableFileRemove: (index: number) => void;
   openUnsuitableFilePicker: () => void;
+  onUnsuitableFileDrop: (file: File) => void;
   unsuitableInputRef: RefObject<HTMLInputElement | null>;
 }) {
   const trainCountLabel = Number.isFinite(Number(datasetInfo.trainingSampleCount)) && datasetInfo.trainingSampleCount.trim() !== ""
     ? Number(datasetInfo.trainingSampleCount).toLocaleString()
     : "-";
-  const evalCountLabel = Number.isFinite(Number(datasetInfo.evaluationSampleCount)) && datasetInfo.evaluationSampleCount.trim() !== ""
-    ? Number(datasetInfo.evaluationSampleCount).toLocaleString()
+  const valCountLabel = Number.isFinite(Number(datasetInfo.validationSampleCount)) && datasetInfo.validationSampleCount.trim() !== ""
+    ? Number(datasetInfo.validationSampleCount).toLocaleString()
     : "-";
 
   return (
@@ -451,17 +473,19 @@ function TrainingDatasetSection({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Field label="Training samples" required>
                 <Input
+                  type="text"
                   inputMode="numeric"
                   value={datasetInfo.trainingSampleCount}
-                  onChange={(event) => updateDatasetInfo("trainingSampleCount", event.target.value)}
+                  onChange={(event) => updateDatasetInfo("trainingSampleCount", event.target.value.replace(/\D/g, ''))}
                   placeholder="1161"
                 />
               </Field>
-              <Field label="Evaluation samples" required>
+              <Field label="Validation samples" required>
                 <Input
+                  type="text"
                   inputMode="numeric"
-                  value={datasetInfo.evaluationSampleCount}
-                  onChange={(event) => updateDatasetInfo("evaluationSampleCount", event.target.value)}
+                  value={datasetInfo.validationSampleCount}
+                  onChange={(event) => updateDatasetInfo("validationSampleCount", event.target.value.replace(/\D/g, ''))}
                   placeholder="291"
                 />
               </Field>
@@ -469,11 +493,11 @@ function TrainingDatasetSection({
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <SampleCountCard label="Total samples" value={hasDatasetCounts && totalCount !== null ? totalCount.toLocaleString() : "-"} />
               <SampleCountCard label="Training samples" value={trainCountLabel} />
-              <SampleCountCard label="Evaluation samples" value={evalCountLabel} />
+              <SampleCountCard label="Validation samples" value={valCountLabel} />
             </div>
             {hasDatasetCounts && totalCount !== null && totalCount > 0 && (
               <div className="text-xs text-muted-foreground">
-                Train/Eval ratio {trainingRatio?.toFixed(2)} / {evaluationRatio?.toFixed(2)}
+                Train/Val ratio {trainingRatio?.toFixed(2)} / {validationRatio?.toFixed(2)}
               </div>
             )}
           </div>
@@ -520,6 +544,7 @@ function TrainingDatasetSection({
               files={trainingExampleFiles}
               onChoose={openFilePicker}
               onRemove={onFileRemove}
+              onFileDrop={onExampleFileDrop}
             />
             <ExampleUploadSlot
               title="Edge or unsuitable example"
@@ -527,6 +552,7 @@ function TrainingDatasetSection({
               files={trainingUnsuitableExampleFiles}
               onChoose={openUnsuitableFilePicker}
               onRemove={onUnsuitableFileRemove}
+              onFileDrop={onUnsuitableFileDrop}
               optional
             />
           </div>
@@ -583,6 +609,7 @@ function ExampleUploadSlot({
   files,
   onChoose,
   onRemove,
+  onFileDrop,
   optional = false,
 }: {
   title: string;
@@ -590,8 +617,31 @@ function ExampleUploadSlot({
   files: UploadedFileInfo[];
   onChoose: () => void;
   onRemove: (index: number) => void;
+  onFileDrop?: (file: File) => void;
   optional?: boolean;
 }) {
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onFileDrop?.(e.dataTransfer.files[0]);
+    }
+  };
+
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -608,7 +658,13 @@ function ExampleUploadSlot({
         <button
           type="button"
           onClick={onChoose}
-          className="flex min-h-[160px] w-full flex-col items-center justify-center rounded-md border-2 border-dashed border-border bg-muted/20 px-4 py-8 text-center transition-colors hover:border-primary hover:bg-blue-50/30"
+          onDragEnter={handleDrag}
+          onDragOver={handleDrag}
+          onDragLeave={handleDrag}
+          onDrop={handleDrop}
+          className={`flex min-h-[160px] w-full flex-col items-center justify-center rounded-md border-2 border-dashed border-border bg-muted/20 px-4 py-8 text-center transition-colors hover:border-primary hover:bg-blue-50/30 ${
+            isDragActive ? "border-primary bg-blue-50" : ""
+          }`}
         >
           <FileImage className="mb-3 h-9 w-9 text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">Choose example file</span>
@@ -640,16 +696,46 @@ function UploadDropzone({
   title,
   description,
   onClick,
+  onFileDrop,
 }: {
   icon: ReactNode;
   title: string;
   description: string;
   onClick: () => void;
+  onFileDrop?: (file: File) => void;
 }) {
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      onFileDrop?.(e.dataTransfer.files[0]);
+    }
+  };
+
   return (
     <Card
-      className="border-2 border-dashed border-border hover:border-primary hover:bg-blue-50/30 transition-colors cursor-pointer"
+      className={`border-2 border-dashed border-border hover:border-primary hover:bg-blue-50/30 transition-colors cursor-pointer ${
+        isDragActive ? "border-primary bg-blue-50" : ""
+      }`}
       onClick={onClick}
+      onDragEnter={handleDrag}
+      onDragOver={handleDrag}
+      onDragLeave={handleDrag}
+      onDrop={handleDrop}
     >
       <CardContent className="flex flex-col items-center justify-center min-h-[240px] py-12">
         {icon}

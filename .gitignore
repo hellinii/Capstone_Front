@@ -17,6 +17,7 @@ pnpm-debug.log*
 
 .vscode/
 .idea/
+.claude/
 node_modules
 .vercel
 .env*.local

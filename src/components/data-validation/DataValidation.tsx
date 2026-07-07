@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -15,14 +14,28 @@ import {
   TASK_TYPE_LABELS,
   type TaskType,
 } from "../../data/evaluationData";
-import type { ValidationDetailItem, ValidationGroup, ValidationStatus } from "../../types/validation.types";
-import { buildMockValidationResponse } from "../../data/mock/dataValidationMock";
+import type {
+  ValidationDetailItem as ValidationCheckItem,
+  ValidateDataResponseData,
+} from "../../types/validation.types";
+
+// ── 백엔드 응답 타입은 types/validation.types.ts 단일 진실에서 가져온다 ──────
+export type { ValidateDataResponseData };
+
+// ── 컴포넌트 Props ──────────────────────────────────────────────────────────
 
 interface DataValidationProps {
-  taskType?: TaskType | "";
-  selectedMetricIds?: string[];
-  onValidationChange?: (hasError: boolean) => void;
+  /** 백엔드 /api/validate-data 응답 데이터 */
+  validationData: ValidateDataResponseData | null;
+  /** 로딩 중 여부 */
+  isLoading: boolean;
+  /** 에러 메시지 (있으면 에러 화면 표시) */
+  error?: string | null;
 }
+
+// ── 내부 UI 컴포넌트 ────────────────────────────────────────────────────────
+
+type ValidationGroup = "common" | "multiclass" | "binary" | "multilabel" | "latency";
 
 const GROUP_META: Record<ValidationGroup, { label: string; description: string }> = {
   common:     { label: "Common Checks",     description: "Applied to all task types" },
@@ -34,7 +47,7 @@ const GROUP_META: Record<ValidationGroup, { label: string; description: string }
 
 const GROUP_ORDER: ValidationGroup[] = ["common", "multiclass", "binary", "multilabel", "latency"];
 
-function getStatusBadge(status: ValidationStatus) {
+function getStatusBadge(status: string) {
   if (status === "error") return <Badge variant="destructive">Error</Badge>;
   if (status === "warning") return <Badge variant="outline">Warning</Badge>;
   return <Badge variant="secondary">Pass</Badge>;
@@ -52,7 +65,7 @@ function GroupStatBadge({ count, label, variant }: { count: number; label: strin
   );
 }
 
-function ValidationGroupSection({ items, group }: { items: ValidationDetailItem[]; group: ValidationGroup }) {
+function ValidationGroupSection({ items, group }: { items: ValidationCheckItem[]; group: ValidationGroup }) {
   const meta = GROUP_META[group];
   const errorCount = items.filter((i) => i.status === "error").length;
   const warningCount = items.filter((i) => i.status === "warning").length;
@@ -81,8 +94,8 @@ function ValidationGroupSection({ items, group }: { items: ValidationDetailItem[
           </TableRow>
         </TableHeader>
         <TableBody>
-          {items.map((item) => (
-            <TableRow key={item.name}>
+          {items.map((item, idx) => (
+            <TableRow key={`${item.name}-${idx}`}>
               <TableCell className="align-top whitespace-normal font-medium">{item.name}</TableCell>
               <TableCell className="align-top whitespace-normal">{item.result}</TableCell>
               <TableCell className="align-top whitespace-normal text-muted-foreground">{item.handling}</TableCell>
@@ -95,22 +108,63 @@ function ValidationGroupSection({ items, group }: { items: ValidationDetailItem[
   );
 }
 
-export function DataValidation({
-  taskType = "",
-  selectedMetricIds = [],
-  onValidationChange,
-}: DataValidationProps) {
-  const validationResponse = buildMockValidationResponse(taskType, selectedMetricIds);
-  const { validationDetails, errorCount, warningCount } = validationResponse;
-  const passCount = validationDetails.filter((i) => i.status === "pass").length;
-  const hasBlockingError = errorCount > 0;
+// ── 메인 컴포넌트 ───────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    onValidationChange?.(hasBlockingError);
-  }, [hasBlockingError, onValidationChange]);
+export function DataValidation({
+  validationData,
+  isLoading,
+  error,
+}: DataValidationProps) {
+
+  // 로딩 상태
+  if (isLoading) {
+    return (
+      <main className="mx-auto max-w-[1344px] space-y-6 px-8 pb-24 pt-12">
+        <div className="flex flex-col items-center justify-center gap-4 py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">데이터 검증 중입니다...</p>
+          <p className="text-xs text-muted-foreground">업로드한 파일의 유효성을 검사하고 있습니다.</p>
+        </div>
+      </main>
+    );
+  }
+
+  // 에러 상태
+  if (error) {
+    return (
+      <main className="mx-auto max-w-[1344px] space-y-6 px-8 pb-24 pt-12">
+        <div>
+          <h1 className="mb-2 text-2xl font-bold text-foreground">Data validation</h1>
+        </div>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            데이터 검증 실패: {error}
+          </AlertDescription>
+        </Alert>
+      </main>
+    );
+  }
+
+  // 데이터 없음
+  if (!validationData) {
+    return (
+      <main className="mx-auto max-w-[1344px] space-y-6 px-8 pb-24 pt-12">
+        <div>
+          <h1 className="mb-2 text-2xl font-bold text-foreground">Data validation</h1>
+          <p className="text-sm text-muted-foreground">검증 데이터를 불러오지 못했습니다.</p>
+        </div>
+      </main>
+    );
+  }
+
+  // 정상 렌더링
+  const { validation_details, error_count, warning_count, task_type, selected_metric_ids, execution_summary } = validationData;
+  const passCount = validation_details.filter((i) => i.status === "pass").length;
+  const hasBlockingError = error_count > 0;
 
   const groupedSections = GROUP_ORDER
-    .map((group) => ({ group, items: validationDetails.filter((i) => i.group === group) }))
+    .map((group) => ({ group, items: validation_details.filter((i) => i.group === group) }))
     .filter(({ items }) => items.length > 0);
 
   return (
@@ -123,8 +177,8 @@ export function DataValidation({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="outline">{TASK_TYPE_LABELS[validationResponse.taskType]}</Badge>
-        {validationResponse.selectedMetricIds.map((id) => (
+        <Badge variant="outline">{TASK_TYPE_LABELS[task_type as TaskType] || task_type}</Badge>
+        {selected_metric_ids.map((id) => (
           <Badge key={id} variant="outline">{id}</Badge>
         ))}
       </div>
@@ -160,7 +214,7 @@ export function DataValidation({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {validationResponse.executionSummary.map((item) => (
+                {execution_summary.map((item) => (
                   <TableRow key={item.label}>
                     <TableCell className="align-top whitespace-normal font-semibold">{item.label}</TableCell>
                     <TableCell className="align-top whitespace-normal">{item.value}</TableCell>
@@ -178,8 +232,8 @@ export function DataValidation({
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold">Validation Details</CardTitle>
             <div className="flex items-center gap-4">
-              {errorCount > 0 && <GroupStatBadge count={errorCount} label="Errors" variant="error" />}
-              {warningCount > 0 && <GroupStatBadge count={warningCount} label="Warnings" variant="warning" />}
+              {error_count > 0 && <GroupStatBadge count={error_count} label="Errors" variant="error" />}
+              {warning_count > 0 && <GroupStatBadge count={warning_count} label="Warnings" variant="warning" />}
               <GroupStatBadge count={passCount} label="Passed" variant="pass" />
             </div>
           </div>

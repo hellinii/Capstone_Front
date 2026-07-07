@@ -10,6 +10,13 @@ export interface MetricDefinition {
   supportedTaskTypes: TaskType[];
   additionalFields?: AdditionalInputField[];
   probabilityRequiredFor?: TaskType[];
+  formula?: string;
+  isCommon?: boolean;
+  /**
+   * 지표 방향성(합·불 판정·기준 표기의 단일 출처). 미지정/true = 높을수록 좋음(값 ≥ 목표 → 합격),
+   * false = 낮을수록 좋음(값 ≤ 목표 → 합격). 낮을수록 좋은 지표: TC6/8/14/15/18/19/23.
+   */
+  higherIsBetter?: boolean;
 }
 
 export interface UploadColumnGuide {
@@ -25,7 +32,8 @@ export type RequiredColumnCode =
   | "y_pred"
   | "score"
   | "prob_class_*"
-  | "prob_label_*";
+  | "prob_label_*"
+  | "latency";
 
 export interface RequiredColumnDisplay {
   code: RequiredColumnCode;
@@ -40,29 +48,29 @@ export const TASK_TYPE_LABELS: Record<TaskType, string> = {
 };
 
 export const METRICS: MetricDefinition[] = [
-  { id: "TC1", name: "Accuracy", subtitle: "Overall correctness", description: "Measures how often the classifier predicts the correct result.", supportedTaskTypes: ["binary", "multiclass", "multilabel"] },
-  { id: "TC2", name: "Precision", subtitle: "Positive predictive value", description: "Among predicted positives, measures how many are actually positive.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"] },
-  { id: "TC3", name: "Recall", subtitle: "Sensitivity", description: "Measures how many true positives are successfully detected.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"] },
-  { id: "TC4", name: "F1 Score", subtitle: "Harmonic mean", description: "Balances precision and recall in a single metric.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"] },
-  { id: "TC5", name: "F-beta Score", subtitle: "Weighted F score", description: "Adjusts the balance between precision and recall using beta.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["beta", "positiveClass"] },
-  { id: "TC6", name: "KL Divergence", subtitle: "Distribution divergence", description: "Compares the true distribution and predicted probability distribution.", supportedTaskTypes: ["binary", "multiclass"], probabilityRequiredFor: ["binary", "multiclass"] },
-  { id: "TC7", name: "Specificity", subtitle: "True negative rate", description: "Measures how many true negatives are correctly predicted.", supportedTaskTypes: ["binary"], additionalFields: ["positiveClass"] },
-  { id: "TC8", name: "FPR", subtitle: "False positive rate", description: "Measures how often negatives are incorrectly marked positive.", supportedTaskTypes: ["binary"], additionalFields: ["positiveClass"] },
-  { id: "TC9", name: "AUROC", subtitle: "ROC area", description: "Measures ranking quality across classification thresholds.", supportedTaskTypes: ["binary"], additionalFields: ["positiveClass"], probabilityRequiredFor: ["binary"] },
-  { id: "TC10", name: "AUPRC", subtitle: "PR area", description: "Measures precision-recall tradeoff across thresholds.", supportedTaskTypes: ["binary"], additionalFields: ["positiveClass"], probabilityRequiredFor: ["binary"] },
-  { id: "TC11", name: "Macro Average", subtitle: "Unweighted class average", description: "Averages class metrics equally across classes.", supportedTaskTypes: ["multiclass"] },
-  { id: "TC12", name: "Micro Average", subtitle: "Global average", description: "Computes metrics over the full set of samples.", supportedTaskTypes: ["multiclass"] },
-  { id: "TC13", name: "Weighted Average", subtitle: "Support-weighted average", description: "Averages class metrics using class support as weights.", supportedTaskTypes: ["multiclass"] },
-  { id: "TC14", name: "Distribution Diff (MC)", subtitle: "Class distribution gap", description: "Compares actual and predicted class distributions.", supportedTaskTypes: ["multiclass"] },
-  { id: "TC15", name: "Hamming Loss", subtitle: "Label mismatch ratio", description: "Measures label-wise disagreement in multi-label classification.", supportedTaskTypes: ["multilabel"] },
-  { id: "TC16", name: "Exact Match Ratio", subtitle: "Strict set match", description: "Counts samples where all labels exactly match.", supportedTaskTypes: ["multilabel"] },
-  { id: "TC17", name: "Jaccard Index", subtitle: "Set overlap score", description: "Measures intersection over union of predicted and actual labels.", supportedTaskTypes: ["multilabel"] },
-  { id: "TC18", name: "Distribution Diff (ML)", subtitle: "Label distribution gap", description: "Compares actual and predicted label distributions.", supportedTaskTypes: ["multilabel"] },
-  { id: "TC19", name: "Log Loss", subtitle: "Probabilistic error", description: "Penalizes confident but wrong probabilistic predictions.", supportedTaskTypes: ["binary"], probabilityRequiredFor: ["binary"] },
-  { id: "TC20", name: "MCC", subtitle: "Balanced correlation", description: "A robust binary metric that considers all confusion matrix cells.", supportedTaskTypes: ["binary"] },
-  { id: "TC21", name: "Confusion Matrix", subtitle: "Prediction matrix", description: "Shows actual versus predicted counts by class or label.", supportedTaskTypes: ["binary", "multiclass", "multilabel"] },
-  { id: "TC22", name: "Class-wise Metric", subtitle: "Per-class detail", description: "Breaks down metrics for each class or label.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"] },
-  { id: "TC23", name: "Imbalance Ratio", subtitle: "Class balance check", description: "Measures the balance of the evaluation dataset itself.", supportedTaskTypes: ["binary", "multiclass", "multilabel"] },
+  { id: "TC1", name: "Accuracy", subtitle: "Overall correctness", description: "Measures how often the classifier predicts the correct result.", supportedTaskTypes: ["binary", "multiclass"], formula: "(TP + TN) / Total", isCommon: true },
+  { id: "TC2", name: "Precision", subtitle: "Positive predictive value", description: "Among predicted positives, measures how many are actually positive.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"], formula: "TP / (TP + FP)", isCommon: true },
+  { id: "TC3", name: "Recall", subtitle: "Sensitivity", description: "Measures how many true positives are successfully detected.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"], formula: "TP / (TP + FN)", isCommon: true },
+  { id: "TC4", name: "F1 Score", subtitle: "Harmonic mean", description: "Balances precision and recall in a single metric.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"], formula: "2 * (Precision * Recall) / (Precision + Recall)", isCommon: true },
+  { id: "TC5", name: "F-beta Score", subtitle: "Weighted F score", description: "Adjusts the balance between precision and recall using beta.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["beta", "positiveClass"], formula: "(1 + β²) * (P * R) / (β² * P + R)", isCommon: true },
+  { id: "TC6", higherIsBetter: false, name: "KL Divergence", subtitle: "Distribution divergence", description: "정답 레이블의 분포와 모델이 예측한 클래스 레이블의 분포 간의 차이(Target Drift)를 계산합니다.", supportedTaskTypes: ["binary", "multiclass"], probabilityRequiredFor: ["binary", "multiclass"], formula: "∑ P(x) * log(P(x) / Q(x))", isCommon: true },
+  { id: "TC7", name: "Specificity", subtitle: "True negative rate", description: "Measures how many true negatives are correctly predicted.", supportedTaskTypes: ["binary"], additionalFields: ["positiveClass"], formula: "TN / (TN + FP)" },
+  { id: "TC8", higherIsBetter: false, name: "FPR", subtitle: "False positive rate", description: "Measures how often negatives are incorrectly marked positive.", supportedTaskTypes: ["binary"], additionalFields: ["positiveClass"], formula: "FP / (FP + TN)" },
+  { id: "TC9", name: "AUROC", subtitle: "ROC area", description: "Measures ranking quality across classification thresholds.", supportedTaskTypes: ["binary"], additionalFields: ["positiveClass"], probabilityRequiredFor: ["binary"], formula: "Area under ROC Curve" },
+  { id: "TC10", name: "AUPRC", subtitle: "PR area", description: "Measures precision-recall tradeoff across thresholds.", supportedTaskTypes: ["binary"], additionalFields: ["positiveClass"], probabilityRequiredFor: ["binary"], formula: "Area under PR Curve" },
+  { id: "TC11", name: "Macro Average", subtitle: "Unweighted class average", description: "Averages class metrics equally across classes.", supportedTaskTypes: ["multiclass", "multilabel"], formula: "(Class1_Metric + ... + ClassN_Metric) / N" },
+  { id: "TC12", name: "Micro Average", subtitle: "Global average", description: "Computes metrics over the full set of samples.", supportedTaskTypes: ["multiclass", "multilabel"], formula: "∑ TP / ∑ (TP+FP+FN)" },
+  { id: "TC13", name: "Weighted Average", subtitle: "Support-weighted average", description: "Averages class metrics using class support as weights.", supportedTaskTypes: ["multiclass", "multilabel"], formula: "∑ (Class_Metric * Support) / Total Support" },
+  { id: "TC14", higherIsBetter: false, name: "Distribution Diff (MC)", subtitle: "Class distribution gap", description: "Compares actual and predicted class distributions.", supportedTaskTypes: ["multiclass"], formula: "0.5 * ∑ |P(x) - Q(x)|" },
+  { id: "TC15", higherIsBetter: false, name: "Hamming Loss", subtitle: "Label mismatch ratio", description: "Measures label-wise disagreement in multi-label classification.", supportedTaskTypes: ["multilabel"], formula: "∑ (y_true ≠ y_pred) / (Samples * Labels)" },
+  { id: "TC16", name: "Exact Match Ratio", subtitle: "Strict set match", description: "Counts samples where all labels exactly match.", supportedTaskTypes: ["multilabel"], formula: "∑ (All_labels_match) / Samples" },
+  { id: "TC17", name: "Jaccard Index", subtitle: "Set overlap score", description: "Measures intersection over union of predicted and actual labels.", supportedTaskTypes: ["multilabel"], formula: "|y_true ∩ y_pred| / |y_true ∪ y_pred|" },
+  { id: "TC18", higherIsBetter: false, name: "Distribution Diff (ML)", subtitle: "Label distribution gap", description: "Compares actual and predicted label distributions.", supportedTaskTypes: ["multilabel"], formula: "0.5 * ∑ |P(l) - Q(l)|" },
+  { id: "TC19", higherIsBetter: false, name: "Log Loss", subtitle: "Probabilistic error", description: "Penalizes confident but wrong probabilistic predictions.", supportedTaskTypes: ["binary"], probabilityRequiredFor: ["binary"], formula: "- (y * log(p) + (1-y) * log(1-p))" },
+  { id: "TC20", name: "MCC", subtitle: "Balanced correlation", description: "A robust binary metric that considers all confusion matrix cells.", supportedTaskTypes: ["binary"], formula: "(TP*TN - FP*FN) / √((TP+FP)(TP+FN)(TN+FP)(TN+FN))" },
+  { id: "TC21", name: "Confusion Matrix", subtitle: "Prediction matrix", description: "Shows actual versus predicted counts by class or label.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], formula: "실제/예측 클래스의 교차 분포를 행렬로 산출", isCommon: true },
+  { id: "TC22", name: "Class-wise Metric", subtitle: "Per-class detail", description: "Breaks down metrics for each class or label.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], additionalFields: ["positiveClass"], formula: "개별 클래스별 P/R/F1 산출", isCommon: true },
+  { id: "TC23", higherIsBetter: false, name: "Imbalance Ratio", subtitle: "Class balance check", description: "Measures the balance of the evaluation dataset itself.", supportedTaskTypes: ["binary", "multiclass", "multilabel"], formula: "max(class count) / min(class count)", isCommon: true },
 ];
 
 const RECOMMENDED_TCS: Record<TaskType, string[]> = {
@@ -110,6 +118,9 @@ const REQUIRED_COLUMNS_BY_TC: Record<TaskType, Partial<Record<string, RequiredCo
     TC3: ["id", "y_true", "y_pred"],
     TC4: ["id", "y_true", "y_pred"],
     TC5: ["id", "y_true", "y_pred"],
+    TC11: ["id", "y_true", "y_pred"],
+    TC12: ["id", "y_true", "y_pred"],
+    TC13: ["id", "y_true", "y_pred"],
     TC15: ["id", "y_true", "y_pred"],
     TC16: ["id", "y_true", "y_pred"],
     TC17: ["id", "y_true", "y_pred"],
@@ -127,6 +138,7 @@ const COLUMN_ORDER: RequiredColumnCode[] = [
   "score",
   "prob_class_*",
   "prob_label_*",
+  "latency",
 ];
 
 const COLUMN_DISPLAY: Record<RequiredColumnCode, RequiredColumnDisplay> = {
@@ -159,6 +171,11 @@ const COLUMN_DISPLAY: Record<RequiredColumnCode, RequiredColumnDisplay> = {
     code: "prob_label_*",
     label: "Per-label probabilities",
     description: "One probability column per label.",
+  },
+  latency: {
+    code: "latency",
+    label: "Inference latency (ms)",
+    description: "Optional. Per-sample inference time in milliseconds; used to report latency statistics (mean/p50/p95/p99).",
   },
 };
 
