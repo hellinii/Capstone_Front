@@ -12,6 +12,7 @@ import type {
 } from "../../types/finalReport.types";
 import type { ReportRecommendation } from "../../types/report.types";
 import type { NarrativeRequestPayload } from "./buildFactSheet";
+import { apiUrl } from "@/lib/apiBase";
 
 export interface NarrativeFields {
   interpretation: InterpretationData;
@@ -45,7 +46,7 @@ export async function fetchNarrative(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), NARRATIVE_TIMEOUT_MS);
   try {
-    const resp = await fetch("/api/generate-narrative", {
+    const resp = await fetch(apiUrl("/api/generate-narrative"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

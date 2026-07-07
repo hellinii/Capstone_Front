@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { apiUrl } from "@/lib/apiBase";
 import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import { ColumnMapping as ColumnMappingContent } from "../components/column-mapping/ColumnMapping";
@@ -50,7 +51,7 @@ export function ColumnMapping() {
         selected_tcs: store.selectedMetricIds,
       };
 
-      const response = await fetch("/api/confirm-mapping", {
+      const response = await fetch(apiUrl("/api/confirm-mapping"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

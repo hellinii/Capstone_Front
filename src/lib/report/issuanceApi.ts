@@ -8,6 +8,7 @@
  * 시각(issued_at)은 백엔드가 offset 포함 ISO8601('...+00:00')로 준다.
  * 여기서 KST 표시 문자열로 변환해, 리포트의 기존 로컬 날짜 표기 규약과 일치시킨다(단일 출처=백엔드).
  */
+import { apiUrl } from "@/lib/apiBase";
 
 export interface OrganizationInfo {
   orgName: string;
@@ -115,7 +116,7 @@ async function errorDetail(resp: Response, fallback: string): Promise<string> {
 /** 수행기관(performer) 조회. 실패/미시드 시 null. */
 export async function getOrganization(): Promise<OrganizationInfo | null> {
   try {
-    const resp = await fetch("/api/organization");
+    const resp = await fetch(apiUrl("/api/organization"));
     if (!resp.ok) return null;
     return mapOrganization(await resp.json());
   } catch {
@@ -126,7 +127,7 @@ export async function getOrganization(): Promise<OrganizationInfo | null> {
 /** 발급정보 조회(재오픈). 미발급/실패 시 null. */
 export async function getIssuance(reportNo: string): Promise<IssuanceResult | null> {
   try {
-    const resp = await fetch(`/api/reports/${encodeURIComponent(reportNo)}`);
+    const resp = await fetch(apiUrl(`/api/reports/${encodeURIComponent(reportNo)}`));
     if (!resp.ok) return null;
     return mapIssuance(await resp.json());
   } catch {
@@ -136,7 +137,7 @@ export async function getIssuance(reportNo: string): Promise<IssuanceResult | nu
 
 /** 발급(채번). 같은 runId 재호출 시 기존 발급본을 그대로 돌려받는다(멱등). */
 export async function issueReport(payload: IssuePayload): Promise<IssuanceResult> {
-  const resp = await fetch("/api/reports/issue", {
+  const resp = await fetch(apiUrl("/api/reports/issue"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -157,7 +158,7 @@ export async function reissueReport(
   note: string,
   issuer?: string,
 ): Promise<IssuanceResult> {
-  const resp = await fetch(`/api/reports/${encodeURIComponent(reportNo)}/reissue`, {
+  const resp = await fetch(apiUrl(`/api/reports/${encodeURIComponent(reportNo)}/reissue`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ note, issuer: issuer ?? null }),

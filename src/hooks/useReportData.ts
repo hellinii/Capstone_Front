@@ -6,6 +6,7 @@
  */
 import { useEffect, useState } from "react";
 
+import { apiUrl } from "@/lib/apiBase";
 import { mapWorkflowToFinalReport } from "../lib/report/mapWorkflowToFinalReport";
 import type { FinalReportData, LatencyStats } from "../types/finalReport.types";
 import { useWorkflowStore } from "../utils/stores/useWorkflowStore";
@@ -113,7 +114,7 @@ export function useReportData(id: string): UseReportDataResult {
         formData.append("file", workflowState.rawFile!);
         formData.append("data", JSON.stringify(payload));
 
-        const response = await fetch("/api/evaluate", {
+        const response = await fetch(apiUrl("/api/evaluate"), {
           method: "POST",
           body: formData,
         });
