@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import { useState } from "react";
+import { apiUrl } from "@/lib/apiBase";
 import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import {
@@ -36,7 +37,7 @@ export function DataUpload() {
       formData.append("task_type", store.taskType || "multiclass");
       formData.append("file", store.rawFile);
 
-      const response = await fetch("/api/analyze-columns", {
+      const response = await fetch(apiUrl("/api/analyze-columns"), {
         method: "POST",
         body: formData,
       });

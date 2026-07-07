@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
+import { apiUrl } from "@/lib/apiBase";
 import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
 import { useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
 import { translateRoleToBackend } from "../lib/mapping/translateRoleToBackend";
@@ -90,7 +91,7 @@ export function DataValidation() {
         formData.append("file", store.rawFile!);
         formData.append("data", JSON.stringify(payload));
 
-        const response = await fetch("/api/validate-data", {
+        const response = await fetch(apiUrl("/api/validate-data"), {
           method: "POST",
           body: formData,
         });
