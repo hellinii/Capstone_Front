@@ -59,6 +59,7 @@ export function KpiResultSection({ kpiResults, taskType, meta }: KpiResultSectio
                 value={r.value}
                 threshold={r.threshold}
                 status={r.status}
+                higherIsBetter={r.higherIsBetter}
               />
             ))}
           </tbody>
@@ -87,6 +88,7 @@ export function KpiResultSection({ kpiResults, taskType, meta }: KpiResultSectio
                 value={r.value}
                 threshold={r.threshold}
                 status={r.status}
+                higherIsBetter={r.higherIsBetter}
               />
             ))}
           </tbody>

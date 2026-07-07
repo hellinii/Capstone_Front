@@ -38,8 +38,11 @@ export function computeVerdict(
   kpiResults: KpiResult[],
   taskType: TaskType,
 ): VerdictResult {
-  // 판정 대상 = 임계값이 설정된 지표만
-  const target = kpiResults.filter((r) => r.threshold > 0);
+  const coreIds = new Set(CORE_METRIC_IDS[taskType] ?? []);
+
+  // 판정 대상 = 임계값이 설정되고 계산에 성공한(measurable) 지표만.
+  // 계산 실패(unavailable) 지표는 "미달"로 위장하지 않고 분모·판정에서 제외한다(D4).
+  const target = kpiResults.filter((r) => r.threshold > 0 && r.status !== "unavailable");
 
   // 합격 기준이 하나도 없으면 판정 불가(정보 제공 평가) → 조건부로 표기, 점수 0
   if (target.length === 0) {
@@ -49,17 +52,20 @@ export function computeVerdict(
   const passed = target.filter((r) => r.status === "pass").length;
   const score = Math.round((passed / target.length) * 1000) / 10;
 
-  const coreIds = new Set(CORE_METRIC_IDS[taskType] ?? []);
   const anyFailed = target.some((r) => r.status === "fail");
   const coreFailed = target.some((r) => coreIds.has(r.tcId) && r.status === "fail");
+  // 핵심 지표가 계산 불가라 확인 자체가 안 되면 PASS 로 단정하지 않고 조건부로 하향.
+  const coreUnavailable = kpiResults.some(
+    (r) => coreIds.has(r.tcId) && r.status === "unavailable",
+  );
 
   let verdict: VerdictResult["verdict"];
-  if (!anyFailed) {
-    verdict = "PASS";
-  } else if (coreFailed) {
+  if (coreFailed) {
     verdict = "FAIL";
-  } else {
+  } else if (anyFailed || coreUnavailable) {
     verdict = "CONDITIONAL_PASS";
+  } else {
+    verdict = "PASS";
   }
 
   return { verdict, score };

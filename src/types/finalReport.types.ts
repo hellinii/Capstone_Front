@@ -123,7 +123,12 @@ export interface KpiResult {
   name: string;
   value: number;
   threshold: number;
-  status: "pass" | "fail" | "warning";
+  /** unavailable = 백엔드 계산 실패(측정 불가). 판정/집계에서 제외하고 '측정 불가'로 표기. */
+  status: "pass" | "fail" | "warning" | "unavailable";
+  /** 방향성(합격 기준 표기 ≥/≤). 미지정=높을수록 좋음. */
+  higherIsBetter?: boolean;
+  /** status=unavailable 일 때 백엔드가 준 계산 실패 사유(디버그/안내용). */
+  errorMessage?: string;
   perClass?: PerClassKpi[];
   /** TC11/12/13 등 dict 반환 메트릭의 세부 수치 (Precision / Recall / F1) */
   subMetrics?: { precision: number; recall: number; f1Score: number };

@@ -14,12 +14,15 @@ import { getMetricDisplayId, METRICS } from "../data/evaluationData";
 import { buildConclusion } from "../lib/report/computeVerdict";
 import { buildDatasetDiagnosis } from "../lib/report/buildDatasetDiagnosis";
 import { buildFactSheet } from "../lib/report/buildFactSheet";
+import { evaluateStatus } from "../lib/report/evaluateStatus";
 import { fetchNarrative } from "../lib/report/fetchNarrative";
 import { translateRoleToBackend } from "../lib/mapping/translateRoleToBackend";
 
 interface UseReportDataResult {
   data: FinalReportData | null;
   isLoading: boolean;
+  /** KPI·차트는 렌더됐으나 LLM 서술(7·8·9절)이 아직 병합 중인 상태(D6b). */
+  narrativePending: boolean;
   error?: string | null;
 }
 
@@ -36,6 +39,7 @@ export function useReportData(id: string): UseReportDataResult {
     return null;
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [narrativePending, setNarrativePending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,6 +81,8 @@ export function useReportData(id: string): UseReportDataResult {
     setError(null);
 
     const runEvaluate = async () => {
+      // stage1(KPI·차트) 렌더 이후 발생한 오류는 에러 화면으로 덮지 않기 위한 플래그(D6b).
+      let narrativeStarted = false;
       try {
         const backendMappings = workflowState.columnMapping.map((row) => ({
           column: row.originalName,
@@ -136,6 +142,8 @@ export function useReportData(id: string): UseReportDataResult {
         }, workflowState.validationResult);
 
         const success_metrics = result.results.success_metrics || {};
+        // 계산 실패 지표({tcId: 에러문자열}). value 0/fail 위장 대신 'unavailable' 처리(D4).
+        const failed_metrics = result.results.failed_metrics || {};
 
         // 1. KPI 지표 계산값 치환
         const updatedKpiResults = workflowState.selectedMetricIds
@@ -143,8 +151,31 @@ export function useReportData(id: string): UseReportDataResult {
             const metric = METRICS.find((m) => m.id === tcId);
             if (!metric) return null;
 
+            // 방향성(높을수록/낮을수록 좋음) — 판정·기준 표기의 단일 출처(evaluationData.ts)
+            const higherIsBetter = metric.higherIsBetter !== false;
+            const detail = workflowState.metricDetails[tcId];
+            const target = parseFloat(detail?.targetValue ?? "");
+            const hasThreshold = Number.isFinite(target) && target > 0;
+            const displayId = getMetricDisplayId(tcId);
+
+            // 계산 실패 지표: 판정/집계에서 제외되도록 'unavailable' 로 표기(value 0/fail 위장 금지)
+            const failReason = failed_metrics[tcId];
+            if (failReason !== undefined) {
+              return {
+                tcId: displayId,
+                name: metric.name,
+                value: 0,
+                threshold: hasThreshold ? target : 0,
+                status: "unavailable" as const,
+                higherIsBetter,
+                errorMessage: typeof failReason === "string" ? failReason : String(failReason),
+                perClass: undefined,
+                subMetrics: undefined,
+              };
+            }
+
             const val = success_metrics[tcId];
-            
+
             // dict 반환 메트릭 (TC11/TC12/TC13): f1_score를 대표값으로, 세부값은 subMetrics로
             let resolvedValue = 0;
             let subMetrics: { precision: number; recall: number; f1Score: number } | undefined;
@@ -156,13 +187,9 @@ export function useReportData(id: string): UseReportDataResult {
               subMetrics = { precision: val.precision, recall: val.recall, f1Score: val.f1_score };
             }
 
-            const detail = workflowState.metricDetails[tcId];
-            const target = parseFloat(detail?.targetValue ?? "");
-            const hasThreshold = Number.isFinite(target) && target > 0;
-
-            let status: "pass" | "fail" | "warning" = "pass";
+            let status: "pass" | "fail" | "warning" | "unavailable" = "pass";
             if (hasThreshold) {
-              status = resolvedValue >= target ? "pass" : "fail";
+              status = evaluateStatus(resolvedValue, target, higherIsBetter);
             }
 
             let perClass: Array<{ label: string; value: number; status: string }> | undefined;
@@ -170,7 +197,7 @@ export function useReportData(id: string): UseReportDataResult {
               const classReport = success_metrics["TC22"];
               const excludeKeys = ["accuracy", "macro avg", "weighted avg", "micro avg", "samples avg"];
               const classValues = Object.keys(classReport).filter(k => !excludeKeys.includes(k));
-              
+
               const metricKeyMap: Record<string, string> = {
                 "TC2": "precision",
                 "TC3": "recall",
@@ -182,10 +209,9 @@ export function useReportData(id: string): UseReportDataResult {
                 perClass = classValues.map((val) => {
                   const classVal = classReport[val];
                   const score = classVal ? classVal[key] : 0;
-                  let classStatus = "pass";
-                  if (hasThreshold) {
-                    classStatus = score >= target ? "pass" : "fail";
-                  }
+                  const classStatus = hasThreshold
+                    ? evaluateStatus(score, target, higherIsBetter)
+                    : "pass";
                   return {
                     label: val,
                     value: score,
@@ -196,11 +222,12 @@ export function useReportData(id: string): UseReportDataResult {
             }
 
             return {
-              tcId: getMetricDisplayId(tcId),
+              tcId: displayId,
               name: metric.name,
               value: resolvedValue,
               threshold: hasThreshold ? target : 0,
               status,
+              higherIsBetter,
               perClass,
               subMetrics,
             };
@@ -276,7 +303,7 @@ export function useReportData(id: string): UseReportDataResult {
 
         const taskTypeResolved = workflowState.taskType || "binary";
         // 혼동행렬의 totalSamples가 가장 정확한 평가 데이터의 row 수 (멀티레이블의 경우 200)
-        const datasetSize = confusionMatrix?.totalSamples || workflowState.datasetInfo?.datasetSize;
+        const datasetSize = confusionMatrix?.totalSamples || Number(workflowState.datasetInfo?.validationSampleCount) || undefined;
 
         const datasetDiagnosis = buildDatasetDiagnosis(
           { class_distribution: resolvedClassDistribution },
@@ -314,8 +341,27 @@ export function useReportData(id: string): UseReportDataResult {
           classReport: success_metrics.TC22 ?? null,
           classLabels,
           latencyStats,
+          positiveClass: workflowState.metadata?.positive_class ?? null,
         });
 
+        // ── Stage 1: 서술과 무관한 결정론적 결과(KPI·차트·규칙 verdict)를 즉시 렌더한다.
+        //    느리거나 실패하는 LLM 서술이 성적서 전체 표시를 인질로 잡지 않도록 분리(D6b).
+        //    interpretation/recommendation* 은 baseReport 의 빈 기본값 유지, narrativeSource 미설정.
+        const stage1Report: FinalReportData = {
+          ...baseReport,
+          kpiResults: updatedKpiResults,
+          conclusion: ruleConclusion,  // full ConclusionData (verdict/score + 빈 서술)
+          datasetDiagnosis,
+          charts: { confusionMatrix, rocCurve, prCurve },
+          latency: latencyStats,
+        };
+        // id!=='preview' 라도 stage1(서술 없음)은 스토어에 저장하지 않는다(캐시 오염 방지) — 로컬 렌더만.
+        setData(stage1Report);
+        setIsLoading(false);
+        setNarrativePending(true);
+        narrativeStarted = true;
+
+        // ── Stage 2: LLM 서술을 받아 7·8·9절만 병합한다(KPI·차트는 이미 화면에 있음).
         const narrative = await fetchNarrative({
           task_type: taskTypeResolved,
           report_purpose: baseReport.evalScope.reportPurposeKey,
@@ -324,8 +370,7 @@ export function useReportData(id: string): UseReportDataResult {
         if (!active) return;
 
         const mergedReport: FinalReportData = {
-          ...baseReport,
-          kpiResults: updatedKpiResults,
+          ...stage1Report,
           // verdict/score 는 규칙 산출값, 서술(benchmark/narrative/risks)은 LLM 결과로 병합
           conclusion: { ...ruleConclusion, ...narrative.conclusionText },
           interpretation: narrative.interpretation,
@@ -333,24 +378,12 @@ export function useReportData(id: string): UseReportDataResult {
           recommendations: narrative.recommendations,
           // 추적성: 규칙 폴백으로 생성된 경우 7·8·9절에 배지 표시
           narrativeSource: narrative.source,
-          datasetDiagnosis,
-          charts: {
-            confusionMatrix,
-            rocCurve,
-            prCurve,
-          },
-          // latency 컬럼이 매핑된 경우만 실측 통계, 아니면 null(섹션이 "미측정" 안내)
-          latency: latencyStats,
           // dataValidation 은 baseReport(= /api/validate-data 실측)에서 그대로 사용한다.
-          // (이전에는 dropped_rows 기반으로 '제외된 샘플 수'/'누락값' 항목을 덮어썼으나,
-          //  검증 엔드포인트가 권위 있는 값을 제공하므로 중복 처리를 제거)
         };
 
+        // 완성본(서술 포함)만 isEvaluated=true 로 스토어에 저장한다(캐시 히트 시 완성본 서빙).
         if (id !== "preview") {
-          const evaluatedReport = {
-            ...mergedReport,
-            isEvaluated: true,
-          };
+          const evaluatedReport = { ...mergedReport, isEvaluated: true };
           useWorkspaceStore.setState((state) => ({
             evaluationRuns: state.evaluationRuns.map((r) =>
               r.id === id ? { ...r, reportData: evaluatedReport } : r
@@ -360,14 +393,18 @@ export function useReportData(id: string): UseReportDataResult {
         } else {
           setData(mergedReport);
         }
+        setNarrativePending(false);
       } catch (err: any) {
         console.error("Evaluation run failed:", err);
-        if (active) {
+        // stage1 이 이미 렌더된 뒤의 오류가 성적서를 에러 화면으로 덮지 않도록 가드.
+        // (fetchNarrative 는 내부에서 흡수하므로 여기 도달은 드묾)
+        if (active && !narrativeStarted) {
           setError(err.message || String(err));
         }
       } finally {
         if (active) {
           setIsLoading(false);
+          setNarrativePending(false);
         }
       }
     };
@@ -379,5 +416,5 @@ export function useReportData(id: string): UseReportDataResult {
     };
   }, [id, run, workflowState.rawFile, workflowState.columnMapping, workflowState.selectedMetricIds]);
 
-  return { data, isLoading, error };
+  return { data, isLoading, narrativePending, error };
 }

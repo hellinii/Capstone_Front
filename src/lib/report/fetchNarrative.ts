@@ -36,14 +36,20 @@ function normalizePriority(v: unknown): ReportRecommendation["priority"] {
   return "MEDIUM";
 }
 
+// 백엔드 최악 지연(45s × 최대 3회 시도 + backoff ≈ 150s)을 상회하는 값. 초과 시 abort→EMPTY(graceful).
+const NARRATIVE_TIMEOUT_MS = 160_000;
+
 export async function fetchNarrative(
   payload: NarrativeRequestPayload,
 ): Promise<NarrativeFields> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), NARRATIVE_TIMEOUT_MS);
   try {
     const resp = await fetch("/api/generate-narrative", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
     if (!resp.ok) return EMPTY;
 
@@ -74,5 +80,7 @@ export async function fetchNarrative(
     };
   } catch {
     return EMPTY;
+  } finally {
+    clearTimeout(timer);
   }
 }

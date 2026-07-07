@@ -31,7 +31,7 @@ export interface FactSheet {
   dropped_rows: number;
   metrics: FactSheetMetric[];
   per_class: FactSheetPerClass[];
-  confusion: { labels: string[]; matrix: number[][] } | null;
+  confusion: { labels: string[]; matrix: number[][]; positive_class: string | null } | null;
   distribution: {
     class_distribution: Record<string, number>;
     imbalance_ratio: number | null;
@@ -68,6 +68,8 @@ export interface BuildFactSheetInput {
   classLabels: string[];
   /** latency 컬럼이 매핑/측정된 경우의 통계 (미측정이면 null/undefined) */
   latencyStats?: LatencyStats | null;
+  /** 양성 클래스 라벨 (2x2 혼동행렬 FN/FP 매핑 기준, binary) */
+  positiveClass?: string | null;
 }
 
 function num(v: unknown): number | null {
@@ -108,10 +110,14 @@ export function buildFactSheet(input: BuildFactSheetInput): FactSheet {
     classReport,
     classLabels,
     latencyStats,
+    positiveClass,
   } = input;
 
-  // 지표: 임계값(threshold)이 없으면(0) 정보 제공(info)으로 표기, threshold 는 null
-  const metrics: FactSheetMetric[] = kpiResults.map((r) => {
+  // 지표: 임계값(threshold)이 없으면(0) 정보 제공(info)으로 표기, threshold 는 null.
+  // 계산 실패(unavailable) 지표는 value 0 이 서술로 새지 않도록 아예 제외한다(D4).
+  const metrics: FactSheetMetric[] = kpiResults
+    .filter((r) => r.status !== "unavailable")
+    .map((r) => {
     const hasThreshold = r.threshold > 0;
     return {
       tc_id: r.tcId,
@@ -134,7 +140,11 @@ export function buildFactSheet(input: BuildFactSheetInput): FactSheet {
     metrics,
     per_class: buildPerClass(classReport, classLabels),
     confusion: confusionMatrix
-      ? { labels: confusionMatrix.labels, matrix: confusionMatrix.matrix }
+      ? {
+          labels: confusionMatrix.labels,
+          matrix: confusionMatrix.matrix,
+          positive_class: positiveClass ?? null,
+        }
       : null,
     distribution: hasDistribution
       ? {

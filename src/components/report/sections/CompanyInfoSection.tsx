@@ -1,4 +1,4 @@
-import type { ApplicantInfo, EvalScope, PerformerInfo } from "../../../types/finalReport.types";
+import type { ApplicantInfo, EvalScope, FinalReportMeta, PerformerInfo } from "../../../types/finalReport.types";
 import { REPORT_PURPOSE_LABEL, REPORT_PURPOSE_OVERVIEW } from "../../../lib/report/reportConstants";
 import { SectionTitle } from "../ui/SectionTitle";
 import { TwoColTable } from "../ui/TwoColTable";

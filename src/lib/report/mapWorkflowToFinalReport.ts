@@ -269,6 +269,9 @@ function buildTcList(
       const target = parseFloat(detail?.targetValue ?? "");
       const hasThreshold = Number.isFinite(target) && target > 0;
 
+      // 방향성에 맞춰 합격 기준 표기(낮을수록 좋은 지표는 ≤). 6절 표(MetricRow)와 일관.
+      const criteriaOp = metric.higherIsBetter === false ? "≤" : "≥";
+
       // β 를 입력받는 지표(F-beta 등)는 사용자가 지정한 β 를 지표명에 함께 표기(입력값이 성적서에 드러나도록).
       const betaVal = detail?.beta?.trim();
       const showsBeta = metric.additionalFields?.includes("beta") && betaVal;
@@ -278,7 +281,7 @@ function buildTcList(
         tcId: getMetricDisplayId(tcId),
         name: displayName,
         threshold: hasThreshold ? target : 0,
-        passCriteria: hasThreshold ? `≥ ${target.toFixed(2)}` : "정보 제공",
+        passCriteria: hasThreshold ? `${criteriaOp} ${target.toFixed(2)}` : "정보 제공",
       };
     })
     .filter((item): item is TcItem => item !== null);

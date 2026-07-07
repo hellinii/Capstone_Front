@@ -19,12 +19,13 @@ import { SignatureSection } from "../../components/report/sections/SignatureSect
 
 export function ReportPrint() {
   const { id = "preview" } = useParams();
-  const { data } = useReportData(id);
+  const { data, narrativePending } = useReportData(id);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Puppeteer waits for data-pdf-ready attribute before capturing, and triggers browser print
+  // Puppeteer waits for data-pdf-ready attribute before capturing, and triggers browser print.
+  // 서술(7·8·9절) 병합이 끝날 때까지(narrativePending=false) 캡처/인쇄를 미뤄 PDF 완결성 유지(D6b).
   useEffect(() => {
-    if (!data || !containerRef.current) return;
+    if (!data || narrativePending || !containerRef.current) return;
     const raf = requestAnimationFrame(() => {
       containerRef.current?.setAttribute("data-pdf-ready", "true");
       // 레이아웃 렌더링이 완료된 후 자동으로 브라우저 인쇄 다이얼로그 호출
@@ -33,7 +34,7 @@ export function ReportPrint() {
       }, 300);
     });
     return () => cancelAnimationFrame(raf);
-  }, [data]);
+  }, [data, narrativePending]);
 
   if (!data) return null;
 

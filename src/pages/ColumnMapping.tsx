@@ -114,6 +114,7 @@ export function ColumnMapping() {
         onClassLabelDescriptionsChange={store.setClassLabelDescriptions}
         positiveClass={store.metadata?.positive_class || ""}
         onPositiveClassChange={handlePositiveClassChange}
+        positiveClassAmbiguous={store.metadata?.positive_class_ambiguous}
       />
     </WorkflowShell>
   );
