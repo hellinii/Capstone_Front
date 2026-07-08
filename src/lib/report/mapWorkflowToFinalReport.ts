@@ -175,7 +175,12 @@ function buildDatasetInfo(input: MapWorkflowToReportInput, taskType: TaskType): 
   // y_true 컬럼에서 실제 클래스 값을 도출 (있으면 mock/추론 대신 실제 값 사용)
   const yTrueRow = input.columnMapping.find((r) => r.confirmedRole === "y_true");
   let classValues: string[] = [];
-  if (yTrueRow) {
+  
+  const colName = yTrueRow?.originalName;
+  const meta = input.metadata as any;
+  if (colName && meta?.column_unique_values?.[colName]) {
+    classValues = meta.column_unique_values[colName];
+  } else if (yTrueRow) {
     if (taskType === "multilabel") {
       const allLabels = yTrueRow.sampleValues.flatMap((val) => 
         val.split(/[|,]/).map((s) => s.trim()).filter(Boolean)

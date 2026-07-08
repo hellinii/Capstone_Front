@@ -32,6 +32,8 @@ interface ColumnMappingProps {
   onPositiveClassChange?: (value: string) => void;
   /** 백엔드가 양성 클래스 자동 판단에 실패한 경우 경고 표시(D5d). */
   positiveClassAmbiguous?: boolean;
+  detectedClasses?: string[];
+  columnUniqueValues?: Record<string, string[]>;
 }
 
 const roleOptions: Array<{ value: MappingRole; label: string }> = [
@@ -46,16 +48,18 @@ const roleOptions: Array<{ value: MappingRole; label: string }> = [
 ];
 
 export function ColumnMapping({
-  taskType = "",
+  taskType = "multiclass",
   selectedMetricIds = [],
   rows,
   onRowsChange,
   onValidationChange,
   classLabelDescriptions = {},
-  onClassLabelDescriptionsChange,
+  onClassLabelDescriptionsChange = () => {},
   positiveClass = "",
-  onPositiveClassChange,
-  positiveClassAmbiguous,
+  onPositiveClassChange = () => {},
+  positiveClassAmbiguous = false,
+  detectedClasses = [],
+  columnUniqueValues = {},
 }: ColumnMappingProps) {
   const resolvedTaskType: TaskType = taskType || "multiclass";
   const selectedMetrics = useMemo(
@@ -70,6 +74,13 @@ export function ColumnMapping({
 
   const yTrueRow = useMemo(() => rows.find((r) => r.confirmedRole === "y_true"), [rows]);
   const yTrueValues = useMemo(() => {
+    const colName = yTrueRow?.originalName;
+    if (colName && columnUniqueValues?.[colName]) {
+      return columnUniqueValues[colName];
+    }
+    if (detectedClasses && detectedClasses.length > 0) {
+      return detectedClasses;
+    }
     if (!yTrueRow) return [];
     // 멀티레이블은 "sports|news" 처럼 결합된 값 → 원자 라벨로 분리해야 성적서 매퍼(동일하게 /[|,]/ 분리)와
     // 클래스 설명 키가 일치한다(분리 안 하면 설명이 매칭 안 돼 "설명 미입력"으로 유실됨).
@@ -80,7 +91,7 @@ export function ColumnMapping({
       return Array.from(new Set(atoms));
     }
     return Array.from(new Set(yTrueRow.sampleValues));
-  }, [yTrueRow, resolvedTaskType]);
+  }, [yTrueRow, resolvedTaskType, detectedClasses, columnUniqueValues]);
 
   const roleCounts = useMemo(() => {
     const counts: Partial<Record<MappingRole, number>> = {};
