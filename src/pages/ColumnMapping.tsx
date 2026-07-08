@@ -116,6 +116,12 @@ export function ColumnMapping() {
         positiveClass={store.metadata?.positive_class || ""}
         onPositiveClassChange={handlePositiveClassChange}
         positiveClassAmbiguous={store.metadata?.positive_class_ambiguous}
+        detectedClasses={
+          store.metadata?.detected_classes?.length
+            ? store.metadata.detected_classes
+            : store.metadata?.detected_labels
+        }
+        columnUniqueValues={store.metadata?.column_unique_values}
       />
     </WorkflowShell>
   );
