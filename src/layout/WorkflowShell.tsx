@@ -65,7 +65,8 @@ export function WorkflowShell({
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col relative">
-      <AppHeader />
+      {/* 워크플로우 안에서는 현재 분류 유형을 계속 보여준다(docs/UI_DESIGN.md §4). */}
+      <AppHeader showTaskType />
       <StepTabs />
       <div className="flex-1 pb-8">
         {children}

@@ -15,7 +15,6 @@ import { fromIsoDate, toIsoDate } from "../../utils/domain/isoDate";
 interface BasicInfoProps {
   formData: BasicInfoFormData;
   onFormDataChange: (value: BasicInfoFormData | ((prev: BasicInfoFormData) => BasicInfoFormData)) => void;
-  onTaskTypeChange?: (type: string) => void;
 }
 
 export function isBasicInfoValid(formData: BasicInfoFormData) {
@@ -43,15 +42,9 @@ export function isBasicInfoValid(formData: BasicInfoFormData) {
 export function BasicInfo({
   formData,
   onFormDataChange,
-  onTaskTypeChange,
 }: BasicInfoProps) {
   const update = <K extends keyof BasicInfoFormData>(field: K, value: BasicInfoFormData[K]) => {
     onFormDataChange((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleTaskTypeChange = (value: string) => {
-    update("taskType", value as BasicInfoFormData["taskType"]);
-    onTaskTypeChange?.(value);
   };
 
   return (
@@ -152,14 +145,10 @@ export function BasicInfo({
               <CardTitle className="text-lg font-semibold">Model information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Field label="Model name" required>
-                  <Input value={formData.modelName} onChange={(e) => update("modelName", e.target.value)} />
-                </Field>
-                <Field label="Version" required>
-                  <Input value={formData.versionName} onChange={(e) => update("versionName", e.target.value)} />
-                </Field>
-              </div>
+              {/* 모델명·버전은 업로드 단계에서 받는다 — 성적서를 내지 않는 run 도 이름이
+                  있어야 워크스페이스에서 모델별로 묶이기 때문이다. 여기서 한 번 더
+                  입력받으면 같은 값을 두 화면이 편집하게 되므로 읽기 전용으로만 보여준다. */}
+              <ReadOnlyModelIdentity modelName={formData.modelName} versionName={formData.versionName} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Field label="Model purpose" required>
@@ -178,18 +167,9 @@ export function BasicInfo({
                 </Field>
               </div>
 
-              <div className="space-y-3">
-                <Label>
-                  Classifier type <span className="text-red-600">*</span>
-                </Label>
-                <RadioGroup value={formData.taskType} onValueChange={handleTaskTypeChange} className="space-y-0">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <ClassifierCard id="binary" title="Binary" description="One of two classes per sample" selected={formData.taskType === "binary"} />
-                    <ClassifierCard id="multiclass" title="Multi-class" description="One of many classes per sample" selected={formData.taskType === "multiclass"} />
-                    <ClassifierCard id="multilabel" title="Multi-label" description="Multiple labels can be assigned" selected={formData.taskType === "multilabel"} />
-                  </div>
-                </RadioGroup>
-              </div>
+              {/* 분류 유형(Classifier type)은 워크플로우 진입 화면(`/app`)으로 옮겼다
+                  (docs/UI_DESIGN.md §1). 앱 전체를 가르는 선택이 필수 입력 12개 중
+                  마지막에 놓여 있었다. 현재 유형은 헤더 배지에서 확인·변경한다. */}
             </CardContent>
           </Card>
 
@@ -207,6 +187,37 @@ export function BasicInfo({
         </div>
       </main>
     </>
+  );
+}
+
+/**
+ * 업로드 단계에서 정한 모델 이름표를 성적서 구간에서 **확인만** 하게 한다.
+ * 고치려면 업로드 화면으로 돌아가야 한다 — 편집 지점이 둘이면 어느 쪽이 참인지
+ * 화면만 보고는 알 수 없다.
+ */
+function ReadOnlyModelIdentity({
+  modelName,
+  versionName,
+}: {
+  modelName: string;
+  versionName: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <div className="text-xs text-muted-foreground">Model name</div>
+          <div className="mt-1 text-sm font-medium text-foreground">{modelName || "—"}</div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground">Version</div>
+          <div className="mt-1 text-sm font-medium text-foreground">{versionName || "—"}</div>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Set in the data upload step. Start a new version from the workspace to change it.
+      </p>
+    </div>
   );
 }
 
@@ -284,38 +295,6 @@ function ChoiceCard({
     >
       <div className="flex items-start gap-2">
         <RadioGroupItem value={id} id={id} />
-        <div className="flex-1">
-          <div className="text-sm font-semibold mb-1">{title}</div>
-          <div className="text-xs text-muted-foreground">{description}</div>
-        </div>
-      </div>
-    </label>
-  );
-}
-
-function ClassifierCard({
-  id,
-  title,
-  description,
-  selected,
-  radioValue,
-}: {
-  id: string;
-  title: string;
-  description: string;
-  selected: boolean;
-  radioValue?: string;
-}) {
-  return (
-    <label
-      htmlFor={id}
-      className={cn(
-        "flex flex-col p-5 rounded-lg border-2 cursor-pointer transition-colors",
-        selected ? "border-primary bg-blue-50" : "border-border bg-card hover:border-gray-400",
-      )}
-    >
-      <div className="flex items-start gap-2">
-        <RadioGroupItem value={radioValue ?? id} id={id} className="mt-0.5" />
         <div className="flex-1">
           <div className="text-sm font-semibold mb-1">{title}</div>
           <div className="text-xs text-muted-foreground">{description}</div>

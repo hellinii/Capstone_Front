@@ -1,15 +1,22 @@
 import { useNavigate } from "react-router";
+import { BarChart3, Columns3, FileBarChart, ListChecks, ShieldCheck, Upload } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "../../utils/styling/styles";
-import { useWorkflowStore, stepToPath } from "../../utils/stores/useWorkflowStore";
+import { useWorkflowStore, stepToPath, STEP } from "../../utils/stores/useWorkflowStore";
 
-const steps = [
-  "Basic info",
-  "Metrics",
-  "Metric details",
-  "Data upload",
-  "Column mapping",
-  "Validation",
-  "Final report",
+/**
+ * 평가 구간의 단계 탭. **`STEP_PATHS` 와 순서가 같아야 한다**(번호 = 배열 위치).
+ *
+ * 성적서 발급 단계는 여기 없다 — 평가만 하고 끝내는 것이 정상 동선이고, 성적서는
+ * 평가 결과 화면에서 이어지는 별도 구간이다.
+ */
+const steps: { label: string; Icon: LucideIcon }[] = [
+  { label: "Data upload", Icon: Upload },
+  { label: "Metrics", Icon: ListChecks },
+  { label: "Column mapping", Icon: Columns3 },
+  { label: "Validation", Icon: ShieldCheck },
+  { label: "Evaluation", Icon: BarChart3 },
+  { label: "Result", Icon: FileBarChart },
 ];
 
 export function StepTabs() {
@@ -20,12 +27,17 @@ export function StepTabs() {
 
   const handleStepClick = (step: number) => {
     useWorkflowStore.getState().setCurrentStep(step);
-    // 7번(최종 성적서)은 방금 만든 run 으로 보낸다. stepToPath(7) 은 항상
-    // 임시 성적서 경로를 가리켜, 실제 성적서가 아니라 저장되지 않는 빈 문서로 갔다
-    // (ISSUES.md E-16·E-06). 그 경로는 폐지됐고 이제 워크스페이스 목록으로 간다.
-    if (step === 7 && lastRunId) {
-      navigate(`/report/${lastRunId}`);
-      return;
+    // run 이 필요한 단계는 방금 만든 run 으로 보낸다. stepToPath 는 목적지를 모르므로
+    // 워크스페이스 목록을 가리킨다 — 종전에는 저장되지 않는 빈 성적서로 갔다(E-16·E-06).
+    if (lastRunId) {
+      if (step === STEP.SUMMARY) {
+        navigate(`/report/${lastRunId}/summary`);
+        return;
+      }
+      if (step === STEP.RESULT) {
+        navigate(`/report/${lastRunId}`);
+        return;
+      }
     }
     navigate(stepToPath(step));
   };
@@ -34,7 +46,7 @@ export function StepTabs() {
     <div className="h-12 border-b border-border bg-card sticky top-14 z-40">
       <div className="h-full px-8 max-w-[1344px] mx-auto">
         <div className="h-full flex items-stretch">
-          {steps.map((label, index) => {
+          {steps.map(({ label, Icon }, index) => {
             const stepNumber = index + 1;
             const isActive = stepNumber === currentStep;
             const isCompleted = completedSteps.includes(stepNumber);
@@ -55,13 +67,13 @@ export function StepTabs() {
               >
                 <span
                   className={cn(
-                    "flex items-center justify-center h-5 w-5 rounded-full text-xs",
+                    "flex items-center justify-center h-5 w-5 rounded-full",
                     isActive && "bg-primary text-primary-foreground",
-                    isCompleted && "bg-blue-50",
+                    isCompleted && "bg-blue-50 text-foreground",
                     isUpcoming && "border border-border text-muted-foreground",
                   )}
                 >
-                  {stepNumber}
+                  <Icon className="h-3 w-3" />
                 </span>
 
                 <span

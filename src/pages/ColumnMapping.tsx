@@ -1,13 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
+import { useWorkflowStore, stepToPath, STEP } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import { ColumnMapping as ColumnMappingContent } from "../components/column-mapping/ColumnMapping";
 import { confirmMapping } from "../lib/report/confirmMappingApi";
 import { FileReuploadNotice } from "../components/workflow/FileReuploadNotice";
 
 /**
- * Step 5 ??Column Mapping page
+ * Step 3 — 컬럼 매핑.
+ *
+ * 지표 선택 **뒤**에 온다. 그래야 "선택한 지표가 요구하는 역할"을 계산해 누락을 짚어줄 수
+ * 있다(`getRequiredColumnsForSelection`).
+ *
+ * 순서를 이렇게 둔 이유는 다음 단계인 검증 때문이기도 하다 — `/api/validate-data` 는
+ * `selected_metric_ids` 가 비면 422 로 거절한다(`EvaluateRequest` 의 `min_length=1`).
+ * 지표 선택은 검증보다 반드시 앞서야 한다.
  */
 export function ColumnMapping() {
   const navigate = useNavigate();
@@ -39,9 +46,9 @@ export function ColumnMapping() {
         return;
       }
 
-      store.markStepCompleted(5);
-      store.setCurrentStep(6);
-      navigate(stepToPath(6));
+      store.markStepCompleted(STEP.MAPPING);
+      store.setCurrentStep(STEP.VALIDATION);
+      navigate(stepToPath(STEP.VALIDATION));
     } catch (err: any) {
       console.error("Mapping confirmation failed:", err);
       alert(`매핑 확인 실패: ${err.message || err}`);
@@ -51,8 +58,8 @@ export function ColumnMapping() {
   };
 
   const handlePrevious = () => {
-    store.setCurrentStep(4);
-    navigate(stepToPath(4));
+    store.setCurrentStep(STEP.METRICS);
+    navigate(stepToPath(STEP.METRICS));
   };
 
   const handlePositiveClassChange = (val: string) => {

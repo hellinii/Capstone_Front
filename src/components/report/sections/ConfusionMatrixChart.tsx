@@ -51,15 +51,15 @@ function SingleMatrixChart({ data }: ConfusionMatrixChartProps) {
     <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">Confusion Matrix (혼동 행렬)</h3>
-          <p className="text-xs text-slate-400 mt-0.5">실제 클래스와 예측 클래스의 오분류 행렬 분포</p>
+          <h3 className="text-sm font-bold text-slate-800">Confusion Matrix</h3>
+          <p className="text-xs text-slate-400 mt-0.5">Actual versus predicted class counts</p>
         </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-1 font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
-            <span className="size-2 rounded-full bg-emerald-600"></span> 정분류 (Pass)
+            <span className="size-2 rounded-full bg-emerald-600"></span> Correct
           </span>
           <span className="inline-flex items-center gap-1 font-medium text-rose-700 bg-rose-50 px-2 py-1 rounded border border-rose-200">
-            <span className="size-2 rounded-full bg-rose-500"></span> 오분류 (Fail)
+            <span className="size-2 rounded-full bg-rose-500"></span> Misclassified
           </span>
         </div>
       </div>
@@ -74,7 +74,7 @@ function SingleMatrixChart({ data }: ConfusionMatrixChartProps) {
           <div />
           {labels.map((label) => (
             <div key={label} className="py-2 text-center text-xs font-bold text-slate-600 bg-slate-50 rounded border border-slate-100">
-              예측: {label}
+              Predicted: {label}
             </div>
           ))}
 
@@ -82,7 +82,7 @@ function SingleMatrixChart({ data }: ConfusionMatrixChartProps) {
           {matrix.map((row, ri) => (
             <div key={`row-${ri}`} className="contents">
               <div className="flex items-center justify-end pr-3 py-2 text-xs font-bold text-slate-600 bg-slate-50 rounded border border-slate-100">
-                실제: {labels[ri]}
+                Actual: {labels[ri]}
               </div>
               {row.map((count, ci) => {
                 const intensity = maxVal > 0 ? count / maxVal : 0;
@@ -115,23 +115,23 @@ function SingleMatrixChart({ data }: ConfusionMatrixChartProps) {
 
         {/* 오른쪽 요약 통계 패널 */}
         <div className="w-full md:w-56 space-y-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3.5 text-xs">
-          <p className="font-bold text-slate-700 border-b border-slate-200 pb-1.5">요약 통계</p>
+          <p className="font-bold text-slate-700 border-b border-slate-200 pb-1.5">Summary</p>
           <div className="flex justify-between items-center py-1">
-            <span className="text-slate-500">총 평가 샘플 수</span>
-            <span className="font-semibold text-slate-800 font-mono">{totalSamples.toLocaleString()}건</span>
+            <span className="text-slate-500">Total samples</span>
+            <span className="font-semibold text-slate-800 font-mono">{totalSamples.toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center py-1 border-t border-slate-200/60">
-            <span className="text-slate-500">오분류 건수</span>
-            <span className="font-semibold text-rose-600 font-mono">{misclassified.toLocaleString()}건</span>
+            <span className="text-slate-500">Misclassified</span>
+            <span className="font-semibold text-rose-600 font-mono">{misclassified.toLocaleString()}</span>
           </div>
           {labels.length === 2 && (
             <div className="pl-2 text-[11px] text-slate-400 space-y-0.5">
-              <div>• FP (위양성): {fp.toLocaleString()}건</div>
-              <div>• FN (위음성): {fn.toLocaleString()}건</div>
+              <div>• False positives: {fp.toLocaleString()}</div>
+              <div>• False negatives: {fn.toLocaleString()}</div>
             </div>
           )}
           <div className="flex justify-between items-center py-1 border-t border-slate-200/60">
-            <span className="text-slate-500">오분류율</span>
+            <span className="text-slate-500">Error rate</span>
             <span className="font-semibold text-rose-600 font-mono">{misclassRate.toFixed(1)}%</span>
           </div>
         </div>

@@ -72,7 +72,7 @@ describe("Step 6 평가 실행 게이트", () => {
 
   it("[E-04] 차단된 이유가 화면에 표시된다", () => {
     renderPage({ validationData: null, error: "Failed to fetch" });
-    expect(screen.getByText(/평가를 실행할 수 없습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/the evaluation cannot run/i)).toBeInTheDocument();
   });
 });
 
@@ -96,26 +96,13 @@ describe("6단계 상단 안내 (ISSUES.md B-03·B-04·A-12)", () => {
     expect(screen.getByText(/예측을 파생합니다/)).toBeVisible();
   });
 
-  it("계산 가능한 지표 N/M 이 보인다", () => {
-    useWorkflowStore.setState({
-      columnNotes: [],
-      mappingWarnings: [],
-      selectedMetricIds: ["M1", "M9"],
-      availableMetricIds: ["M1"],
-    });
-
-    renderPage({});
-
-    expect(screen.getByText(/계산 가능한 지표 1\/2/)).toBeVisible();
-  });
-
   it("안내가 없으면 배너를 그리지 않는다", () => {
-    useWorkflowStore.setState({
-      columnNotes: [], mappingWarnings: [], selectedMetricIds: [], availableMetricIds: null,
-    });
+    useWorkflowStore.setState({ columnNotes: [], mappingWarnings: [] });
 
     renderPage({});
 
-    expect(screen.queryByText(/계산 가능한 지표/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/\[Column analysis\]|\[Mapping\]|\[Preprocessing\]/),
+    ).not.toBeInTheDocument();
   });
 });

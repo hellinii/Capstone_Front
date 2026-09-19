@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
 import { useWorkflowStore } from "../utils/stores/useWorkflowStore";
-import { stepToPath } from "../utils/stores/useWorkflowStore";
+import { STEP, stepToPath } from "../utils/stores/useWorkflowStore";
 import { ensureActiveWorkspace } from "../utils/domain/ensureActiveWorkspace";
 
 /**
@@ -51,9 +51,10 @@ describe("preview 경로가 코드에서 사라졌다 (E-06)", () => {
   });
 });
 
-describe("stepToPath(7) — preview 를 가리키지 않는다", () => {
+describe("마지막 단계의 stepToPath — preview 를 가리키지 않는다", () => {
   it("워크스페이스 목록으로 간다", () => {
-    expect(stepToPath(7)).toBe("/workspaces");
+    // 번호를 직접 쓰지 않는다 — 단계 순서가 바뀌어도 '마지막 단계'라는 의미는 유지된다.
+    expect(stepToPath(STEP.RESULT)).toBe("/workspaces");
   });
 });
 
@@ -103,8 +104,8 @@ describe("6단계는 워크스페이스 없이 성적서로 넘어가지 않는�
     const source = read("pages/DataValidation.tsx");
 
     expect(source).toContain("ensureActiveWorkspace");
-    // 워크스페이스 없이 stepToPath(7) 로 빠지는 폴백이 사라졌다 —
+    // 워크스페이스 없이 마지막 단계 경로로 빠지는 폴백이 사라졌다 —
     // 그 분기는 계산해 둔 reportData 를 버리고 preview 로 갔다.
-    expect(source).not.toContain("navigate(stepToPath(7))");
+    expect(source).not.toContain("navigate(stepToPath(STEP.RESULT))");
   });
 });

@@ -19,7 +19,8 @@ describe("BackendNoticePanel", () => {
     ]} />);
 
     expect(screen.getByText(/memo 를 제외했습니다/)).toBeInTheDocument();
-    expect(screen.getByText("[컬럼 분석]")).toBeInTheDocument();
+    // 출처 라벨은 화면 문구(영문). 메시지 본문은 백엔드가 준 그대로 싣는다.
+    expect(screen.getByText("[Column analysis]")).toBeInTheDocument();
   });
 
   it("[B-04] 매핑 확정 경고를 보여준다", () => {
@@ -32,15 +33,9 @@ describe("BackendNoticePanel", () => {
     expect(screen.getByText(/2개 행이 제외되었습니다/)).toBeInTheDocument();
   });
 
-  it("[A-12] 계산 가능한 지표 N/M 을 보여준다", () => {
-    render(<BackendNoticePanel selectedMetricIds={["M1", "M9"]} availableMetricIds={["M1"]} />);
-    expect(screen.getByText(/계산 가능한 지표 1\/2/)).toBeInTheDocument();
-  });
-
-  it("[A-12] 전부 계산 가능하면 경고 문구를 덧붙이지 않는다", () => {
-    render(<BackendNoticePanel selectedMetricIds={["M1"]} availableMetricIds={["M1", "M9"]} />);
-    expect(screen.getByText(/계산 가능한 지표 1\/1/)).toBeInTheDocument();
-    expect(screen.queryByText(/계산할 수 없습니다/)).not.toBeInTheDocument();
+  it("안내가 하나도 없으면 배너를 그리지 않는다", () => {
+    const { container } = render(<BackendNoticePanel />);
+    expect(container).toBeEmptyDOMElement();
   });
 });
 
@@ -50,7 +45,6 @@ describe("배선 — 만들어 두고 붙이지 않는 실수 차단", () => {
     expect(source).toContain("<BackendNoticePanel");
     expect(source).toContain("store.columnNotes");
     expect(source).toContain("store.mappingWarnings");
-    expect(source).toContain("store.availableMetricIds");
   });
 
   it("성적서 화면에도 마운트돼 있다(D-16 은 여기서 도착한다)", () => {
@@ -61,7 +55,9 @@ describe("배선 — 만들어 두고 붙이지 않는 실수 차단", () => {
 
   it("컬럼 분석 응답의 column_notes 를 store 로 나른다", () => {
     expect(read("hooks/useColumnAnalysis.ts")).toContain("result.column_notes");
-    expect(read("pages/DataUpload.tsx")).toContain("setColumnNotes");
+    // 분석은 매핑 **직전** 단계에서 돈다(2026-09-19 재배치). 업로드에서 돌리면 결과가
+    // 필요 없는 지표 선택 화면으로 가려고 최대 150초를 기다리게 된다.
+    expect(read("pages/TestItems.tsx")).toContain("setColumnNotes");
   });
 
   it("매핑 확정 응답의 warnings·available_metric_ids 를 store 로 나른다", () => {

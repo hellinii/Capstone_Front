@@ -68,18 +68,20 @@ export function describeMappingValidity(
   missingRoleCodes: string[] = [],
 ): string | null {
   switch (reason) {
+    // 단계를 번호가 아니라 **이름**으로 가리킨다. 번호는 개편 때마다 바뀌는데
+    // (업로드는 4단계였다가 1단계가 됐다) 문자열은 같이 안 바뀌어 조용히 거짓말이 된다.
     case "no_task_type":
-      return "작업 유형이 지정되지 않았습니다. 1단계부터 다시 진행해 주세요.";
+      return "No classifier type is set. Start again from the classifier type screen.";
     case "no_metrics":
-      return "선택된 평가 지표가 없습니다. 2단계에서 지표를 선택해 주세요.";
+      return "No metrics are selected. Pick them in the Metrics step.";
     case "no_mapped_rows":
-      return "역할이 배정된 컬럼이 없습니다. 4단계에서 데이터 파일을 다시 업로드해 주세요.";
+      return "No column has a role assigned. Upload the data file again in the Data upload step.";
     case "duplicate_roles":
-      return "같은 역할이 여러 컬럼에 배정되었습니다. 중복을 정리해 주세요.";
+      return "The same role is assigned to more than one column. Resolve the duplicates.";
     case "missing_roles":
-      return `필수 역할이 배정되지 않았습니다: ${missingRoleCodes.join(", ")}`;
+      return `These required roles are not assigned: ${missingRoleCodes.join(", ")}`;
     case "no_positive_class":
-      return "이진 분류는 양성 클래스를 지정해야 합니다.";
+      return "Binary classification needs a positive class.";
     case "ok":
       return null;
   }

@@ -1,39 +1,119 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
+import { AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Button } from "../components/ui/button";
+import { useWorkflowStore, stepToPath, STEP } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import { TestItems as TestItemsContent } from "../components/test-items/TestItems";
+import { useColumnAnalysis } from "../hooks/useColumnAnalysis";
 
 /**
- * Step 2 — Metric selection page
+ * Step 2 — 평가 지표 선택.
+ *
+ * 컬럼 매핑·검증보다 **앞선다**. `/api/validate-data` 가 `selected_metric_ids` 를 필수로
+ * 받기 때문이다(`EvaluateRequest` 의 `min_length=1` — 빈 목록이면 결측 제거 범위를 좁힐 수
+ * 없어 거절한다). 검증을 지표보다 앞에 두려면 백엔드 스키마를 갈라야 한다.
+ *
+ * 목표값(합격 기준)은 여기서 묻지 않는다. 합불 판정은 성적서의 일이고, 평가는 "정확도가
+ * 몇 %인가"만 답하면 된다 — 목표값은 성적서 구간으로 갔다.
+ *
+ * β(M5)만 여기 남는다. 목표값과 달리 `/api/evaluate` 페이로드에 실리는 **평가 입력**이다.
  */
 export function TestItems() {
   const navigate = useNavigate();
   const store = useWorkflowStore();
+  const { analyzeColumns, isAnalyzing, cancel } = useColumnAnalysis();
+  // 종전에는 raw alert() 로만 드러났다. 화면 안에 남겨야 사용자가 읽고 조치할 수 있다(E-18).
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
-  const handleNext = () => {
-    store.markStepCompleted(2);
-    store.setCurrentStep(3);
-    navigate(stepToPath(3));
+  const beta = store.metricDetails["M5"]?.beta ?? "1.0";
+  const betaInvalid =
+    store.selectedMetricIds.includes("M5") &&
+    (beta.trim() === "" || !Number.isFinite(Number(beta)) || Number(beta) <= 0);
+
+  const handleBetaChange = (value: string) => {
+    store.setMetricDetails((prev) => {
+      const existing = prev.M5 ?? {
+        id: "M5",
+        name: "F-beta Score",
+        description: "",
+        targetValue: "",
+        positiveClass: "",
+        completed: false,
+        beta: "1.0",
+      };
+      return { ...prev, M5: { ...existing, beta: value } };
+    });
+  };
+
+  /**
+   * 다음 화면(컬럼 매핑)이 쓸 자동 매핑을 여기서 받아둔다.
+   *
+   * 업로드 단계가 아니라 여기인 이유: 이 호출은 최대 150초가 걸리는데
+   * (`ANALYSIS_TIMEOUT_MS`), 결과를 소비하는 건 바로 다음 화면이다. 업로드에서 돌리면
+   * 결과가 필요 없는 이 화면으로 오려고 그 시간을 기다리게 된다.
+   */
+  const handleNext = async () => {
+    if (!store.rawFile) {
+      setAnalysisError("Evaluation file is missing. Please re-upload it in the data upload step.");
+      return;
+    }
+
+    setAnalysisError(null);
+    try {
+      const { rows, metadata, columnNotes } = await analyzeColumns(
+        store.rawFile,
+        store.taskType || "multiclass",
+      );
+
+      store.setColumnMapping(rows);
+      store.setMetadata(metadata);
+      // 백엔드가 만든 컬럼 대조 안내를 검증 단계까지 나른다(ISSUES.md B-03).
+      store.setColumnNotes(columnNotes);
+
+      store.markStepCompleted(STEP.METRICS);
+      store.setCurrentStep(STEP.MAPPING);
+      navigate(stepToPath(STEP.MAPPING));
+    } catch (err: any) {
+      console.error("Column analysis failed:", err);
+      setAnalysisError(err?.message || String(err));
+    }
   };
 
   const handlePrevious = () => {
-    store.setCurrentStep(1);
-    navigate(stepToPath(1));
+    store.setCurrentStep(STEP.UPLOAD);
+    navigate(stepToPath(STEP.UPLOAD));
   };
 
   return (
     <WorkflowShell
       showActionBar
-      showPrevious={true}
-      showNext={true}
+      showPrevious={!isAnalyzing}
+      showNext
       onPrevious={handlePrevious}
       onNext={handleNext}
-      nextDisabled={store.selectedMetricIds.length === 0}
-      nextLabel="Next step"
+      nextDisabled={store.selectedMetricIds.length === 0 || betaInvalid || isAnalyzing}
+      nextLabel={isAnalyzing ? "Analyzing columns..." : "Next step"}
+      leftAction={
+        isAnalyzing ? (
+          <Button variant="outline" onClick={cancel}>
+            Cancel analysis
+          </Button>
+        ) : undefined
+      }
     >
+      {analysisError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{analysisError}</AlertDescription>
+        </Alert>
+      )}
       <TestItemsContent
         taskType={store.taskType}
         onSelectedMetricsChange={store.setSelectedMetricIds}
+        beta={beta}
+        onBetaChange={handleBetaChange}
       />
     </WorkflowShell>
   );

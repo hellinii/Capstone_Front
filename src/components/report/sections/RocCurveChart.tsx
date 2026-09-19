@@ -21,8 +21,8 @@ export function RocCurveChart({ data, auroc }: RocCurveChartProps) {
     <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">ROC Curve (수신기 반응 특성 곡선)</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Y축: TPR (재현율) / X축: FPR (위양성률)</p>
+          <h3 className="text-sm font-bold text-slate-800">ROC Curve</h3>
+          <p className="text-xs text-slate-400 mt-0.5">Y: true positive rate / X: false positive rate</p>
         </div>
         {auroc !== undefined && (
           <div className="rounded-lg bg-teal-50 border border-teal-200 px-3 py-1 text-xs font-semibold text-teal-800">
@@ -40,13 +40,13 @@ export function RocCurveChart({ data, auroc }: RocCurveChartProps) {
               type="number"
               domain={[0, 1]}
               tickCount={6}
-              label={{ value: "FPR (위양성률)", position: "insideBottom", offset: -15, fontSize: 11, fill: "#64748b" }}
+              label={{ value: "FPR", position: "insideBottom", offset: -15, fontSize: 11, fill: "#64748b" }}
               tick={{ fontSize: 11, fill: "#64748b" }}
             />
             <YAxis
               domain={[0, 1]}
               tickCount={6}
-              label={{ value: "TPR (재현율)", angle: -90, position: "insideLeft", offset: -10, fontSize: 11, fill: "#64748b" }}
+              label={{ value: "TPR", angle: -90, position: "insideLeft", offset: -10, fontSize: 11, fill: "#64748b" }}
               tick={{ fontSize: 11, fill: "#64748b" }}
             />
             <Tooltip
