@@ -76,9 +76,9 @@ export function DecisionThresholdCard({
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            예측 레이블 컬럼이 없어 확률·점수에서 예측을 만듭니다. 여기서 정한 임계값과
-            "파생값이라는 사실"이 성적서에 기재됩니다. (3단계에서 정하는 <em>합격 목표값</em>과는
-            다른 값입니다.)
+            No predicted-label column was mapped, so predictions are derived from the probability or
+            score column. The threshold you set here, and the fact that predictions were derived, are
+            both recorded in the report. This is <em>not</em> the pass target you set later.
           </AlertDescription>
         </Alert>
 
@@ -100,13 +100,13 @@ export function DecisionThresholdCard({
               </label>
             ))}
             <p className="text-xs text-slate-500">
-              레이블마다 다른 임계값을 줄 수 있습니다. 각 레이블은 독립적으로 판정됩니다.
+              Each label can take its own threshold and is decided independently.
             </p>
           </div>
         ) : (
           <label className="flex items-center justify-between gap-4 text-sm">
             <span className="text-slate-700">
-              점수가 이 값 이상이면 양성으로 판정합니다
+              Scores at or above this value count as positive
               <span className="ml-1 font-mono text-slate-500">
                 ({probabilityRows.map((r) => r.originalName).join(", ")})
               </span>
@@ -126,7 +126,7 @@ export function DecisionThresholdCard({
 
         {!withinUnitInterval(decisionThreshold) && (
           <Alert variant="destructive">
-            <AlertDescription>임계값은 0 과 1 사이여야 합니다.</AlertDescription>
+            <AlertDescription>Thresholds must be between 0 and 1.</AlertDescription>
           </Alert>
         )}
       </CardContent>

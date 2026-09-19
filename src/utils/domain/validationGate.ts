@@ -49,11 +49,11 @@ export function canRunEvaluation(input: ValidationGateInput): boolean {
 export function describeValidationGate(reason: ValidationGateReason): string | null {
   switch (reason) {
     case "failed":
-      return "데이터 검증에 실패해 평가를 실행할 수 없습니다. 원인을 확인한 뒤 다시 시도해 주세요.";
+      return "Data validation failed, so the evaluation cannot run. Check the cause and try again.";
     case "not_run":
-      return "데이터 검증이 아직 수행되지 않아 평가를 실행할 수 없습니다. 4단계에서 파일을 다시 업로드해 주세요.";
+      return "Data validation has not run yet, so the evaluation cannot run. Go back and upload the file again.";
     case "blocking_errors":
-      return "데이터 검증에서 오류가 발견되어 평가를 실행할 수 없습니다. 아래 상세 내역을 확인해 주세요.";
+      return "Data validation found errors, so the evaluation cannot run. Review the details below.";
     case "loading":
     case "ok":
       return null;

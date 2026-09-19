@@ -12,22 +12,22 @@ export function NotFound() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-20 text-center">
-      <h1 className="text-lg font-semibold text-slate-800">페이지를 찾을 수 없습니다</h1>
+      <h1 className="text-lg font-semibold text-slate-800">Page not found</h1>
       <p className="mt-3 text-sm leading-relaxed text-slate-600">
-        <span className="font-mono break-all">{pathname}</span> 경로는 존재하지 않습니다.
+        There is nothing at <span className="font-mono break-all">{pathname}</span>.
       </p>
       <div className="mt-6 flex justify-center gap-3">
         <Link
           to="/workspaces"
           className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
         >
-          워크스페이스
+          Workspaces
         </Link>
         <Link
           to="/"
           className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
         >
-          홈으로
+          Home
         </Link>
       </div>
     </div>
