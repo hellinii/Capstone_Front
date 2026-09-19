@@ -13,6 +13,7 @@ import { ReportPrint } from "./pages/report/ReportPrint";
 import { ReportByNumber } from "./pages/report/ReportByNumber";
 import { WorkspaceDetail } from "./pages/workspaces/WorkspaceDetail";
 import { WorkspaceList } from "./pages/workspaces/WorkspaceList";
+import { ModelComparison } from "./pages/workspaces/ModelComparison";
 import { NotFound } from "./pages/NotFound";
 
 /** 지정 경로로 replace 리다이렉트하는 라우트 컴포넌트를 만든다. */
@@ -27,6 +28,9 @@ export const routes = [
   { path: "/app", Component: TaskTypeSelect },
   { path: "/workspaces", Component: WorkspaceList },
   { path: "/workspaces/:workspaceId", Component: WorkspaceDetail },
+  // 한 모델의 버전별 평가 비교. 모델은 run 의 modelName 으로만 존재하므로 경로도
+  // 이름을 그대로 싣는다(링크 생성 시 encodeURIComponent 필요).
+  { path: "/workspaces/:workspaceId/models/:modelName", Component: ModelComparison },
   // 평가 구간 — 배열 순서 = STEP_PATHS 순서 = 단계 번호.
   { path: "/app/data-upload", Component: DataUpload },
   { path: "/app/column-mapping", Component: ColumnMapping },
