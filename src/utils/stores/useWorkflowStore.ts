@@ -28,25 +28,57 @@ import {
   type UploadedFileInfo,
 } from "../../types/workflow.types";
 
-/** Step path segments used in routing */
+/**
+ * 평가 구간의 단계 경로. **배열 순서가 곧 단계 번호다**(1-based).
+ *
+ * 성적서 발급에만 필요한 입력(기관 정보·학습 데이터셋 정보·목표값)은 이 구간에 없다.
+ * 평가는 그것들 없이 성립한다 — `/api/evaluate` 페이로드에 하나도 들어가지 않는다.
+ * 성적서 구간은 평가 결과 화면에서 이어진다(docs/WORKFLOW_REDESIGN.md).
+ */
 export const STEP_PATHS = [
-  "basic-info",
-  "metrics",
-  "metric-detail",
   "data-upload",
+  "metrics",
   "column-mapping",
   "data-validation",
+  "evaluation-summary",
   "report",
 ] as const;
 
 export type StepPath = (typeof STEP_PATHS)[number];
 
+/**
+ * 단계 번호에 이름을 붙인다.
+ *
+ * 종전에는 `markStepCompleted(3)` 같은 **생짜 숫자**가 8개 파일에 흩어져 있었다. 타입이
+ * 전부 `number` 라 순서를 바꿔도 컴파일러가 잡아주지 않아, 재배치 때 조용히 어긋난다.
+ * 앞으로 순서가 또 바뀌면 이 표 하나만 고친다.
+ */
+export const STEP = {
+  UPLOAD: 1,
+  METRICS: 2,
+  MAPPING: 3,
+  VALIDATION: 4,
+  /** 평가 결과 — 고른 지표의 값만 본다. 합불 판정은 여기 없다(목표값은 성적서 구간 입력). */
+  SUMMARY: 5,
+  /** 성적서. */
+  RESULT: 6,
+} as const;
+
+/** 평가 구간의 마지막 단계. */
+export const LAST_STEP = STEP.RESULT;
+
+/**
+ * run id 가 있어야만 열 수 있는 단계. 평가를 실행해야 생기는 화면들이다.
+ * 경로가 `/report/<runId>/...` 라 단계 번호만으로는 목적지를 만들 수 없다.
+ */
+export const RUN_SCOPED_STEPS: number[] = [STEP.SUMMARY, STEP.RESULT];
+
 /** Convert a 1-based step number to a route path */
 export function stepToPath(step: number): string {
-  // 7단계(성적서)는 실제 run id 로만 열 수 있다. 여기서는 목적지가 정해지지 않으므로
-  // 항상 유효한 워크스페이스 목록으로 보낸다 — 종전의 "/report/preview" 는 저장되지
-  // 않는 임시 성적서를 만들어 발급·재조회를 불가능하게 했다(ISSUES.md E-02·E-06).
-  if (step === 7) return "/workspaces";
+  // run 이 필요한 단계는 목적지가 정해지지 않으므로 항상 유효한 워크스페이스 목록으로
+  // 보낸다 — 종전의 "/report/preview" 는 저장되지 않는 임시 성적서를 만들어 발급·재조회를
+  // 불가능하게 했다(ISSUES.md E-02·E-06). 실제 이동은 StepTabs 가 lastRunId 로 처리한다.
+  if (RUN_SCOPED_STEPS.includes(step)) return "/workspaces";
   return `/app/${STEP_PATHS[step - 1] ?? STEP_PATHS[0]}`;
 }
 
@@ -59,24 +91,49 @@ export function pathToStep(path: string): number {
 }
 
 /** persist 스키마 버전. 저장된 상태의 의미가 바뀔 때만 올린다. */
-export const WORKFLOW_PERSIST_VERSION = 2;
+export const WORKFLOW_PERSIST_VERSION = 3;
 
 /**
  * 저장된 워크플로우 상태를 현재 규칙으로 옮긴다(순수 함수 — 테스트가 직접 호출한다).
  *
- * 지금 하는 일은 하나다: 저장된 `selectedMetricIds` 에서 **현재 task_type 이 노출하지
- * 않는 지표**를 걸러낸다. 지표 ID 를 하드코딩하지 않고 METRICS 에서 유도하므로,
- * 앞으로 노출 목록이 또 바뀌어도 이 함수는 그대로 둔다.
+ * **v1 → v2**: multilabel 에서 M1·M11·M12·M13 이 제거됐다(ISSUES.md A-04, 결정 2).
+ * 저장된 `selectedMetricIds` 에서 현재 task_type 이 노출하지 않는 지표를 걸러낸다.
+ * 지표 ID 를 하드코딩하지 않고 METRICS 에서 유도하므로 노출 목록이 또 바뀌어도 그대로 둔다.
+ *
+ * **v2 → v3**: 단계 순서가 통째로 바뀌었다.
+ *   구: 기본정보 → 지표 → 지표상세 → 업로드 → 매핑 → 검증 → 성적서
+ *   신: 업로드 → 매핑 → 지표 → 검증 → 평가결과  (기관정보·목표값은 성적서 구간으로)
+ *
+ * 저장된 `completedSteps`·`currentStep` 은 **구 번호 체계의 숫자**다. 새 번호로 1:1
+ * 대응시킬 방법이 없다 — 구 1(기본정보)·3(지표상세)은 평가 구간에서 사라졌고, 남은 것도
+ * 순서가 뒤집혀 대응표가 구멍 난 집합(예: `[1, 3]`)을 만든다. 그 상태로 진입 가드
+ * (`canEnterStep`)를 통과시키면 빈 화면에 갇힌다.
+ *
+ * 그래서 **진행 표시만 초기화하고 입력 데이터는 전부 보존한다.** 어차피 원본 파일은
+ * persist 대상이 아니라 재수화 후 재업로드가 필요하므로(`onRehydrateStorage`),
+ * 1단계부터 다시 밟는 것이 실제 상태와도 맞다.
  */
 export function migrateWorkflowState(persisted: any, version: number): any {
   if (!persisted || version >= WORKFLOW_PERSIST_VERSION) return persisted;
 
-  const taskType = persisted.taskType;
-  const selected = persisted.selectedMetricIds;
-  if (!taskType || !Array.isArray(selected)) return persisted;
+  let next = persisted;
 
-  const exposed = new Set(getAvailableMetrics(taskType).map((m) => m.id));
-  return { ...persisted, selectedMetricIds: selected.filter((id: string) => exposed.has(id)) };
+  // v1 → v2
+  if (version < 2) {
+    const taskType = next.taskType;
+    const selected = next.selectedMetricIds;
+    if (taskType && Array.isArray(selected)) {
+      const exposed = new Set(getAvailableMetrics(taskType).map((m) => m.id));
+      next = { ...next, selectedMetricIds: selected.filter((id: string) => exposed.has(id)) };
+    }
+  }
+
+  // v2 → v3 — 단계 번호 체계 교체. 진행 표시만 버리고 입력은 남긴다.
+  if (version < 3) {
+    next = { ...next, completedSteps: [], currentStep: STEP.UPLOAD };
+  }
+
+  return next;
 }
 
 interface WorkflowState {
@@ -364,11 +421,20 @@ export const useWorkflowStore = create<WorkflowState>()(
           columnMapping: snapshot.columnMapping,
           classLabelDescriptions: snapshot.classLabelDescriptions,
           validationResult: null,
-          currentStep: 1,
-          // 원본 파일은 복원할 수 없다(File 객체). 파일이 있어야 성립하는 4~6단계를 '완료'로
-          // 표시하면 거짓말이고, 사용자는 빈 상태로 뒤 단계에 진입해 막다른 길에 갇힌다
-          // (ISSUES.md E-09). 파일 이전 단계까지만 완료로 둔다.
-          completedSteps: [1, 2, 3],
+          currentStep: STEP.UPLOAD,
+          /**
+           * 원본 파일은 복원할 수 없다(File 객체).
+           *
+           * 2026-09-19 재배치로 **업로드가 1단계**가 됐다. 파일이 없으면 1단계부터 성립하지
+           * 않으므로 완료로 표시할 단계가 하나도 없다 — 종전의 `[1, 2, 3]` 은 구 번호 체계
+           * (기본정보·지표·지표상세)를 가리키던 값이라, 그대로 두면 새 체계에서
+           * 업로드·지표·매핑이 '완료'로 둔갑해 사용자가 빈 상태로 뒤 단계에 진입한다
+           * (ISSUES.md E-09 가 막으려던 바로 그 상태).
+           *
+           * 지표 선택·매핑 **입력 자체는 위에서 복원**했으므로, 파일만 다시 올리면
+           * 그대로 이어서 진행할 수 있다.
+           */
+          completedSteps: [],
           needsFileReupload: true,
         }),
     }),

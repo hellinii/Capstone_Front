@@ -1,115 +1,85 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Button } from "../components/ui/button";
-import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
+import { useWorkflowStore, stepToPath, STEP } from "../utils/stores/useWorkflowStore";
 import { WorkflowShell } from "../layout/WorkflowShell";
 import {
   DataUpload as DataUploadContent,
   isEvaluationDataUploadValid,
-  isTrainingDatasetInfoValid,
-  type DataUploadPhase,
 } from "../components/data-upload/DataUpload";
-import { useColumnAnalysis } from "../hooks/useColumnAnalysis";
-
 /**
- * Step 4 — Data Upload page
+ * Step 1 — 평가 데이터 업로드.
  *
- * 자동 컬럼 분석 fetch 는 useColumnAnalysis 훅이 담당하고, 페이지는 phase 전환과
- * 네비게이션만 처리하는 얇은 컨트롤러다.
+ * **컬럼 자동 분석(`/api/analyze-columns`)은 여기서 돌리지 않는다.** 그 호출은 최대 150초가
+ * 걸리는데(`ANALYSIS_TIMEOUT_MS`), 결과를 쓰는 화면은 3단계(컬럼 매핑)다. 여기서 돌리면
+ * 결과가 필요 없는 2단계(지표 선택)로 가려고 그 시간을 기다리게 된다. 분석은 매핑 직전인
+ * 2단계 '다음'에서 실행한다.
+ *
+ * 학습 데이터셋 정보도 이 화면에서 빠졌다 — 평가에 쓰이지 않고 성적서 3절을 채우는 값이라
+ * 성적서 구간(`/report/:id/issue-info`)으로 옮겼다. 다만 모델명·버전은 여기 남는다:
+ * 평가 결과를 식별하는 이름표라, 성적서를 내지 않는 run 에도 반드시 있어야 한다.
  */
 export function DataUpload() {
   const navigate = useNavigate();
   const store = useWorkflowStore();
-  const [phase, setPhase] = useState<DataUploadPhase>("evaluation");
-  const { analyzeColumns, isAnalyzing, cancel } = useColumnAnalysis();
-  // 종전에는 raw alert() 로만 드러났다. 화면 안에 남겨야 사용자가 읽고 조치할 수 있다(E-18).
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
-  const handleNext = async () => {
-    if (phase === "evaluation") {
-      setPhase("training");
-      return;
+  // 분류 유형은 진입 화면에서 고른다. 유형 없이 들어오면 안내할 컬럼도 분석 기준도
+  // 정해지지 않으므로 진입 화면으로 돌려보낸다.
+  useEffect(() => {
+    if (!store.taskType) {
+      navigate("/app", { replace: true });
     }
+  }, [store.taskType, navigate]);
 
+  const handleNext = () => {
     if (!store.rawFile) {
-      setAnalysisError("Evaluation file is missing. Please re-upload it in this step.");
+      setFileError("Evaluation file is missing. Please re-upload it in this step.");
       return;
     }
 
-    setAnalysisError(null);
-    try {
-      const { rows, metadata, columnNotes } = await analyzeColumns(
-        store.rawFile,
-        store.taskType || "multiclass",
-      );
-
-      store.setColumnMapping(rows);
-      store.setMetadata(metadata);
-      // 백엔드가 만든 컬럼 대조 안내를 6단계까지 나른다(ISSUES.md B-03).
-      store.setColumnNotes(columnNotes);
-
-      store.markStepCompleted(4);
-      store.setCurrentStep(5);
-      navigate(stepToPath(5));
-    } catch (err: any) {
-      console.error("Column analysis failed:", err);
-      setAnalysisError(err?.message || String(err));
-    }
+    setFileError(null);
+    store.markStepCompleted(STEP.UPLOAD);
+    store.setCurrentStep(STEP.METRICS);
+    navigate(stepToPath(STEP.METRICS));
   };
-
-  const handlePrevious = () => {
-    if (phase === "training") {
-      setPhase("evaluation");
-      return;
-    }
-
-    store.setCurrentStep(3);
-    navigate(stepToPath(3));
-  };
-
-  const nextDisabled =
-    phase === "evaluation"
-      ? !isEvaluationDataUploadValid(store.datasetInfo, store.uploadedFile)
-      : !isTrainingDatasetInfoValid(store.datasetInfo) || isAnalyzing;
 
   return (
     <WorkflowShell
       showActionBar
-      showPrevious={!isAnalyzing}
-      showNext={true}
-      onPrevious={handlePrevious}
+      showPrevious={false}
+      showNext
       onNext={handleNext}
-      nextDisabled={nextDisabled}
-      nextLabel={isAnalyzing ? "Analyzing..." : (phase === "evaluation" ? "Next: training dataset" : "Next step")}
-      leftAction={
-        isAnalyzing ? (
-          <Button variant="outline" onClick={cancel}>
-            Cancel analysis
-          </Button>
-        ) : undefined
+      nextDisabled={
+        !isEvaluationDataUploadValid(
+          store.uploadedFile,
+          !!store.rawFile,
+          store.basicInfo.modelName,
+          store.basicInfo.versionName,
+        )
       }
+      nextLabel="Next step"
     >
-      {analysisError && (
+      {fileError && (
         <Alert variant="destructive" className="mb-6">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{analysisError}</AlertDescription>
+          <AlertDescription>{fileError}</AlertDescription>
         </Alert>
       )}
       <DataUploadContent
-        phase={phase}
-        onPhaseChange={setPhase}
         taskType={store.taskType}
-        selectedMetricIds={store.selectedMetricIds}
-        datasetInfo={store.datasetInfo}
-        onDatasetInfoChange={store.setDatasetInfo}
         uploadedFile={store.uploadedFile}
         onUploadedFileChange={store.setUploadedFile}
-        trainingExampleFiles={store.trainingExampleFiles}
-        onTrainingExampleFilesChange={store.setTrainingExampleFiles}
-        trainingUnsuitableExampleFiles={store.trainingUnsuitableExampleFiles}
-        onTrainingUnsuitableExampleFilesChange={store.setTrainingUnsuitableExampleFiles}
+        modelName={store.basicInfo.modelName}
+        versionName={store.basicInfo.versionName}
+        onModelNameChange={(value) =>
+          store.setBasicInfo((prev) => ({ ...prev, modelName: value }))
+        }
+        onVersionNameChange={(value) =>
+          store.setBasicInfo((prev) => ({ ...prev, versionName: value }))
+        }
+        needsReupload={!!store.uploadedFile && !store.rawFile}
       />
     </WorkflowShell>
   );

@@ -57,22 +57,13 @@ export function collectBackendNotices(notices: BackendNotices): BackendNotice[] 
   });
 }
 
-/**
- * SPEC §6 의 "계산 가능한 지표 N/M" (ISSUES.md A-12).
+/*
+ * `countComputableMetrics` 는 제거했다(2026-09-19).
  *
- * **분모는 사용자가 고른 지표다.** 백엔드 `available_metric_ids` 의 분모는 task 의
- * 전체 지표라(실측: binary 는 사용자가 M1 하나만 골라도 12/15) 그대로 인쇄하면
- * 사용자에게 무의미한 비율이 된다.
+ * "계산 가능한 지표 N/M"(구 SPEC §6 · ISSUES.md A-12)을 만들던 함수다. 전부 계산
+ * 가능할 때도 'N/N' 이 떠서 사용자가 읽고 할 일이 없는 문구였다.
+ *
+ * 지표 선택이 매핑보다 앞선 뒤로는 매핑 화면이 필수 역할 누락을 직접 막으므로
+ * (`resolveMissingRoleCodes` → `getMappingValidityReason`), 이 집계가 없어도
+ * 고른 지표가 조용히 빠지지는 않는다.
  */
-export function countComputableMetrics(
-  selectedMetricIds: string[],
-  availableMetricIds: string[] | undefined | null,
-): { computable: number; selected: number } | null {
-  if (!availableMetricIds || selectedMetricIds.length === 0) return null;
-
-  const available = new Set(availableMetricIds);
-  return {
-    computable: selectedMetricIds.filter((id) => available.has(id)).length,
-    selected: selectedMetricIds.length,
-  };
-}

@@ -1,9 +1,10 @@
 import { createElement } from "react";
 import { Navigate } from "react-router";
 import { Home } from "./pages/Home";
-import { BasicInfo } from "./pages/BasicInfo";
+import { TaskTypeSelect } from "./pages/TaskTypeSelect";
+import { EvaluationSummary } from "./pages/report/EvaluationSummary";
+import { ReportInfo } from "./pages/report/ReportInfo";
 import { TestItems } from "./pages/TestItems";
-import { MetricDetail } from "./pages/MetricDetail";
 import { DataUpload } from "./pages/DataUpload";
 import { ColumnMapping } from "./pages/ColumnMapping";
 import { DataValidation } from "./pages/DataValidation";
@@ -21,19 +22,28 @@ function redirectTo(path: string) {
 
 export const routes = [
   { path: "/", Component: Home },
-  { path: "/app", Component: redirectTo("/app/basic-info") },
+  // 워크플로우 진입점 = 분류 유형 선택(docs/UI_DESIGN.md §3).
+  // 종전에는 /app/basic-info 로 바로 리다이렉트해, 유형 선택이 1단계 폼 안에 묻혀 있었다.
+  { path: "/app", Component: TaskTypeSelect },
   { path: "/workspaces", Component: WorkspaceList },
   { path: "/workspaces/:workspaceId", Component: WorkspaceDetail },
-  { path: "/app/basic-info", Component: BasicInfo },
-  { path: "/app/metrics", Component: TestItems },
-  { path: "/app/metric-detail", Component: MetricDetail },
+  // 평가 구간 — 배열 순서 = STEP_PATHS 순서 = 단계 번호.
   { path: "/app/data-upload", Component: DataUpload },
   { path: "/app/column-mapping", Component: ColumnMapping },
+  { path: "/app/metrics", Component: TestItems },
   { path: "/app/data-validation", Component: DataValidation },
+  // 평가 결과(5단계) — run 하나에 매인 화면이라 `/app/*` 이 아니라 run id 경로에 둔다.
+  { path: "/report/:id/summary", Component: EvaluationSummary },
+  // 성적서 구간 — 평가 결과 화면에서 이어진다. 평가만 하려는 사용자는 여기 오지 않는다.
+  { path: "/report/:id/issue-info", Component: ReportInfo },
+  // 지표 상세(구 3단계)는 폐지됐다 — β 는 지표 선택으로, 목표값은 성적서 구간으로 갔다.
+  { path: "/app/metric-detail", Component: redirectTo("/app/metrics") },
+  // 기본 정보는 더 이상 평가 구간의 단계가 아니다(ISSUES.md 없음 — 2026-09-19 재배치).
+  { path: "/app/basic-info", Component: redirectTo("/app") },
   // 레거시 /step/* 경로는 정식 /app/* 로 리다이렉트 (기존 북마크/링크 보존)
-  { path: "/step/basic-info", Component: redirectTo("/app/basic-info") },
+  { path: "/step/basic-info", Component: redirectTo("/app") },
   { path: "/step/test-items", Component: redirectTo("/app/metrics") },
-  { path: "/step/metric-detail", Component: redirectTo("/app/metric-detail") },
+  { path: "/step/metric-detail", Component: redirectTo("/app/metrics") },
   { path: "/step/data-upload", Component: redirectTo("/app/data-upload") },
   { path: "/step/column-mapping", Component: redirectTo("/app/column-mapping") },
   { path: "/step/data-validation", Component: redirectTo("/app/data-validation") },

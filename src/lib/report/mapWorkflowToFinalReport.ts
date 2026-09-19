@@ -62,8 +62,20 @@ export interface MapWorkflowToReportInput {
   trainingUnsuitableExampleFiles: UploadedFileInfo[];
   columnMapping: MappingRow[];
   classLabelDescriptions: Record<string, string>;
-  /** 컬럼 매핑 단계 메타데이터(사용자가 고른 positive_class 등). 성적서 표시용 소스. */
-  metadata?: { positive_class?: string } | null;
+  /**
+   * 컬럼 매핑 단계 메타데이터(사용자가 고른 positive_class 등). 성적서 표시용 소스.
+   *
+   * `class_distribution` 은 y_true 기준 클래스별 개수다 — 버전 간 비교 화면이
+   * "같은 데이터로 잰 건가"를 사용자가 직접 판단하도록 그대로 보여준다
+   * (멀티레이블에서는 레이블 등장 횟수라 샘플 수와 합이 다르다).
+   * 스토어의 실제 값은 이보다 넓지만(`metadata: any`), 소비처가 읽는 키만 적는다.
+   */
+  metadata?: {
+    positive_class?: string;
+    detected_classes?: string[];
+    detected_labels?: string[];
+    class_distribution?: Record<string, number>;
+  } | null;
 }
 
 export function mapWorkflowToFinalReport(
