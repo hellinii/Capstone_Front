@@ -46,8 +46,8 @@ export function BinaryClassificationCard({
             <Alert className="border-amber-300 bg-amber-50">
               <AlertTriangle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-800">
-                양성(Positive) 클래스를 자동으로 확정하지 못했습니다. 아래 선택값이 올바른지 반드시 확인하세요.
-                잘못 지정하면 Precision·Recall·FPR·AUROC 등 지표가 왜곡됩니다.
+                The positive class could not be determined automatically. Check that the value below
+                is correct — picking the wrong one skews Precision, Recall, FPR, and AUROC.
               </AlertDescription>
             </Alert>
           )}

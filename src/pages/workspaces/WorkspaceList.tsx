@@ -13,7 +13,7 @@ export function WorkspaceList() {
   const { workspaces, createWorkspace, deleteWorkspace } = useWorkspaceStore();
 
   const handleDeleteWorkspace = (id: string) => {
-    if (confirm("이 워크스페이스와 하위 평가 결과를 모두 삭제하시겠습니까?")) {
+    if (confirm("Delete this workspace and every evaluation in it? This cannot be undone.")) {
       deleteWorkspace(id);
     }
   };

@@ -20,11 +20,20 @@ import {
 interface TestItemsProps {
   taskType?: TaskType | "";
   onSelectedMetricsChange?: (ids: string[]) => void;
+  /**
+   * F-beta(M5)의 β. **평가 입력이다** — `/api/evaluate` 페이로드에 실린다.
+   * 종전에는 지표 상세(구 3단계)에서 받았는데, 그 화면의 나머지(목표값)는 성적서
+   * 전용이라 뒤로 갔다. β 만 평가에 필요해 여기 남는다.
+   */
+  beta?: string;
+  onBetaChange?: (value: string) => void;
 }
 
 export function TestItems({
   taskType,
   onSelectedMetricsChange,
+  beta = "1.0",
+  onBetaChange,
 }: TestItemsProps) {
   const availableMetrics = useMemo(() => getAvailableMetrics(taskType), [taskType]);
   const resolvedTaskType = taskType || "";
@@ -140,8 +149,37 @@ export function TestItems({
 
         <div>
           <span className="text-sm text-muted-foreground">Class: </span>
-          <Badge variant="secondary">{taskType ? TASK_TYPE_LABELS[taskType] : "Choose in Step 1"}</Badge>
+          <Badge variant="secondary">{taskType ? TASK_TYPE_LABELS[taskType] : "Not chosen"}</Badge>
         </div>
+
+        {/* β 는 M5 를 골랐을 때만 물어본다. 목표값과 달리 **평가에 쓰이는 값**이라
+            성적서 구간으로 미룰 수 없다 — F-beta 의 정의 자체가 β 로 정해진다. */}
+        {selectedMetrics.includes("M5") && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold">F-beta weight (β)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Input
+                className="max-w-[200px] font-mono tabular-nums"
+                inputMode="decimal"
+                value={beta}
+                onChange={(event) => onBetaChange?.(event.target.value)}
+                aria-label="Beta"
+              />
+              <p className="text-xs text-muted-foreground">
+                β &gt; 1 weights recall more heavily; β &lt; 1 weights precision. β = 1 equals F1.
+              </p>
+              {(() => {
+                const parsed = Number(beta);
+                const invalid = beta.trim() === "" || !Number.isFinite(parsed) || parsed <= 0;
+                return invalid ? (
+                  <p className="text-xs text-destructive">Beta must be a number greater than 0.</p>
+                ) : null;
+              })()}
+            </CardContent>
+          </Card>
+        )}
 
         {taskType && (
           <Card>

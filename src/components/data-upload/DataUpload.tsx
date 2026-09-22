@@ -1,185 +1,133 @@
-import { useMemo, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from "react";
-import { CheckCircle2, FileImage, FileText, Lightbulb, Upload, X } from "lucide-react";
-import { AlertTriangle } from "lucide-react";
+/**
+ * 평가 데이터 업로드 (평가 구간 1단계).
+ *
+ * **지표 선택보다 앞선다.** 그래서 "선택한 지표가 요구하는 컬럼"을 보여줄 수 없고,
+ * `getRequiredColumnsForTaskType` 로 **분류 유형이 쓸 수 있는 컬럼 전체**를 안내한다.
+ * 확률 컬럼을 포함한 예시를 기본으로 보여주는 것도 같은 이유다 — 나중에 "확률이 없어서
+ * AUROC 를 못 쓴다"를 알게 되는 것보다, 처음에 넣을 수 있게 알려주는 편이 낫다.
+ *
+ * 학습 데이터셋 정보는 이 화면에 없다. 평가에 쓰이지 않고 성적서 3절을 채우는 값이라
+ * 성적서 구간으로 옮겼다(docs/WORKFLOW_REDESIGN.md).
+ *
+ * **모델명·버전만은 예외적으로 여기 남는다.** 나머지 기관 정보와 함께 성적서 구간으로
+ * 보냈더니, 평가만 하고 끝낸 run 이 전부 `"Untitled model"` 로 저장됐다. 그러면
+ * 워크스페이스에서 모델별로 묶을 수도, 버전 간 성능을 비교할 수도 없다 — 이 둘은
+ * 성적서 서식용 값이 아니라 **평가 결과를 식별하는 이름표**다.
+ */
+import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { AlertTriangle, FileText, Upload } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import {
-  getRequiredColumnsForSelection,
-  selectionRequiresProbability,
+  getRequiredColumnsForTaskType,
   TASK_TYPE_LABELS,
   type TaskType,
 } from "../../data/evaluationData";
-import type {
-  DatasetInfoFormData,
-  UploadedFileInfo,
-} from "../../types/workflow.types";
+import type { UploadedFileInfo } from "../../types/workflow.types";
 import { getCsvExample, getJsonExample } from "../../data/templateExamples";
-import { formatFileSize } from "../../utils/format/format";
 import { MAX_UPLOAD_LABEL, checkUploadSize } from "../../lib/upload/uploadLimits";
-
-export type DataUploadPhase = "evaluation" | "training";
-
-// 디자인 시스템에 Textarea 컴포넌트가 없어 Input 스타일을 모사한 textarea 클래스
-const TEXTAREA_CLASS =
-  "border-input placeholder:text-muted-foreground flex w-full min-h-[80px] rounded-md border px-3 py-2 text-base bg-input-background transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm";
+import {
+  Field,
+  SelectedFileCard,
+  UploadDropzone,
+  toUploadedFileInfo,
+  toUploadedFileInfoAsync,
+} from "./shared";
 
 interface DataUploadProps {
-  phase: DataUploadPhase;
-  onPhaseChange: (phase: DataUploadPhase) => void;
-  selectedMetricIds?: string[];
-  taskType?: TaskType | "";
-  datasetInfo: DatasetInfoFormData;
-  onDatasetInfoChange: (
-    value: DatasetInfoFormData | ((prev: DatasetInfoFormData) => DatasetInfoFormData),
-  ) => void;
+  taskType: TaskType | "";
   uploadedFile: UploadedFileInfo | null;
   onUploadedFileChange: (value: UploadedFileInfo | null, rawFile?: File) => void;
-  trainingExampleFiles: UploadedFileInfo[];
-  onTrainingExampleFilesChange: (
-    value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
-  ) => void;
-  trainingUnsuitableExampleFiles: UploadedFileInfo[];
-  onTrainingUnsuitableExampleFilesChange: (
-    value: UploadedFileInfo[] | ((prev: UploadedFileInfo[]) => UploadedFileInfo[]),
-  ) => void;
+  modelName: string;
+  versionName: string;
+  onModelNameChange: (value: string) => void;
+  onVersionNameChange: (value: string) => void;
+  /**
+   * 파일 **메타**는 복원됐지만 원본(File 객체)이 없는 상태.
+   * 과거 평가를 편집하거나 새로고침한 뒤에 생긴다(ISSUES.md E-01·E-09).
+   */
+  needsReupload?: boolean;
 }
 
+/**
+ * 다음 단계로 갈 수 있는가.
+ *
+ * **원본 File 객체가 있어야 한다.** 메타(`uploadedFile`)만 보면 안 된다 — 과거 평가를
+ * 편집해 들어오면 메타는 복원되지만 원본은 복원할 수 없어서, 화면은 "파일 있음"으로
+ * 보이는데 '다음'에서 "Evaluation file is missing" 이 뜬다(사용자 보고, 2026-09-19).
+ *
+ * 모델명·버전도 여기서 막는다. 빈 채로 통과하면 run 이 `"Untitled model"` 로 저장돼
+ * 워크스페이스에서 다른 모델들과 한 덩어리로 묶인다 — 나중에 고칠 수단도 없다.
+ */
 export function isEvaluationDataUploadValid(
-  datasetInfo: DatasetInfoFormData,
   uploadedFile: UploadedFileInfo | null,
+  hasRawFile: boolean,
+  modelName: string,
+  versionName: string,
 ) {
-  return uploadedFile !== null;
-}
-
-export function isTrainingDatasetInfoValid(datasetInfo: DatasetInfoFormData) {
   return (
-    datasetInfo.trainingDatasetName.trim() !== "" &&
-    datasetInfo.trainingSampleCount.trim() !== "" &&
-    datasetInfo.validationSampleCount.trim() !== ""
+    uploadedFile !== null &&
+    hasRawFile &&
+    modelName.trim() !== "" &&
+    versionName.trim() !== ""
   );
 }
 
 export function DataUpload({
-  phase,
-  onPhaseChange,
-  selectedMetricIds = [],
-  taskType = "",
-  datasetInfo,
-  onDatasetInfoChange,
+  taskType,
   uploadedFile,
   onUploadedFileChange,
-  trainingExampleFiles,
-  onTrainingExampleFilesChange,
-  trainingUnsuitableExampleFiles,
-  onTrainingUnsuitableExampleFilesChange,
+  modelName,
+  versionName,
+  onModelNameChange,
+  onVersionNameChange,
+  needsReupload = false,
 }: DataUploadProps) {
-  const evaluationInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   // 백엔드 상한(20 MiB)을 넘는 파일은 올리기 전에 막는다 — 종전에는 안내문이 100MB 라
   // 사용자가 전부 올린 뒤에야 413 을 봤다(G-04a·D-15).
   const [sizeError, setSizeError] = useState<string | null>(null);
-  const trainingExampleInputRef = useRef<HTMLInputElement>(null);
-  const trainingUnsuitableExampleInputRef = useRef<HTMLInputElement>(null);
-  const resolvedTaskType = taskType || "multiclass";
-  const requiresProb = selectionRequiresProbability(resolvedTaskType, selectedMetricIds);
+
+  const resolvedTaskType: TaskType = taskType || "multiclass";
   const requiredColumns = useMemo(
-    () => getRequiredColumnsForSelection(resolvedTaskType, selectedMetricIds),
-    [resolvedTaskType, selectedMetricIds],
+    () => getRequiredColumnsForTaskType(resolvedTaskType),
+    [resolvedTaskType],
   );
-  const csvExample = getCsvExample(resolvedTaskType, requiresProb);
-  const jsonExample = getJsonExample(resolvedTaskType, requiresProb);
-  const trainingCount = Number(datasetInfo.trainingSampleCount);
-  const validationCount = Number(datasetInfo.validationSampleCount);
-  const hasDatasetCounts = Number.isFinite(trainingCount) && Number.isFinite(validationCount) && trainingCount >= 0 && validationCount >= 0;
-  const totalCount = hasDatasetCounts ? trainingCount + validationCount : null;
-  const trainingRatio = hasDatasetCounts && totalCount ? trainingCount / totalCount : null;
-  const validationRatio = hasDatasetCounts && totalCount ? validationCount / totalCount : null;
+  // 지표가 아직 정해지지 않았으므로 '확률 포함' 예시를 보여준다(위 파일 주석 참조).
+  const csvExample = getCsvExample(resolvedTaskType, true);
+  const jsonExample = getJsonExample(resolvedTaskType, true);
 
-  const updateDatasetInfo = <K extends keyof DatasetInfoFormData>(
-    field: K,
-    value: DatasetInfoFormData[K],
-  ) => {
-    onDatasetInfoChange((prev) => ({ ...prev, [field]: value }));
-  };
+  const openFilePicker = () => inputRef.current?.click();
 
-  const handleEvaluationFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
+  const acceptFile = (file: File, info: UploadedFileInfo) => {
     const tooBig = checkUploadSize(file);
     if (tooBig) {
       setSizeError(tooBig);
-      event.target.value = "";  // 같은 파일을 다시 고를 수 있게 비운다
-      return;
+      return false;
     }
-
     setSizeError(null);
-    onUploadedFileChange(toUploadedFileInfo(file), file);
-  };
-
-  const handleTrainingExampleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    const info = await toUploadedFileInfoAsync(file);
-    onTrainingExampleFilesChange((prev) => [...prev, info]);
-    event.target.value = "";
-  };
-
-  const handleTrainingUnsuitableExampleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    const info = await toUploadedFileInfoAsync(file);
-    onTrainingUnsuitableExampleFilesChange((prev) => [...prev, info]);
-    event.target.value = "";
-  };
-
-  const removeEvaluationFile = () => {
-    onUploadedFileChange(null);
-    if (evaluationInputRef.current) {
-      evaluationInputRef.current.value = "";
-    }
-  };
-
-  const removeTrainingExampleFile = (index: number) => {
-    onTrainingExampleFilesChange((prev) => prev.filter((_, fileIndex) => fileIndex !== index));
-  };
-
-  const removeTrainingUnsuitableExampleFile = (index: number) => {
-    onTrainingUnsuitableExampleFilesChange((prev) => prev.filter((_, fileIndex) => fileIndex !== index));
-  };
-
-  const handleEvaluationFileDrop = async (file: File) => {
-    const tooBig = checkUploadSize(file);
-    if (tooBig) {
-      setSizeError(tooBig);
-      return;
-    }
-
-    setSizeError(null);
-    const info = await toUploadedFileInfoAsync(file);
     onUploadedFileChange(info, file);
+    return true;
   };
 
-  const handleTrainingExampleFileDrop = async (file: File) => {
-    const info = await toUploadedFileInfoAsync(file);
-    onTrainingExampleFilesChange((prev) => [...prev, info]);
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!acceptFile(file, toUploadedFileInfo(file))) {
+      event.target.value = ""; // 같은 파일을 다시 고를 수 있게 비운다
+    }
   };
 
-  const handleTrainingUnsuitableFileDrop = async (file: File) => {
-    const info = await toUploadedFileInfoAsync(file);
-    onTrainingUnsuitableExampleFilesChange((prev) => [...prev, info]);
+  const handleFileDrop = async (file: File) => {
+    acceptFile(file, await toUploadedFileInfoAsync(file));
+  };
+
+  const handleRemove = () => {
+    onUploadedFileChange(null);
+    if (inputRef.current) inputRef.current.value = "";
   };
 
   return (
@@ -187,114 +135,85 @@ export function DataUpload({
       <div>
         <h1 className="text-2xl font-bold text-foreground mb-2">Data upload</h1>
         <p className="text-sm text-muted-foreground">
-          Upload the evaluation data first, then enter the training dataset information used to build the model.
+          Name the model you are evaluating and upload the file that holds its predictions. You will
+          map its columns next.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <PhaseButton
-          active={phase === "evaluation"}
-          complete={isEvaluationDataUploadValid(datasetInfo, uploadedFile)}
-          label="1. Evaluation data"
-          description="File with id, ground truth, prediction, and optional latency"
-          onClick={() => onPhaseChange("evaluation")}
-        />
-        <PhaseButton
-          active={phase === "training"}
-          complete={isTrainingDatasetInfoValid(datasetInfo)}
-          label="2. Training dataset"
-          description="Dataset summary and example file for the final report"
-          onClick={() => onPhaseChange("training")}
-        />
-      </div>
+      {/* 모델명·버전은 성적서 서식이 아니라 평가 결과의 이름표다. 워크스페이스는 이 이름으로
+          평가를 모델별로 묶고, 버전별 성능 비교 화면도 여기서 갈라진다. */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold">Model</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Evaluations that share a model name are grouped together, so you can compare versions of
+            the same model later.
+          </p>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <Field label="Model name" required>
+              <Input
+                value={modelName}
+                onChange={(event) => onModelNameChange(event.target.value)}
+                placeholder="e.g. Surface defect detector"
+              />
+            </Field>
+            <Field label="Version" required>
+              <Input
+                value={versionName}
+                onChange={(event) => onVersionNameChange(event.target.value)}
+                placeholder="e.g. v1.0.0"
+              />
+            </Field>
+          </div>
+        </CardContent>
+      </Card>
 
       {sizeError && (
-        <Alert variant="destructive" className="mb-6">
+        <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{sizeError}</AlertDescription>
         </Alert>
       )}
 
-      {phase === "evaluation" ? (
-        <EvaluationDataSection
-          datasetInfo={datasetInfo}
-          updateDatasetInfo={updateDatasetInfo}
-          uploadedFile={uploadedFile}
-          onFileChange={handleEvaluationFileChange}
-          onFileRemove={removeEvaluationFile}
-          openFilePicker={() => evaluationInputRef.current?.click()}
-          onFileDrop={handleEvaluationFileDrop}
-          inputRef={evaluationInputRef}
-          requiredColumns={requiredColumns}
-          csvExample={csvExample}
-          jsonExample={jsonExample}
-          resolvedTaskType={resolvedTaskType}
-          requiresProb={requiresProb}
-        />
-      ) : (
-        <TrainingDatasetSection
-          datasetInfo={datasetInfo}
-          updateDatasetInfo={updateDatasetInfo}
-          trainingExampleFiles={trainingExampleFiles}
-          onFileChange={handleTrainingExampleFileChange}
-          onFileRemove={removeTrainingExampleFile}
-          openFilePicker={() => trainingExampleInputRef.current?.click()}
-          onExampleFileDrop={handleTrainingExampleFileDrop}
-          inputRef={trainingExampleInputRef}
-          hasDatasetCounts={hasDatasetCounts}
-          totalCount={totalCount}
-          trainingRatio={trainingRatio}
-          validationRatio={validationRatio}
-          trainingUnsuitableExampleFiles={trainingUnsuitableExampleFiles}
-          onUnsuitableFileChange={handleTrainingUnsuitableExampleFileChange}
-          onUnsuitableFileRemove={removeTrainingUnsuitableExampleFile}
-          openUnsuitableFilePicker={() => trainingUnsuitableExampleInputRef.current?.click()}
-          onUnsuitableFileDrop={handleTrainingUnsuitableFileDrop}
-          unsuitableInputRef={trainingUnsuitableExampleInputRef}
-        />
-      )}
-    </main>
-  );
-}
-
-function EvaluationDataSection({
-  datasetInfo,
-  updateDatasetInfo,
-  uploadedFile,
-  onFileChange,
-  onFileRemove,
-  openFilePicker,
-  onFileDrop,
-  inputRef,
-  requiredColumns,
-  csvExample,
-  jsonExample,
-  resolvedTaskType,
-  requiresProb,
-}: {
-  datasetInfo: DatasetInfoFormData;
-  updateDatasetInfo: <K extends keyof DatasetInfoFormData>(field: K, value: DatasetInfoFormData[K]) => void;
-  uploadedFile: UploadedFileInfo | null;
-  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onFileRemove: () => void;
-  openFilePicker: () => void;
-  onFileDrop: (file: File) => void;
-  inputRef: RefObject<HTMLInputElement | null>;
-  requiredColumns: Array<{ code: string; label: string; description: string }>;
-  csvExample: string;
-  jsonExample: string;
-  resolvedTaskType: TaskType;
-  requiresProb: boolean;
-}) {
-  return (
-    <div className="space-y-6">
       <input
         ref={inputRef}
         type="file"
         accept=".csv,.json,application/json,text/csv"
         className="hidden"
-        onChange={onFileChange}
+        onChange={handleFileChange}
       />
+
+      {/* 메타는 있는데 원본이 없는 상태를 "업로드 완료"로 보여주면 안 된다 — 사용자는
+          파일이 있다고 믿고 '다음'을 눌렀다가 실패를 만난다(ISSUES.md E-01·E-09). */}
+      {needsReupload && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Your previous inputs were restored, but the data file itself must be uploaded again —
+            browsers cannot keep the file.
+            {uploadedFile ? ` Previous file: ${uploadedFile.name}` : ""}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!uploadedFile || needsReupload ? (
+        <UploadDropzone
+          icon={<Upload className="h-12 w-12 text-muted-foreground mb-4" />}
+          title={needsReupload ? "Upload the evaluation data again" : "Click to choose evaluation data"}
+          description={`CSV or JSON, up to ${MAX_UPLOAD_LABEL}`}
+          onClick={openFilePicker}
+          onFileDrop={handleFileDrop}
+        />
+      ) : (
+        <SelectedFileCard
+          file={uploadedFile}
+          icon={<FileText className="h-10 w-10 text-primary" />}
+          onChooseAnother={openFilePicker}
+          onRemove={handleRemove}
+        />
+      )}
 
       <Card>
         <CardHeader className="pb-3">
@@ -303,7 +222,6 @@ function EvaluationDataSection({
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <Badge variant="secondary">{TASK_TYPE_LABELS[resolvedTaskType]}</Badge>
-            {requiresProb && <Badge variant="outline">probability columns required</Badge>}
             <Badge variant="outline">inference_time_ms optional</Badge>
           </div>
           <Tabs defaultValue="csv" className="w-full">
@@ -322,519 +240,47 @@ function EvaluationDataSection({
               </div>
             </TabsContent>
           </Tabs>
-          <div className="rounded-md border border-border bg-muted/60 p-3">
-            <p className="text-sm text-muted-foreground">
-              `inference_time_ms` is optional. Include it when you want the final report to summarize inference latency.
-            </p>
-          </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Evaluation dataset information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Upload a CSV or JSON file that contains sample id, ground truth, predicted label, and optional latency values.
-          </p>
-        </CardContent>
-      </Card>
-
-      {!uploadedFile ? (
-        <UploadDropzone
-          icon={<Upload className="h-12 w-12 text-muted-foreground mb-4" />}
-          title="Click to choose evaluation data"
-          description={`CSV or JSON, up to ${MAX_UPLOAD_LABEL}`}
-          onClick={openFilePicker}
-          onFileDrop={onFileDrop}
-        />
-      ) : (
-        <SelectedFileCard
-          file={uploadedFile}
-          icon={<FileText className="h-10 w-10 text-primary" />}
-          onChooseAnother={openFilePicker}
-          onRemove={onFileRemove}
-        />
-      )}
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Required columns</CardTitle>
+          <CardTitle className="text-lg font-semibold">Columns you can map</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            These are the columns required by the selected metrics. Latency is intentionally separated because it is optional.
+            These are every column the {TASK_TYPE_LABELS[resolvedTaskType]} workflow can use. You do not
+            need all of them — which metrics you can compute depends on what your file contains, and you
+            will choose the metrics after mapping.
           </p>
 
           <div className="space-y-3">
-            {requiredColumns.length === 0 && (
-              <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                Select one or more metrics first to see the exact required columns here.
-              </div>
-            )}
-
             {requiredColumns.map((column) => (
               <div key={column.code} className="rounded-lg border border-green-200 bg-[#F0FDF4] p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="outline">{column.code}</Badge>
                   <span className="text-sm font-semibold text-slate-900">{column.label}</span>
                 </div>
-                <p className="text-sm text-slate-700">{getColumnHelpText(column.code, column.description)}</p>
+                <p className="text-sm text-slate-700">
+                  {getColumnHelpText(column.code, column.description)}
+                </p>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Optional latency column</CardTitle>
-        </CardHeader>
-        <CardContent>
           <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Badge variant="outline">inference_time_ms</Badge>
               <span className="text-sm font-semibold text-slate-900">Inference latency</span>
             </div>
             <p className="text-sm text-slate-700">
-              Add one latency value per sample in milliseconds if you want the report to include mean, P95, P99, max, and min latency metrics.
+              Optional. Add one latency value per sample in milliseconds to include mean, P95, P99, max,
+              and min latency in the report.
             </p>
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function TrainingDatasetSection({
-  datasetInfo,
-  updateDatasetInfo,
-  trainingExampleFiles,
-  onFileChange,
-  onFileRemove,
-  openFilePicker,
-  onExampleFileDrop,
-  inputRef,
-  hasDatasetCounts,
-  totalCount,
-  trainingRatio,
-  validationRatio,
-  trainingUnsuitableExampleFiles,
-  onUnsuitableFileChange,
-  onUnsuitableFileRemove,
-  openUnsuitableFilePicker,
-  onUnsuitableFileDrop,
-  unsuitableInputRef,
-}: {
-  datasetInfo: DatasetInfoFormData;
-  updateDatasetInfo: <K extends keyof DatasetInfoFormData>(field: K, value: DatasetInfoFormData[K]) => void;
-  trainingExampleFiles: UploadedFileInfo[];
-  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onFileRemove: (index: number) => void;
-  openFilePicker: () => void;
-  onExampleFileDrop: (file: File) => void;
-  inputRef: RefObject<HTMLInputElement | null>;
-  hasDatasetCounts: boolean;
-  totalCount: number | null;
-  trainingRatio: number | null;
-  validationRatio: number | null;
-  trainingUnsuitableExampleFiles: UploadedFileInfo[];
-  onUnsuitableFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onUnsuitableFileRemove: (index: number) => void;
-  openUnsuitableFilePicker: () => void;
-  onUnsuitableFileDrop: (file: File) => void;
-  unsuitableInputRef: RefObject<HTMLInputElement | null>;
-}) {
-  const trainCountLabel = Number.isFinite(Number(datasetInfo.trainingSampleCount)) && datasetInfo.trainingSampleCount.trim() !== ""
-    ? Number(datasetInfo.trainingSampleCount).toLocaleString()
-    : "-";
-  const valCountLabel = Number.isFinite(Number(datasetInfo.validationSampleCount)) && datasetInfo.validationSampleCount.trim() !== ""
-    ? Number(datasetInfo.validationSampleCount).toLocaleString()
-    : "-";
-
-  return (
-    <div className="space-y-6">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*,.csv,.json,application/json,text/csv"
-        className="hidden"
-        onChange={onFileChange}
-      />
-      <input
-        ref={unsuitableInputRef}
-        type="file"
-        accept="image/*,.csv,.json,application/json,text/csv"
-        className="hidden"
-        onChange={onUnsuitableFileChange}
-      />
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Training dataset information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <p className="text-sm text-muted-foreground">
-            Enter the dataset information used to train the model. This will later support the training data example section in the test report.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Field label="Training dataset name" required>
-              <Input
-                value={datasetInfo.trainingDatasetName}
-                onChange={(event) => updateDatasetInfo("trainingDatasetName", event.target.value)}
-                placeholder="e.g. Product defect image training set"
-              />
-            </Field>
-            <Field label="Training data format">
-              <Input
-                value={datasetInfo.trainingDataFormat}
-                onChange={(event) => updateDatasetInfo("trainingDataFormat", event.target.value)}
-                placeholder="e.g. Structured CSV, image (JPG/PNG), text"
-              />
-            </Field>
-          </div>
-
-          <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
-            <div>
-              <div className="text-sm font-semibold text-foreground">Dataset sample counts</div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Enter how many samples were used for training and how many are included in the evaluation upload.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <Field label="Training samples" required>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={datasetInfo.trainingSampleCount}
-                  onChange={(event) => updateDatasetInfo("trainingSampleCount", event.target.value.replace(/\D/g, ''))}
-                  placeholder="1161"
-                />
-              </Field>
-              <Field label="Validation samples" required>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={datasetInfo.validationSampleCount}
-                  onChange={(event) => updateDatasetInfo("validationSampleCount", event.target.value.replace(/\D/g, ''))}
-                  placeholder="291"
-                />
-              </Field>
-            </div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <SampleCountCard label="Total samples" value={hasDatasetCounts && totalCount !== null ? totalCount.toLocaleString() : "-"} />
-              <SampleCountCard label="Training samples" value={trainCountLabel} />
-              <SampleCountCard label="Validation samples" value={valCountLabel} />
-            </div>
-            {hasDatasetCounts && totalCount !== null && totalCount > 0 && (
-              <div className="text-xs text-muted-foreground">
-                Train/Val ratio {trainingRatio?.toFixed(2)} / {validationRatio?.toFixed(2)}
-              </div>
-            )}
-          </div>
-
-          <Field label="Class distribution">
-            <textarea
-              className={TEXTAREA_CLASS}
-              rows={3}
-              value={datasetInfo.trainingClassDistribution}
-              onChange={(event) => updateDatasetInfo("trainingClassDistribution", event.target.value)}
-              placeholder="Per-class sample counts or ratios, e.g. cat 5,000 / dog 5,000 / bird 3,000"
-            />
-          </Field>
-
-          <Field label="Training data description / notes">
-            <textarea
-              className={TEXTAREA_CLASS}
-              rows={3}
-              value={datasetInfo.trainingDataDescription}
-              onChange={(event) => updateDatasetInfo("trainingDataDescription", event.target.value)}
-              placeholder="How the training data was collected, labeled, or preprocessed (optional)"
-            />
-          </Field>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">Training data example</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-md border border-border bg-muted/60 p-3 flex items-start gap-2">
-            <Lightbulb className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <p>Upload a representative valid training sample that clearly matches the dataset definition.</p>
-              <p>You can also add an optional edge or unsuitable example, such as a blurry image, wrong class, corrupted sample, or out-of-scope input, to document what should be excluded or reviewed.</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <ExampleUploadSlot
-              title="Representative valid example"
-              description="A clear sample that should be included in the training dataset."
-              files={trainingExampleFiles}
-              onChoose={openFilePicker}
-              onRemove={onFileRemove}
-              onFileDrop={onExampleFileDrop}
-            />
-            <ExampleUploadSlot
-              title="Edge or unsuitable example"
-              description="Optional sample that should be excluded, reviewed, or treated with caution."
-              files={trainingUnsuitableExampleFiles}
-              onChoose={openUnsuitableFilePicker}
-              onRemove={onUnsuitableFileRemove}
-              onFileDrop={onUnsuitableFileDrop}
-              optional
-            />
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function PhaseButton({
-  active,
-  complete,
-  label,
-  description,
-  onClick,
-}: {
-  active: boolean;
-  complete: boolean;
-  label: string;
-  description: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-lg border p-4 text-left transition-colors ${
-        active ? "border-primary bg-blue-50" : "border-border bg-card hover:bg-muted/40"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-foreground">{label}</div>
-          <div className="mt-1 text-xs text-muted-foreground">{description}</div>
-        </div>
-        {complete && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-      </div>
-    </button>
-  );
-}
-
-function SampleCountCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-border bg-card px-4 py-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-lg font-semibold tabular-nums text-foreground">{value}</div>
-    </div>
-  );
-}
-
-function ExampleUploadSlot({
-  title,
-  description,
-  files,
-  onChoose,
-  onRemove,
-  onFileDrop,
-  optional = false,
-}: {
-  title: string;
-  description: string;
-  files: UploadedFileInfo[];
-  onChoose: () => void;
-  onRemove: (index: number) => void;
-  onFileDrop?: (file: File) => void;
-  optional?: boolean;
-}) {
-  const [isDragActive, setIsDragActive] = useState(false);
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setIsDragActive(true);
-    } else if (e.type === "dragleave") {
-      setIsDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileDrop?.(e.dataTransfer.files[0]);
-    }
-  };
-
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="text-sm font-semibold text-foreground">{title}</div>
-            {optional && <Badge variant="outline">Optional</Badge>}
-          </div>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
-        </div>
-      </div>
-
-      {files.length === 0 ? (
-        <button
-          type="button"
-          onClick={onChoose}
-          onDragEnter={handleDrag}
-          onDragOver={handleDrag}
-          onDragLeave={handleDrag}
-          onDrop={handleDrop}
-          className={`flex min-h-[160px] w-full flex-col items-center justify-center rounded-md border-2 border-dashed border-border bg-muted/20 px-4 py-8 text-center transition-colors hover:border-primary hover:bg-blue-50/30 ${
-            isDragActive ? "border-primary bg-blue-50" : ""
-          }`}
-        >
-          <FileImage className="mb-3 h-9 w-9 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">Choose example file</span>
-          <span className="mt-1 text-xs text-muted-foreground">Image, CSV, or JSON sample</span>
-        </button>
-      ) : (
-        <div className="space-y-3">
-          {files.map((file, index) => (
-            <SelectedFileCard
-              key={`${file.name}-${index}`}
-              file={file}
-              icon={<FileImage className="h-10 w-10 text-primary" />}
-              onChooseAnother={undefined}
-              onRemove={() => onRemove(index)}
-            />
-          ))}
-          <Button variant="outline" size="sm" onClick={onChoose}>
-            <Upload className="mr-2 h-4 w-4" />
-            Add another file
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function UploadDropzone({
-  icon,
-  title,
-  description,
-  onClick,
-  onFileDrop,
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  onClick: () => void;
-  onFileDrop?: (file: File) => void;
-}) {
-  const [isDragActive, setIsDragActive] = useState(false);
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setIsDragActive(true);
-    } else if (e.type === "dragleave") {
-      setIsDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onFileDrop?.(e.dataTransfer.files[0]);
-    }
-  };
-
-  return (
-    <Card
-      className={`border-2 border-dashed border-border hover:border-primary hover:bg-blue-50/30 transition-colors cursor-pointer ${
-        isDragActive ? "border-primary bg-blue-50" : ""
-      }`}
-      onClick={onClick}
-      onDragEnter={handleDrag}
-      onDragOver={handleDrag}
-      onDragLeave={handleDrag}
-      onDrop={handleDrop}
-    >
-      <CardContent className="flex flex-col items-center justify-center min-h-[240px] py-12">
-        {icon}
-        <h3 className="text-base font-semibold mb-2">{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function SelectedFileCard({
-  file,
-  icon,
-  onChooseAnother,
-  onRemove,
-}: {
-  file: UploadedFileInfo;
-  icon: ReactNode;
-  onChooseAnother?: () => void;
-  onRemove: () => void;
-}) {
-  return (
-    <Card className="border-2 border-border">
-      <CardContent className="flex items-center justify-between min-h-[120px] py-6">
-        <div className="flex items-center gap-4">
-          {icon}
-          <div>
-            <div className="font-semibold text-sm mb-1">{file.name}</div>
-            <div className="text-xs text-muted-foreground mb-2">
-              {file.size} {file.type !== "unknown" ? `| ${file.type}` : ""}
-            </div>
-            {onChooseAnother && (
-              <button
-                type="button"
-                onClick={onChooseAnother}
-                className="text-xs text-muted-foreground hover:text-foreground underline"
-              >
-                Choose another file
-              </button>
-            )}
-          </div>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onRemove} className="h-8 w-8">
-          <X className="h-4 w-4" />
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Field({
-  label,
-  required = false,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label>
-        {label} {required && <span className="text-red-600">*</span>}
-      </Label>
-      {children}
-    </div>
+    </main>
   );
 }
 
@@ -858,30 +304,4 @@ function getColumnHelpText(code: string, fallback: string) {
     return "Provide one probability column per label in the multi-label setting.";
   }
   return fallback;
-}
-
-function toUploadedFileInfo(file: File): UploadedFileInfo {
-  return {
-    name: file.name,
-    size: formatFileSize(file.size),
-    type: file.type || "unknown",
-  };
-}
-
-async function toUploadedFileInfoAsync(file: File): Promise<UploadedFileInfo> {
-  let previewUrl: string | undefined = undefined;
-  if (file.type.startsWith("image/")) {
-    previewUrl = await new Promise<string>((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(URL.createObjectURL(file));
-      reader.readAsDataURL(file);
-    });
-  }
-  return {
-    name: file.name,
-    size: formatFileSize(file.size),
-    type: file.type || "unknown",
-    previewUrl,
-  };
 }

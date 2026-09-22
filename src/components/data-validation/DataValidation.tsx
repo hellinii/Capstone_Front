@@ -122,8 +122,8 @@ export function DataValidation({
       <main className="mx-auto max-w-[1344px] space-y-6 px-8 pb-24 pt-12">
         <div className="flex flex-col items-center justify-center gap-4 py-24">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">데이터 검증 중입니다...</p>
-          <p className="text-xs text-muted-foreground">업로드한 파일의 유효성을 검사하고 있습니다.</p>
+          <p className="text-sm text-muted-foreground">Validating your data…</p>
+          <p className="text-xs text-muted-foreground">Checking the file you uploaded.</p>
         </div>
       </main>
     );
@@ -139,7 +139,7 @@ export function DataValidation({
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            데이터 검증 실패: {error}
+            Data validation failed: {error}
           </AlertDescription>
         </Alert>
       </main>
@@ -152,7 +152,7 @@ export function DataValidation({
       <main className="mx-auto max-w-[1344px] space-y-6 px-8 pb-24 pt-12">
         <div>
           <h1 className="mb-2 text-2xl font-bold text-foreground">Data validation</h1>
-          <p className="text-sm text-muted-foreground">검증 데이터를 불러오지 못했습니다.</p>
+          <p className="text-sm text-muted-foreground">Validation results could not be loaded.</p>
         </div>
       </main>
     );

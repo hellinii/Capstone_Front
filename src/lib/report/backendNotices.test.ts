@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   collectBackendNotices,
-  countComputableMetrics,
   type BackendNotices,
 } from "./backendNotices";
 
@@ -69,31 +68,5 @@ describe("collectBackendNotices — 세 출처를 한 목록으로", () => {
   });
 });
 
-describe("countComputableMetrics — '계산 가능한 지표 N/M' (A-12)", () => {
-  /**
-   * 백엔드 `available_metric_ids` 의 분모는 **task 의 전체 지표**이지 사용자가 고른
-   * 지표가 아니다(실측: binary 는 사용자가 M1 하나만 골라도 12/15 가 나온다).
-   * 그 값을 그대로 인쇄하면 사용자에게 무의미한 비율이 된다 — 선택한 지표를 기준으로 센다.
-   */
-  it("선택한 지표 중 계산 가능한 수를 센다", () => {
-    expect(countComputableMetrics(["M1", "M9"], ["M1", "M2", "M3"])).toEqual({
-      computable: 1,
-      selected: 2,
-    });
-  });
-
-  it("전부 계산 가능하면 N == M 이다", () => {
-    expect(countComputableMetrics(["M1", "M2"], ["M1", "M2", "M3"])).toEqual({
-      computable: 2,
-      selected: 2,
-    });
-  });
-
-  it("백엔드 응답이 없으면 셀 수 없다(추측하지 않는다)", () => {
-    expect(countComputableMetrics(["M1"], undefined)).toBeNull();
-  });
-
-  it("선택한 지표가 없으면 셀 것이 없다", () => {
-    expect(countComputableMetrics([], ["M1"])).toBeNull();
-  });
-});
+// countComputableMetrics('계산 가능한 지표 N/M', 구 A-12) 테스트는 함수와 함께
+// 제거했다(2026-09-19). 사유는 backendNotices.ts 의 해당 자리 주석 참조.

@@ -20,8 +20,8 @@ export function PrCurveChart({ data, auprc }: PrCurveChartProps) {
     <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">PR Curve (정밀도-재현율 곡선)</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Y축: Precision (정밀도) / X축: Recall (재현율)</p>
+          <h3 className="text-sm font-bold text-slate-800">Precision-Recall Curve</h3>
+          <p className="text-xs text-slate-400 mt-0.5">Y: precision / X: recall</p>
         </div>
         {auprc !== undefined && (
           <div className="rounded-lg bg-purple-50 border border-purple-200 px-3 py-1 text-xs font-semibold text-purple-800">
@@ -39,13 +39,13 @@ export function PrCurveChart({ data, auprc }: PrCurveChartProps) {
               type="number"
               domain={[0, 1]}
               tickCount={6}
-              label={{ value: "Recall (재현율)", position: "insideBottom", offset: -15, fontSize: 11, fill: "#64748b" }}
+              label={{ value: "Recall", position: "insideBottom", offset: -15, fontSize: 11, fill: "#64748b" }}
               tick={{ fontSize: 11, fill: "#64748b" }}
             />
             <YAxis
               domain={[0, 1]}
               tickCount={6}
-              label={{ value: "Precision (정밀도)", angle: -90, position: "insideLeft", offset: -10, fontSize: 11, fill: "#64748b" }}
+              label={{ value: "Precision", angle: -90, position: "insideLeft", offset: -10, fontSize: 11, fill: "#64748b" }}
               tick={{ fontSize: 11, fill: "#64748b" }}
             />
             <Tooltip

@@ -15,7 +15,7 @@ export function ReportErrorState({ error, onBack }: ReportErrorStateProps) {
           <span className="text-xl font-bold">!</span>
         </div>
         <div className="text-center space-y-2">
-          <h2 className="text-lg font-semibold text-slate-800">평가 연산 실패</h2>
+          <h2 className="text-lg font-semibold text-slate-800">Evaluation failed</h2>
           <p className="text-sm text-red-600 font-mono bg-red-50 p-3 rounded border border-red-100 break-all text-left">
             {error}
           </p>
@@ -24,7 +24,7 @@ export function ReportErrorState({ error, onBack }: ReportErrorStateProps) {
           onClick={onBack}
           className="w-full py-2 px-4 bg-slate-800 text-white rounded hover:bg-slate-700 transition-colors text-sm font-medium"
         >
-          이전 단계로 돌아가기
+          Back to the previous step
         </button>
       </div>
     </div>

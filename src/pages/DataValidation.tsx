@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { AlertTriangle } from "lucide-react";
-import { useWorkflowStore, stepToPath } from "../utils/stores/useWorkflowStore";
+import { useWorkflowStore, stepToPath, STEP } from "../utils/stores/useWorkflowStore";
 import { BackendNoticePanel } from "../components/workflow/BackendNoticePanel";
 import { ensureActiveWorkspace } from "../utils/domain/ensureActiveWorkspace";
 import { useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
@@ -25,8 +25,8 @@ function describeSubmitError(err: unknown): string {
 
   if (isQuota) {
     return (
-      "브라우저 저장 공간이 가득 차 평가 결과를 저장하지 못했습니다. " +
-      "워크스페이스 상세 화면에서 오래된 평가 기록을 삭제한 뒤 다시 시도해 주세요."
+      "Browser storage is full, so the evaluation result could not be saved. " +
+      "Delete older evaluations from the workspace page and try again."
     );
   }
 
@@ -77,10 +77,11 @@ export function DataValidation() {
       // 저장에 성공한 뒤에만 단계를 넘긴다(실패 시 6단계에 머물러 재시도 가능).
       // run id 를 남겨야 성적서를 벗어난 뒤 7번 탭으로 돌아올 수 있다(ISSUES.md E-16).
       store.setLastRunId(run.id);
-      store.markStepCompleted(6);
-      store.markStepCompleted(7);
-      store.setCurrentStep(7);
-      navigate(`/report/${run.id}`);
+      store.markStepCompleted(STEP.VALIDATION);
+      store.setCurrentStep(STEP.SUMMARY);
+      // 성적서(6)가 아니라 평가 결과(5)로 간다. 성적서는 기관 정보·목표값을 입력해야
+      // 완성되므로, 평가만 하려는 사용자를 그리로 끌고 가지 않는다.
+      navigate(`/report/${run.id}/summary`);
     } catch (err) {
       console.error("평가 실행(성적서 생성) 실패:", err);
       setSubmitError(describeSubmitError(err));
@@ -88,8 +89,8 @@ export function DataValidation() {
   };
 
   const handlePrevious = () => {
-    store.setCurrentStep(5);
-    navigate(stepToPath(5));
+    store.setCurrentStep(STEP.MAPPING);
+    navigate(stepToPath(STEP.MAPPING));
   };
 
   return (
@@ -121,8 +122,6 @@ export function DataValidation() {
       <BackendNoticePanel
         columnNotes={store.columnNotes}
         mappingWarnings={store.mappingWarnings}
-        selectedMetricIds={store.selectedMetricIds}
-        availableMetricIds={store.availableMetricIds}
       />
       <DataValidationContent
         validationData={validationData}

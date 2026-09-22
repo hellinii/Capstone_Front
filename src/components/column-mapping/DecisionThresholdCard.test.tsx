@@ -138,7 +138,7 @@ describe("DecisionThresholdCard — 값 편집", () => {
         onDecisionThresholdChange={noop}
       />,
     );
-    expect(screen.getByText(/0 과 1 사이/)).toBeInTheDocument();
+    expect(screen.getByText(/between 0 and 1/i)).toBeInTheDocument();
   });
 });
 

@@ -1,0 +1,77 @@
+/**
+ * 지표 값을 사람이 읽는 문자열로.
+ *
+ * 평가 결과 화면과 버전 비교 화면이 **같은 규칙**으로 읽어야 한다 — 한쪽이 0.903 을,
+ * 다른 쪽이 90.3% 를 보여주면 같은 평가를 두 번 본 사용자가 서로 다른 값으로 기억한다.
+ *
+ * 전부 %로 바꾸지 않는 이유: M23(불균형비) 같은 지표는 비율이 아니라 배수라
+ * 100 을 곱하면 뜻이 달라진다. 그래서 0~1 범위의 비율 지표만 골라 둔다.
+ */
+
+/** 값이 0~1 범위의 비율인 지표(ISO/IEC TS 4213 기준). */
+export const RATIO_METRIC_IDS = new Set([
+  "M1", "M2", "M3", "M4", "M5", "M7", "M8", "M9", "M10", "M11", "M12", "M13",
+  "M15", "M16", "M17", "M18",
+]);
+
+/** 측정 불가·미선택을 나타내는 표기. 0 과 구분돼야 한다. */
+export const NOT_MEASURED = "—";
+
+/**
+ * 스칼라 값이 **없는** 지표. M21 은 행렬, M22 는 클래스별 표를 돌려준다.
+ *
+ * 백엔드 응답이 숫자가 아니라 객체라서 `resolvedValue` 가 0 으로 남는데
+ * (`useReportData` 의 dict 분기는 `f1_score` 키가 있을 때만 값을 꺼낸다),
+ * 그 0 을 그대로 인쇄하면 화면에 **"Confusion Matrix 0.000"** 이 뜬다.
+ * 0 은 측정값이 아니라 '해당 없음'이므로 숫자를 그리지 않는다.
+ */
+export const VISUAL_ONLY_METRIC_IDS = new Set(["M21", "M22"]);
+
+/** 스칼라 값이 없는 지표가 어디에 그려지는지 알려주는 한 줄. */
+export const VISUAL_ONLY_HINT: Record<string, string> = {
+  M21: "Rendered as the confusion matrix below.",
+  M22: "Adds a per-class breakdown to Precision, Recall, and F1.",
+};
+
+/**
+ * 비교 표에서 M21/M22 칸에 넣는 표기.
+ *
+ * 숫자 칸에 긴 문장을 넣을 수 없으므로 아래의 그림·표를 가리키기만 한다
+ * (비교 화면은 이 표 아래에 버전별 혼동행렬과 클래스별 표를 함께 그린다).
+ */
+export const VISUAL_ONLY_CELL = "See below";
+
+/** 소수 표기(항상 3자리). 지표 종류와 무관하게 쓸 수 있는 원값. */
+export function formatMetricValue(value: number | null | undefined): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) return NOT_MEASURED;
+  return value.toFixed(3);
+}
+
+/** 비율 지표면 백분율 문자열, 아니면 null(호출부가 원값으로 떨어지게). */
+export function formatMetricPercent(
+  metricId: string,
+  value: number | null | undefined,
+): string | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  if (!RATIO_METRIC_IDS.has(metricId)) return null;
+  if (value < 0 || value > 1) return null;
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+/**
+ * 표 한 칸에 넣을 대표 표기 — 비율이면 %, 아니면 소수.
+ *
+ * 행렬·클래스별 표를 돌려주는 지표(M21/M22)는 스칼라가 없어 `resolvedValue` 가 0 으로
+ * 남는다. 그 0 을 그대로 찍으면 **"Confusion Matrix 0.000"** 이라는 없는 측정값이
+ * 생긴다 — 성적서(MetricRow)와 평가 결과 화면은 이미 걸러내는데 비교 표만 새고 있었다.
+ */
+export function formatMetricCell(
+  metricId: string,
+  value: number | null | undefined,
+): string {
+  if (VISUAL_ONLY_METRIC_IDS.has(metricId)) {
+    // 값이 아예 없으면(계산 실패·미선택) 측정 불가 표기가 맞다.
+    return typeof value === "number" && Number.isFinite(value) ? VISUAL_ONLY_CELL : NOT_MEASURED;
+  }
+  return formatMetricPercent(metricId, value) ?? formatMetricValue(value);
+}
