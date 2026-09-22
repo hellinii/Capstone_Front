@@ -10,10 +10,7 @@
  * (confusionMatrix=M21, rocCurve·prCurve=binary+확률+M9/M10), null 이면 카드를 숨긴다.
  * 빈 축이나 더미 곡선을 그리지 않는다.
  */
-import { Link } from "react-router";
-import { GitCompare } from "lucide-react";
 import { Badge } from "../ui/badge";
-import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ConfusionMatrixChart } from "../report/sections/ConfusionMatrixChart";
 import { RocCurveChart } from "../report/sections/RocCurveChart";
@@ -23,6 +20,7 @@ import {
   NOT_MEASURED,
   VISUAL_ONLY_HINT,
   VISUAL_ONLY_METRIC_IDS,
+  formatMetricCell,
   formatMetricPercent,
   formatMetricValue,
 } from "../../lib/report/metricValueFormat";
@@ -41,17 +39,18 @@ function formatPercent(result: KpiResult): string | null {
   return formatMetricPercent(result.metricId, result.value);
 }
 
+/**
+ * **비교 입구는 여기 없다.** 종전에는 "Compare versions" 버튼이 있었지만, 그것이 여는
+ * 화면은 워크스페이스의 비교 화면과 **완전히 같은 것**이었다 — 지름길일 뿐 자기 역할이
+ * 없었다. 게다가 비교는 어느 버전을 세울지 고르는 일에서 시작하는데(최대 3개), 그 선택은
+ * 워크스페이스의 모델 카드에서만 할 수 있다. 고를 수 없는 자리에 둔 입구는 사용자를
+ * 아무것도 고르지 않은 비교 화면으로 떨어뜨릴 뿐이라 걷어냈다.
+ */
 interface EvaluationSummaryProps {
   data: FinalReportData;
-  /**
-   * 같은 모델의 다른 버전이 있을 때만 넘어오는 비교 화면 경로.
-   * 평가를 막 끝낸 직후가 "전보다 좋아졌나"가 가장 궁금한 순간이라, 워크스페이스까지
-   * 되돌아가지 않아도 되게 여기에도 입구를 둔다.
-   */
-  compareTo?: string;
 }
 
-export function EvaluationSummary({ data, compareTo }: EvaluationSummaryProps) {
+export function EvaluationSummary({ data }: EvaluationSummaryProps) {
   const { kpiResults, charts, meta, latency } = data;
   const sampleCount = resolveSampleCount(data);
 
@@ -70,23 +69,12 @@ export function EvaluationSummary({ data, compareTo }: EvaluationSummaryProps) {
 
   return (
     <main className="px-8 pt-12 pb-24 max-w-[1344px] mx-auto space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Evaluation results</h1>
-          <p className="text-sm text-muted-foreground">
-            Measured values for the metrics you selected. Pass/fail criteria are set later, when you
-            prepare the official report.
-          </p>
-        </div>
-
-        {compareTo && (
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link to={compareTo}>
-              <GitCompare className="h-4 w-4" />
-              Compare versions
-            </Link>
-          </Button>
-        )}
+      <div>
+        <h1 className="text-2xl font-bold text-foreground mb-2">Evaluation results</h1>
+        <p className="text-sm text-muted-foreground">
+          Measured values for the metrics you selected. Pass/fail criteria are set later, when you
+          prepare the official report.
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -128,16 +116,13 @@ export function EvaluationSummary({ data, compareTo }: EvaluationSummaryProps) {
                     {VISUAL_ONLY_HINT[result.metricId] ?? "Shown below."}
                   </p>
                 ) : (
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-mono text-3xl font-semibold tabular-nums text-foreground">
-                      {percent ?? formatValue(result)}
-                    </span>
-                    {percent && (
-                      <span className="font-mono text-sm tabular-nums text-muted-foreground">
-                        {formatValue(result)}
-                      </span>
-                    )}
-                  </div>
+                  /* 값은 하나만 보여준다. 종전에는 "47.6% 0.476" 처럼 같은 수를 두 번
+                     적었는데, 한 화면에 두 표기가 나란히 있으면 읽는 사람이 둘을 다른
+                     값으로 여기거나 어느 쪽이 참인지 되묻게 된다.
+                     비율이 아닌 지표(M23 불균형비 등)는 percent 가 null 이라 원값이 나온다. */
+                  <span className="font-mono text-3xl font-semibold tabular-nums text-foreground">
+                    {percent ?? formatValue(result)}
+                  </span>
                 )}
 
                 {result.status === "unavailable" && (
@@ -191,8 +176,11 @@ export function EvaluationSummary({ data, compareTo }: EvaluationSummaryProps) {
                   {result.perClass!.map((pc) => (
                     <tr key={pc.label} className="border-b border-border/50 last:border-b-0">
                       <td className="py-2 pr-4 text-foreground">{pc.label}</td>
+                      {/* 바로 위 카드가 같은 지표를 47.6% 로 보여주는데 여기만 0.476 이면
+                          같은 값이 다른 수로 읽힌다. 화면 표기는 한 규칙으로 맞춘다
+                          (성적서는 "소수점 셋째 자리" 를 스스로 선언하므로 별개다). */}
                       <td className="py-2 text-right font-mono tabular-nums text-foreground">
-                        {pc.value.toFixed(3)}
+                        {formatMetricCell(result.metricId, pc.value)}
                       </td>
                     </tr>
                   ))}

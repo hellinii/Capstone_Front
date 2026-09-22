@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { BarChart3, FileText, Trash2 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import {
   Table,
   TableBody,
@@ -30,17 +31,31 @@ interface EvaluationRunsTableProps {
   onDelete: (runId: string) => void;
   /** 모델별로 묶인 카드 안에서는 제목이 이미 모델명이라 열을 숨긴다. */
   hideModelName?: boolean;
+  /**
+   * 비교 대상으로 고른 run 의 id. **넘기지 않으면 선택 열 자체가 없다** — 비교할 대상이
+   * 없는 모델(평가 1건)에까지 체크박스를 두면 무엇에 쓰는 물건인지 알 수 없다.
+   */
+  selectedIds?: string[];
+  onToggleSelect?: (runId: string) => void;
+  /** 상한에 닿아 더 고를 수 없는 상태. 고른 것은 계속 풀 수 있어야 하므로 행마다 판단한다. */
+  selectionFull?: boolean;
 }
 
 export function EvaluationRunsTable({
   runs,
   onDelete,
   hideModelName = false,
+  selectedIds,
+  onToggleSelect,
+  selectionFull = false,
 }: EvaluationRunsTableProps) {
+  const selectable = Boolean(selectedIds && onToggleSelect);
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          {selectable && <TableHead className="w-10" aria-label="Compare selection" />}
           {!hideModelName && <TableHead>Model Name</TableHead>}
           <TableHead>Version</TableHead>
           <TableHead>Status</TableHead>
@@ -52,9 +67,22 @@ export function EvaluationRunsTable({
       <TableBody>
         {runs.map((run) => {
           const issued = Boolean(run.reportId);
+          const checked = selectedIds?.includes(run.id) ?? false;
 
           return (
             <TableRow key={run.id}>
+              {selectable && (
+                <TableCell>
+                  <Checkbox
+                    checked={checked}
+                    // 이미 고른 것은 상한과 무관하게 풀 수 있어야 한다 — 막아 두면
+                    // 셋을 고른 뒤 무엇도 바꿀 수 없는 상태에 갇힌다.
+                    disabled={!checked && selectionFull}
+                    onCheckedChange={() => onToggleSelect?.(run.id)}
+                    aria-label={`Select ${run.versionName} for comparison`}
+                  />
+                </TableCell>
+              )}
               {!hideModelName && <TableCell className="font-medium">{run.modelName}</TableCell>}
               <TableCell>{run.versionName}</TableCell>
               <TableCell>
@@ -72,18 +100,25 @@ export function EvaluationRunsTable({
               <TableCell>{formatCreatedAt(run.createdAt)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  {/* 미발급 run 을 성적서로 보내면 기관 정보·목표값이 빈 문서가 열린다.
-                      아직 만들지 않은 것을 보여주는 셈이라, 평가 결과로 보낸다. */}
+                  {/* 측정값은 발급 여부와 무관하게 늘 볼 수 있다. 종전에는 발급하는 순간
+                      이 버튼이 Report 로 **바뀌어** 평가 결과로 가는 길이 목록에서 사라졌다 —
+                      성적서를 냈다고 해서 지표·차트를 다시 볼 일이 없어지지는 않는다. */}
                   <Button asChild variant="outline" size="sm">
-                    <Link to={issued ? `/report/${run.id}` : `/report/${run.id}/summary`}>
-                      {issued ? (
-                        <FileText className="h-4 w-4" />
-                      ) : (
-                        <BarChart3 className="h-4 w-4" />
-                      )}
-                      {issued ? "Report" : "Results"}
+                    <Link to={`/report/${run.id}/summary`}>
+                      <BarChart3 className="h-4 w-4" />
+                      Results
                     </Link>
                   </Button>
+                  {/* 성적서는 발급된 것만 연다. 미발급 run 을 성적서로 보내면 기관 정보·
+                      목표값이 빈 문서가 열려, 아직 만들지 않은 것을 보여주는 셈이 된다. */}
+                  {issued && (
+                    <Button asChild variant="outline" size="sm">
+                      <Link to={`/report/${run.id}`}>
+                        <FileText className="h-4 w-4" />
+                        Report
+                      </Link>
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

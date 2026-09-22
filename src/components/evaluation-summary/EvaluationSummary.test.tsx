@@ -60,12 +60,42 @@ describe("클래스별 내역이 대표값을 대체하지 않는다", () => {
     expect(screen.getByText("47.6%")).toBeInTheDocument();
   });
 
+  /**
+   * 종전에는 카드에 "47.6% 0.476" 처럼 같은 수를 두 표기로 나란히 적었다.
+   * 한 화면에 두 수가 붙어 있으면 읽는 사람이 둘을 다른 값으로 여기거나
+   * 어느 쪽이 참인지 되묻게 된다(사용자 보고, 2026-09-22).
+   */
+  it("같은 값을 두 표기로 중복해 적지 않는다", () => {
+    renderSummary([kpi({ metricId: "M2", name: "Precision", value: 0.476 })]);
+
+    expect(screen.getByText("47.6%")).toBeInTheDocument();
+    expect(screen.queryByText("0.476")).not.toBeInTheDocument();
+  });
+
+  it("비율이 아닌 지표는 원값을 그대로 보여준다(%로 바꾸면 뜻이 달라진다)", () => {
+    // M23 불균형비는 배수라 100 을 곱할 수 없다 — 1.463 은 '146.3%' 가 아니다.
+    renderSummary([kpi({ metricId: "M23", name: "Imbalance Ratio", value: 1.463 })]);
+
+    expect(screen.getByText("1.463")).toBeInTheDocument();
+  });
+
   it("클래스별 내역은 대표값 **아래에** 함께 나온다", () => {
     renderSummary([PRECISION_WITH_BREAKDOWN]);
 
     expect(screen.getByText("47.6%")).toBeInTheDocument();
-    expect(screen.getByText("0.417")).toBeInTheDocument();
+    expect(screen.getByText("41.7%")).toBeInTheDocument();
     expect(screen.getByText(/by class/i)).toBeInTheDocument();
+  });
+
+  /**
+   * 대표값 카드가 47.6% 인데 바로 아래 표가 0.476 이면, 같은 측정이 두 수로 읽힌다.
+   * 화면 표기는 버전 비교 화면과 같은 규칙(metricValueFormat)으로 맞춘다 —
+   * 성적서는 "소수점 셋째 자리" 를 문서 안에서 스스로 선언하므로 별개다.
+   */
+  it("클래스별 값도 대표값과 같은 표기 규칙을 쓴다", () => {
+    renderSummary([PRECISION_WITH_BREAKDOWN]);
+
+    expect(screen.queryByText("0.417")).not.toBeInTheDocument();
   });
 });
 
