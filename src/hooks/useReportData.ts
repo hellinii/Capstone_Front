@@ -8,9 +8,10 @@
  * 종전에는 `id === "preview"` 라는 임시 경로가 있어 워크스페이스 없이도 성적서가
  * 렌더됐다 — 그 성적서는 어디에도 저장되지 않아 발급·재조회가 불가능했다(ISSUES.md E-02·E-06).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { apiUrl } from "@/lib/apiBase";
+import { applyUserInputs } from "../lib/report/applyUserInputs";
 import { mapWorkflowToFinalReport } from "../lib/report/mapWorkflowToFinalReport";
 import type { FinalReportData, LatencyStats } from "../types/finalReport.types";
 import { useWorkflowStore } from "../utils/stores/useWorkflowStore";
@@ -55,30 +56,14 @@ export function useReportData(id: string): UseReportDataResult {
       return;
     }
 
+    // 원본 파일이 없으면 평가를 다시 돌릴 수 없다(File 객체는 저장소를 넘지 못한다).
+    // 저장된 run 의 성적서를 그대로 내보내고, 사용자 입력은 아래 applyUserInputs 가 덮는다.
+    //
+    // 종전에는 이 아래에 **같은 조건의 블록이 하나 더** 있었다. 도달할 수 없는 코드였고,
+    // 하는 일도 지금은 틀렸다 — 전역 워크플로우 store 로 성적서를 새로 조립했는데,
+    // 그러면 지금 작업 중인 다른 평가의 입력이 이 run 의 성적서로 새어 들어간다.
     if (!workflowState.rawFile) {
       setData(run?.reportData || null);
-      return;
-    }
-
-    // rawFile이 없다면 (쇼케이스 모드 등) 바로 매핑한 기본 리포트 반환
-    if (!workflowState.rawFile) {
-      const baseReport = mapWorkflowToFinalReport({
-        basicInfo: workflowState.basicInfo,
-        datasetInfo: workflowState.datasetInfo,
-        taskType: workflowState.taskType,
-        selectedMetricIds: workflowState.selectedMetricIds,
-        metricDetails: workflowState.metricDetails,
-        uploadedFile: workflowState.uploadedFile,
-        trainingExampleFiles: workflowState.trainingExampleFiles,
-        trainingUnsuitableExampleFiles: workflowState.trainingUnsuitableExampleFiles,
-        columnMapping: workflowState.columnMapping,
-        classLabelDescriptions: workflowState.classLabelDescriptions,
-        metadata: workflowState.metadata,
-      }, workflowState.validationResult);
-      setData({
-        ...baseReport,
-        datasetDiagnosis: buildDatasetDiagnosis(workflowState.metadata),
-      });
       return;
     }
 
@@ -456,5 +441,22 @@ export function useReportData(id: string): UseReportDataResult {
     };
   }, [id, run, workflowState.rawFile, workflowState.columnMapping, workflowState.selectedMetricIds]);
 
-  return { data, isLoading, narrativePending, error };
+  /**
+   * 성적서 구간 입력을 평가 결과 위에 덮는다.
+   *
+   * 이 effect 안이 아니라 **렌더 시점**에 하는 것이 핵심이다. 기관 정보·학습 데이터셋·
+   * 목표값은 평가가 끝난 뒤 `/report/:id/issue-info` 에서 들어오는데, 위 effect 는
+   * 캐시가 있으면 즉시 반환해 버려서 그 입력을 두 번 다시 쳐다보지 않았다.
+   * 그래서 사용자가 입력한 값이 성적서에 하나도 나오지 않았다.
+   *
+   * 출처는 전역 store 가 아니라 **run 의 스냅샷**이다 — 워크스페이스에서 예전 run 을
+   * 열었을 때 지금 작업 중인 다른 평가의 입력이 새어 들어가면 안 된다.
+   */
+  const merged = useMemo(() => {
+    const snapshot = run?.workflowSnapshot;
+    if (!data || !snapshot) return data;
+    return applyUserInputs(data, snapshot);
+  }, [data, run?.workflowSnapshot]);
+
+  return { data: merged, isLoading, narrativePending, error };
 }

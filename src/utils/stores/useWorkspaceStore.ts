@@ -22,6 +22,15 @@ interface WorkspaceState {
   addEvaluationRun: (
     input: Omit<WorkspaceEvaluationRun, "id" | "createdAt">,
   ) => WorkspaceEvaluationRun;
+  /**
+   * 저장된 run 을 부분 갱신한다. 성적서 구간 입력(기관 정보·학습 데이터셋·목표값)이
+   * 평가가 끝난 뒤에 들어오므로, 그 입력을 해당 run 의 `workflowSnapshot` 에 되돌려
+   * 적는 경로가 필요하다. id·createdAt 은 신원이라 바꾸지 않는다.
+   */
+  updateEvaluationRun: (
+    id: string,
+    patch: Partial<Omit<WorkspaceEvaluationRun, "id" | "createdAt">>,
+  ) => void;
   deleteWorkspace: (id: string) => void;
   deleteEvaluationRun: (id: string) => void;
 }
@@ -74,6 +83,13 @@ export const useWorkspaceStore = create<WorkspaceState>()(
 
         return run;
       },
+
+      updateEvaluationRun: (id, patch) =>
+        set((state) => ({
+          evaluationRuns: state.evaluationRuns.map((run) =>
+            run.id === id ? { ...run, ...patch } : run,
+          ),
+        })),
 
       deleteWorkspace: (id) =>
         set((state) => ({
