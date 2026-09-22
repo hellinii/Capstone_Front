@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
+  MAX_COMPARE_RUNS,
   buildModelComparison,
   findRunsForModel,
   groupRunsByModel,
+  parseRunIds,
+  selectComparisonRuns,
 } from "./modelComparison";
 import type { WorkspaceEvaluationRun } from "../../types/workspace.types";
 
@@ -172,5 +175,152 @@ describe("buildModelComparison — 행(지표)", () => {
     expect(comparison.columns).toHaveLength(1);
     expect(comparison.metricRows).toEqual([]);
     expect(comparison.columns[0].dataset.fileName).toBe("—");
+  });
+});
+
+describe("스칼라가 없는 지표를 위한 자료", () => {
+  it("버전별 혼동행렬을 싣는다(숫자 표에 넣을 수 없는 값)", () => {
+    const matrix = { labels: ["a", "b"], matrix: [[1, 2], [3, 4]], totalSamples: 10 };
+    const comparison = buildModelComparison("Face", [
+      makeRun({ id: "a", reportData: reportWith({ charts: { confusionMatrix: matrix } }) }),
+      makeRun({ id: "b", reportData: reportWith({ charts: { confusionMatrix: null } }) }),
+    ]);
+
+    expect(comparison.columns[0].confusionMatrix).toEqual(matrix);
+    expect(comparison.columns[1].confusionMatrix).toBeNull();
+  });
+
+  it("차트가 아예 없는 run 에서도 무너지지 않는다", () => {
+    const comparison = buildModelComparison("Face", [makeRun({ id: "a" })]);
+
+    expect(comparison.columns[0].confusionMatrix).toBeNull();
+  });
+
+  it("클래스별 내역을 지표별로 모은다", () => {
+    const comparison = buildModelComparison("Face", [
+      makeRun({
+        id: "new",
+        createdAt: "2026-09-10T00:00:00.000Z",
+        reportData: reportWith({
+          kpiResults: [
+            {
+              metricId: "M2",
+              name: "Precision",
+              perClass: [
+                { label: "cat", value: 0.9, status: "pass" },
+                { label: "dog", value: 0.7, status: "pass" },
+              ],
+            },
+          ],
+        }),
+      }),
+      makeRun({
+        id: "old",
+        createdAt: "2026-09-01T00:00:00.000Z",
+        reportData: reportWith({
+          kpiResults: [
+            {
+              metricId: "M2",
+              name: "Precision",
+              perClass: [{ label: "cat", value: 0.8, status: "pass" }],
+            },
+          ],
+        }),
+      }),
+    ]);
+
+    expect(comparison.perClassMetrics).toHaveLength(1);
+    const rows = comparison.perClassMetrics[0].rows;
+    expect(rows.map((r) => r.label)).toEqual(["cat", "dog"]);
+    expect(rows[0].values).toEqual({ new: 0.9, old: 0.8 });
+    // 예전 버전에 없던 클래스는 0 이 아니라 null 이다 — 0 은 '측정했는데 0' 이라는 뜻이다.
+    expect(rows[1].values).toEqual({ new: 0.7, old: null });
+  });
+
+  it("클래스별 내역이 없으면 빈 배열이다(빈 섹션을 만들지 않게)", () => {
+    const comparison = buildModelComparison("Face", [
+      makeRun({
+        id: "a",
+        reportData: reportWith({ kpiResults: [{ metricId: "M1", name: "Accuracy", value: 0.9 }] }),
+      }),
+    ]);
+
+    expect(comparison.perClassMetrics).toEqual([]);
+  });
+});
+
+/**
+ * 비교 대상 고르기.
+ *
+ * 상한이 있는 이유는 화면이다 — '평가 데이터' 표는 run 을 **열**로 세우므로, 10개를
+ * 넘기면 2,000px 를 넘는 가로 스크롤이 되어 사실상 읽을 수 없다. 그래서 어떤 경로로
+ * 들어와도 셋을 넘지 않는 것이 이 계층의 계약이다.
+ */
+describe("selectComparisonRuns", () => {
+  const ten = Array.from({ length: 10 }, (_, i) =>
+    makeRun({
+      id: `run-${i}`,
+      versionName: `v1.${i}.0`,
+      // i 가 클수록 최신.
+      createdAt: `2026-09-${String(i + 1).padStart(2, "0")}T00:00:00.000Z`,
+    }),
+  );
+
+  it("고르지 않으면 최근 것부터 셋만 준다", () => {
+    const picked = selectComparisonRuns(ten, null);
+
+    expect(picked.map((r) => r.id)).toEqual(["run-9", "run-8", "run-7"]);
+  });
+
+  it("고른 것만 준다", () => {
+    const picked = selectComparisonRuns(ten, ["run-0", "run-5"]);
+
+    expect(picked.map((r) => r.id)).toEqual(["run-5", "run-0"]);
+  });
+
+  it("고른 순서와 무관하게 늘 최신순이다(표의 왼쪽이 최신)", () => {
+    const picked = selectComparisonRuns(ten, ["run-2", "run-8", "run-4"]);
+
+    expect(picked.map((r) => r.id)).toEqual(["run-8", "run-4", "run-2"]);
+  });
+
+  it("셋을 넘겨 요청해도 셋에서 자른다(URL 을 손으로 고쳐도 표가 무너지지 않게)", () => {
+    const picked = selectComparisonRuns(ten, ten.map((r) => r.id));
+
+    expect(picked).toHaveLength(MAX_COMPARE_RUNS);
+  });
+
+  it("지운 평가의 id 는 건너뛴다", () => {
+    const picked = selectComparisonRuns(ten, ["run-9", "deleted", "run-1"]);
+
+    expect(picked.map((r) => r.id)).toEqual(["run-9", "run-1"]);
+  });
+
+  it("요청한 id 가 하나도 안 맞으면 최근 셋으로 떨어진다(빈 표 금지)", () => {
+    const picked = selectComparisonRuns(ten, ["gone-1", "gone-2"]);
+
+    expect(picked.map((r) => r.id)).toEqual(["run-9", "run-8", "run-7"]);
+  });
+
+  it("평가가 셋보다 적으면 있는 만큼만 준다", () => {
+    const picked = selectComparisonRuns(ten.slice(0, 2), null);
+
+    expect(picked).toHaveLength(2);
+  });
+});
+
+describe("parseRunIds", () => {
+  it("쉼표로 나눈 id 목록을 읽는다", () => {
+    expect(parseRunIds("a,b,c")).toEqual(["a", "b", "c"]);
+  });
+
+  it("값이 없으면 null(= 고르지 않음)", () => {
+    expect(parseRunIds(null)).toBeNull();
+    expect(parseRunIds("")).toBeNull();
+  });
+
+  it("빈 조각과 공백을 걸러낸다", () => {
+    expect(parseRunIds(" a , , b ")).toEqual(["a", "b"]);
+    expect(parseRunIds(",,")).toBeNull();
   });
 });

@@ -24,6 +24,7 @@ const base: ModelComparisonData = {
         fileName: "eval-sep.csv",
       },
       metricValues: { M1: 0.91 },
+      confusionMatrix: null,
     },
     {
       runId: "old",
@@ -37,12 +38,14 @@ const base: ModelComparisonData = {
         fileName: "eval.csv",
       },
       metricValues: { M1: 0.88, M9: null },
+      confusionMatrix: null,
     },
   ],
   metricRows: [
     { metricId: "M1", name: "Accuracy" },
     { metricId: "M9", name: "AUROC" },
   ],
+  perClassMetrics: [],
 };
 
 function renderComparison(over: Partial<ModelComparisonData> = {}) {
@@ -120,6 +123,136 @@ describe("평가 결과 — 판정·해석 없음", () => {
     renderComparison({ metricRows: [] });
 
     expect(screen.getByText(/No measured metrics/i)).toBeInTheDocument();
+  });
+});
+
+/**
+ * M21(혼동행렬)·M22(클래스별)는 **스칼라가 없다.** 백엔드가 객체를 돌려주므로
+ * `resolvedValue` 가 0 으로 남는데, 그 0 을 그대로 찍으면 화면에
+ * "Confusion Matrix 0.000" 이라는 **없는 측정값**이 생긴다. 성적서(MetricRow)와 평가 결과
+ * 화면은 이미 걸러내고 있었고 비교 표만 새고 있었다(사용자 보고, 2026-09-22).
+ */
+describe("스칼라가 없는 지표 (M21 / M22)", () => {
+  const visualBase: Partial<ModelComparisonData> = {
+    metricRows: [
+      { metricId: "M21", name: "Confusion Matrix" },
+      { metricId: "M22", name: "Class-wise Metric" },
+    ],
+  };
+
+  it("0.000 을 찍지 않는다", () => {
+    renderComparison({
+      ...visualBase,
+      columns: [{ ...base.columns[0], metricValues: { M21: 0, M22: 0 } }],
+    });
+
+    expect(screen.queryByText("0.000")).not.toBeInTheDocument();
+  });
+
+  it("아래의 그림·표를 가리킨다", () => {
+    renderComparison({
+      ...visualBase,
+      columns: [{ ...base.columns[0], metricValues: { M21: 0, M22: 0 } }],
+    });
+
+    expect(screen.getAllByText("See below")).toHaveLength(2);
+  });
+
+  it("아예 측정되지 않았으면 '가리킴'이 아니라 미측정 표기다", () => {
+    renderComparison({
+      ...visualBase,
+      columns: [{ ...base.columns[0], metricValues: { M21: null, M22: null } }],
+    });
+
+    expect(screen.queryByText("See below")).not.toBeInTheDocument();
+  });
+});
+
+describe("혼동행렬 — 버전별로 그린다", () => {
+  const matrix = {
+    labels: ["cat", "dog"],
+    matrix: [
+      [120, 10],
+      [15, 55],
+    ],
+    totalSamples: 200,
+  };
+
+  it("행렬이 하나도 없으면 섹션을 만들지 않는다(빈 카드 금지)", () => {
+    renderComparison();
+
+    expect(screen.queryByText("Confusion matrices")).not.toBeInTheDocument();
+  });
+
+  it("행렬이 있는 버전만 그린다", () => {
+    renderComparison({
+      columns: [
+        { ...base.columns[0], confusionMatrix: matrix },
+        { ...base.columns[1], confusionMatrix: null },
+      ],
+    });
+
+    expect(screen.getByText("Confusion matrices")).toBeInTheDocument();
+    // ConfusionMatrixChart 는 카드마다 제목을 하나씩 단다.
+    expect(screen.getAllByText("Confusion Matrix")).toHaveLength(1);
+  });
+
+  it("버전마다 하나씩 그린다", () => {
+    renderComparison({
+      columns: [
+        { ...base.columns[0], confusionMatrix: matrix },
+        { ...base.columns[1], confusionMatrix: matrix },
+      ],
+    });
+
+    expect(screen.getAllByText("Confusion Matrix")).toHaveLength(2);
+  });
+});
+
+describe("클래스별 세부 성능 (M22)", () => {
+  const perClass: ModelComparisonData["perClassMetrics"] = [
+    {
+      metricId: "M2",
+      name: "Precision",
+      rows: [
+        { label: "cat", values: { new: 0.91, old: 0.88 } },
+        // 예전 버전에는 없던 클래스 — 행이 사라지지 않고 미측정으로 남아야 한다.
+        { label: "dog", values: { new: 0.72, old: null } },
+      ],
+    },
+  ];
+
+  it("클래스별 내역이 없으면 섹션을 만들지 않는다", () => {
+    renderComparison();
+
+    expect(screen.queryByText("Per-class metrics")).not.toBeInTheDocument();
+  });
+
+  /**
+   * 클래스별 표로 범위를 좁힌다. 클래스 이름("cat")은 위쪽 '평가 데이터' 표의
+   * Classes 행에도 배지로 떠 있어, 화면 전체에서 찾으면 그쪽이 함께 잡힌다.
+   */
+  const perClassRow = (label: string) => {
+    const table = screen.getByRole("columnheader", { name: "Class" }).closest("table")!;
+    return within(table)
+      .getAllByRole("row")
+      .find((row) => within(row).queryByText(label))!;
+  };
+
+  it("클래스를 행으로, 버전을 열로 놓는다", () => {
+    renderComparison({ perClassMetrics: perClass });
+
+    const row = perClassRow("cat");
+    expect(within(row).getByText("91.0%")).toBeInTheDocument();
+    expect(within(row).getByText("88.0%")).toBeInTheDocument();
+  });
+
+  it("한 버전에만 있는 클래스도 행이 사라지지 않는다", () => {
+    renderComparison({ perClassMetrics: perClass });
+
+    const row = perClassRow("dog");
+    expect(within(row).getByText("72.0%")).toBeInTheDocument();
+    expect(within(row).getByText("—")).toBeInTheDocument();
   });
 });
 

@@ -6,7 +6,6 @@ import { ReportLoadingState } from "../../components/report/ReportLoadingState";
 import { ReportErrorState } from "../../components/report/ReportErrorState";
 import { useReportData } from "../../hooks/useReportData";
 import { useWorkflowStore, STEP } from "../../utils/stores/useWorkflowStore";
-import { useWorkspaceStore } from "../../utils/stores/useWorkspaceStore";
 
 /**
  * Step 5 — 평가 결과.
@@ -22,7 +21,6 @@ export function EvaluationSummary() {
   const navigate = useNavigate();
   const { id = "" } = useParams();
   const { data, isLoading, error } = useReportData(id);
-  const compareTo = useCompareLink(id);
 
   // 탭 하이라이트를 이 단계로 맞춘다. WorkflowShell 은 `/app/*` 경로에서만 단계를
   // 유도하는데, 이 화면은 `/report/*` 라 유도가 되지 않는다.
@@ -48,30 +46,7 @@ export function EvaluationSummary() {
       onNext={handleNext}
       nextLabel="Prepare report"
     >
-      <EvaluationSummaryContent data={data} compareTo={compareTo} />
+      <EvaluationSummaryContent data={data} />
     </WorkflowShell>
   );
-}
-
-/**
- * 같은 모델의 다른 버전이 있을 때만 비교 화면 경로를 돌려준다.
- *
- * 평가가 하나뿐이면 비교할 대상이 없으므로 링크 자체를 만들지 않는다 — 눌러봐야
- * 열 하나짜리 표가 나오는 버튼은 안 보이는 편이 낫다.
- */
-function useCompareLink(runId: string): string | undefined {
-  return useWorkspaceStore((state) => {
-    const run = state.evaluationRuns.find((item) => item.id === runId);
-    if (!run) return undefined;
-
-    const modelName = run.modelName.trim() || "Untitled model";
-    const siblings = state.evaluationRuns.filter(
-      (item) =>
-        item.workspaceId === run.workspaceId &&
-        (item.modelName.trim() || "Untitled model") === modelName,
-    );
-
-    if (siblings.length < 2) return undefined;
-    return `/workspaces/${run.workspaceId}/models/${encodeURIComponent(modelName)}`;
-  });
 }

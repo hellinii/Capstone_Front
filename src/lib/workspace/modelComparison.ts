@@ -12,6 +12,7 @@
  * 판단은 사용자에게 남긴다.
  */
 import type { TaskType } from "../../data/evaluationData";
+import type { ConfusionMatrixData } from "../../types/report.types";
 import type { WorkspaceEvaluationRun } from "../../types/workspace.types";
 
 export interface ModelGroup {
@@ -40,11 +41,31 @@ export interface ComparisonColumn {
   dataset: ComparisonDataset;
   /** metricId → 측정값. 측정 불가(unavailable)거나 안 고른 지표는 없거나 null. */
   metricValues: Record<string, number | null>;
+  /**
+   * 오차 행렬(M21). 그 지표를 고른 평가에만 있다.
+   *
+   * 숫자 표에는 실을 수 없는 값이라(행렬이다) 표 아래에 버전별로 따로 그린다 —
+   * 종전에는 스칼라가 없어 0 으로 남은 값이 "0.000" 으로 인쇄됐다.
+   */
+  confusionMatrix: ConfusionMatrixData | null;
 }
 
 export interface ComparisonMetricRow {
   metricId: string;
   name: string;
+}
+
+/**
+ * 클래스별 세부 성능(M22 를 함께 고른 경우의 M2·M3·M4).
+ *
+ * 숫자 하나로 줄일 수 없어 비교 표에 실리지 못하던 값이다. 클래스를 행으로, 버전을
+ * 열로 놓아 "어느 클래스에서 나아졌나"를 볼 수 있게 한다.
+ */
+export interface ComparisonPerClassMetric {
+  metricId: string;
+  name: string;
+  /** 클래스 라벨별 행. `values` 는 runId → 값(그 버전에 없으면 null). */
+  rows: Array<{ label: string; values: Record<string, number | null> }>;
 }
 
 export interface ModelComparison {
@@ -54,6 +75,53 @@ export interface ModelComparison {
   columns: ComparisonColumn[];
   /** 어느 한 평가에라도 등장한 지표의 합집합. */
   metricRows: ComparisonMetricRow[];
+  /** 어느 한 평가에라도 클래스별 내역이 있는 지표. 없으면 빈 배열. */
+  perClassMetrics: ComparisonPerClassMetric[];
+}
+
+/**
+ * 한 번에 비교할 수 있는 평가의 최대 개수.
+ *
+ * 상한이 필요한 이유는 화면이다 — 위쪽 '평가 데이터' 표는 run 을 **열**로 세우므로
+ * 개수가 늘면 가로로 자란다. 10개면 2,000px 를 넘겨 사실상 읽을 수 없다.
+ * 셋이면 한 화면에 들어오고, 사람이 한눈에 대조할 수 있는 폭도 대체로 여기까지다.
+ */
+export const MAX_COMPARE_RUNS = 3;
+
+/**
+ * URL 의 `?runs=a,b,c` 를 id 목록으로 읽는다. 값이 없으면 null(= 사용자가 고르지 않음).
+ *
+ * 선택을 URL 에 싣는 이유: 새로고침·뒤로가기·링크 공유가 전부 살아난다. 컴포넌트
+ * 상태에만 두면 비교 화면을 한 번 벗어나는 순간 고른 것이 사라진다.
+ */
+export function parseRunIds(param: string | null): string[] | null {
+  if (!param) return null;
+  const ids = param.split(",").map((id) => id.trim()).filter(Boolean);
+  return ids.length > 0 ? ids : null;
+}
+
+/**
+ * 비교할 run 을 고른다. 항상 최신순이고 절대 `MAX_COMPARE_RUNS` 를 넘지 않는다.
+ *
+ * 고르지 않았으면 **최근 것부터 셋**을 보여준다. 빈 화면을 내미는 것보다 낫고,
+ * 어떤 경로로 들어와도 표가 무너지지 않는다(평가 결과 화면의 바로가기 포함).
+ * 요청한 id 가 하나도 맞지 않으면(지운 평가의 오래된 링크) 같은 기본값으로 떨어진다 —
+ * 열이 0개인 표를 그리느니 최근 것을 보여주는 편이 낫다.
+ */
+export function selectComparisonRuns(
+  runs: WorkspaceEvaluationRun[],
+  requestedIds: string[] | null,
+): WorkspaceEvaluationRun[] {
+  const sorted = [...runs].sort(byCreatedAtDesc);
+  if (!requestedIds || requestedIds.length === 0) {
+    return sorted.slice(0, MAX_COMPARE_RUNS);
+  }
+
+  const wanted = new Set(requestedIds);
+  const picked = sorted.filter((run) => wanted.has(run.id));
+  if (picked.length === 0) return sorted.slice(0, MAX_COMPARE_RUNS);
+
+  return picked.slice(0, MAX_COMPARE_RUNS);
 }
 
 /** 평가를 모델명으로 묶는다. 그룹도 그룹 안의 run 도 최신순. */
@@ -88,12 +156,13 @@ export function buildModelComparison(
   modelName: string,
   runs: WorkspaceEvaluationRun[],
 ): ModelComparison {
-  const columns = [...runs].sort(byCreatedAtDesc).map(toColumn);
+  const sorted = [...runs].sort(byCreatedAtDesc);
+  const columns = sorted.map(toColumn);
 
   // 지표 행은 합집합이다. 어떤 버전에서만 고른 지표가 있어도 행이 사라지면 안 된다 —
   // 그 칸은 '측정 안 함'이라는 사실 자체가 비교 대상이다.
   const seen = new Map<string, string>();
-  for (const run of [...runs].sort(byCreatedAtDesc)) {
+  for (const run of sorted) {
     for (const kpi of run.reportData?.kpiResults ?? []) {
       if (!seen.has(kpi.metricId)) seen.set(kpi.metricId, kpi.name);
     }
@@ -110,7 +179,51 @@ export function buildModelComparison(
       : "binary",
     columns,
     metricRows,
+    perClassMetrics: buildPerClassMetrics(sorted),
   };
+}
+
+/**
+ * 클래스별 내역을 지표별로 모은다. 클래스 목록도 지표 목록도 **합집합**이다 —
+ * 버전마다 고른 지표가 다르거나 데이터에 없던 클래스가 생겨도 행이 사라지면 안 된다.
+ */
+function buildPerClassMetrics(sortedRuns: WorkspaceEvaluationRun[]): ComparisonPerClassMetric[] {
+  const metrics = new Map<
+    string,
+    { name: string; labels: string[]; byRun: Record<string, Record<string, number>> }
+  >();
+
+  for (const run of sortedRuns) {
+    for (const kpi of run.reportData?.kpiResults ?? []) {
+      if (!kpi.perClass?.length) continue;
+
+      let entry = metrics.get(kpi.metricId);
+      if (!entry) {
+        entry = { name: kpi.name, labels: [], byRun: {} };
+        metrics.set(kpi.metricId, entry);
+      }
+
+      const perLabel: Record<string, number> = {};
+      for (const item of kpi.perClass) {
+        if (!entry.labels.includes(item.label)) entry.labels.push(item.label);
+        perLabel[item.label] = item.value;
+      }
+      entry.byRun[run.id] = perLabel;
+    }
+  }
+
+  return [...metrics.entries()]
+    .sort(([a], [b]) => metricOrder(a) - metricOrder(b))
+    .map(([metricId, entry]) => ({
+      metricId,
+      name: entry.name,
+      rows: entry.labels.map((label) => ({
+        label,
+        values: Object.fromEntries(
+          sortedRuns.map((run) => [run.id, entry.byRun[run.id]?.[label] ?? null]),
+        ),
+      })),
+    }));
 }
 
 function toColumn(run: WorkspaceEvaluationRun): ComparisonColumn {
@@ -146,6 +259,7 @@ function toColumn(run: WorkspaceEvaluationRun): ComparisonColumn {
       fileName: report?.datasetInfo?.fileName || "—",
     },
     metricValues,
+    confusionMatrix: report?.charts?.confusionMatrix ?? null,
   };
 }
 

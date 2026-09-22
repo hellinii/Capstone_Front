@@ -33,6 +33,14 @@ export const VISUAL_ONLY_HINT: Record<string, string> = {
   M22: "Adds a per-class breakdown to Precision, Recall, and F1.",
 };
 
+/**
+ * 비교 표에서 M21/M22 칸에 넣는 표기.
+ *
+ * 숫자 칸에 긴 문장을 넣을 수 없으므로 아래의 그림·표를 가리키기만 한다
+ * (비교 화면은 이 표 아래에 버전별 혼동행렬과 클래스별 표를 함께 그린다).
+ */
+export const VISUAL_ONLY_CELL = "See below";
+
 /** 소수 표기(항상 3자리). 지표 종류와 무관하게 쓸 수 있는 원값. */
 export function formatMetricValue(value: number | null | undefined): string {
   if (typeof value !== "number" || !Number.isFinite(value)) return NOT_MEASURED;
@@ -50,10 +58,20 @@ export function formatMetricPercent(
   return `${(value * 100).toFixed(1)}%`;
 }
 
-/** 표 한 칸에 넣을 대표 표기 — 비율이면 %, 아니면 소수. */
+/**
+ * 표 한 칸에 넣을 대표 표기 — 비율이면 %, 아니면 소수.
+ *
+ * 행렬·클래스별 표를 돌려주는 지표(M21/M22)는 스칼라가 없어 `resolvedValue` 가 0 으로
+ * 남는다. 그 0 을 그대로 찍으면 **"Confusion Matrix 0.000"** 이라는 없는 측정값이
+ * 생긴다 — 성적서(MetricRow)와 평가 결과 화면은 이미 걸러내는데 비교 표만 새고 있었다.
+ */
 export function formatMetricCell(
   metricId: string,
   value: number | null | undefined,
 ): string {
+  if (VISUAL_ONLY_METRIC_IDS.has(metricId)) {
+    // 값이 아예 없으면(계산 실패·미선택) 측정 불가 표기가 맞다.
+    return typeof value === "number" && Number.isFinite(value) ? VISUAL_ONLY_CELL : NOT_MEASURED;
+  }
   return formatMetricPercent(metricId, value) ?? formatMetricValue(value);
 }

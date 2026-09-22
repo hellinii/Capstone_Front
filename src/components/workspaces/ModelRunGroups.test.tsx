@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -59,9 +59,14 @@ describe("모델별 묶기", () => {
       makeRun({ id: "b", modelName: "얼굴 인식", createdAt: "2026-09-10T00:00:00.000Z", versionName: "v1.1.0" }),
     ]);
 
+    fireEvent.click(screen.getByRole("checkbox", { name: /Select v1.0.0/i }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Select v1.1.0/i }));
+
+    // id 는 고른 순서대로 실린다. 표시 순서는 비교 화면이 최신순으로 다시 세우므로
+    // (selectComparisonRuns) URL 의 순서는 표에 영향을 주지 않는다.
     expect(screen.getByRole("link", { name: /Compare/i })).toHaveAttribute(
       "href",
-      `/workspaces/ws-1/models/${encodeURIComponent("얼굴 인식")}`,
+      `/workspaces/ws-1/models/${encodeURIComponent("얼굴 인식")}?runs=a,b`,
     );
   });
 
@@ -130,14 +135,144 @@ describe("배선 — 만들어 두고 붙이지 않는 실수 차단", () => {
     expect(read("routes.ts")).toContain("/workspaces/:workspaceId/models/:modelName");
   });
 
-  it("평가 결과 화면이 비교 링크를 넘긴다", () => {
+  /**
+   * 평가 결과 화면에는 비교 입구를 두지 않는다.
+   *
+   * 그 버튼이 열던 화면은 워크스페이스의 비교 화면과 **같은 것**이었다 — 자기 역할이 없는
+   * 지름길이었다. 게다가 비교는 어느 버전을 세울지 고르는 일에서 시작하는데, 그 선택은
+   * 모델 카드에서만 할 수 있다. 고를 수 없는 자리의 입구는 사용자를 아무것도 고르지 않은
+   * 비교 화면으로 떨어뜨릴 뿐이다.
+   */
+  it("평가 결과 화면에는 비교 입구가 없다", () => {
     const source = read("pages/report/EvaluationSummary.tsx");
-    expect(source).toContain("compareTo={compareTo}");
-    expect(source).toContain("/models/${encodeURIComponent(modelName)}");
+    expect(source).not.toContain("compareTo");
+    expect(source).not.toContain("/models/");
   });
 
   it("워크스페이스 상세가 모델 카드로 그린다", () => {
     expect(read("pages/workspaces/WorkspaceDetail.tsx")).toContain("<ModelRunGroups");
+  });
+});
+
+describe("비교 대상 고르기 (최대 3개)", () => {
+  /** 최신순으로 v1.0.0 … v1.(n-1).0 짜리 평가 n 건. */
+  function manyRuns(count: number) {
+    return Array.from({ length: count }, (_, i) =>
+      makeRun({
+        id: `run-${i}`,
+        versionName: `v1.${i}.0`,
+        createdAt: `2026-09-${String(i + 1).padStart(2, "0")}T00:00:00.000Z`,
+      }),
+    );
+  }
+
+  const box = (version: string) =>
+    screen.getByRole("checkbox", { name: new RegExp(`Select ${version}`, "i") });
+
+  /** Radix 체크박스의 상태 변경은 act 안에서 일어나야 반영된다. */
+  const tick = (version: string) => fireEvent.click(box(version));
+
+  it("평가가 하나뿐이면 체크박스가 아예 없다(비교할 대상이 없다)", () => {
+    renderGroups([makeRun({ id: "a" })]);
+
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  });
+
+  it("평가가 둘 이상이면 행마다 체크박스가 생긴다", () => {
+    renderGroups(manyRuns(4));
+
+    expect(screen.getAllByRole("checkbox")).toHaveLength(4);
+  });
+
+  it("고른 것이 비교 링크에 실린다", () => {
+    renderGroups(manyRuns(4));
+
+    tick("v1.3.0");
+    tick("v1.1.0");
+
+    expect(screen.getByRole("link", { name: /Compare/i })).toHaveAttribute(
+      "href",
+      "/workspaces/ws-1/models/Face%20recognizer?runs=run-3,run-1",
+    );
+  });
+
+  it("셋을 채우면 나머지는 더 고를 수 없다", () => {
+    renderGroups(manyRuns(5));
+
+    tick("v1.4.0");
+    tick("v1.3.0");
+    tick("v1.2.0");
+
+    expect(box("v1.1.0")).toBeDisabled();
+    expect(box("v1.0.0")).toBeDisabled();
+  });
+
+  it("셋을 채워도 고른 것은 풀 수 있다(바꿀 수 없는 상태에 가두지 않는다)", () => {
+    renderGroups(manyRuns(5));
+
+    tick("v1.4.0");
+    tick("v1.3.0");
+    tick("v1.2.0");
+
+    expect(box("v1.2.0")).not.toBeDisabled();
+
+    tick("v1.2.0");
+    expect(box("v1.1.0")).not.toBeDisabled();
+  });
+
+  it("넷째를 눌러도 선택이 셋을 넘지 않는다", () => {
+    renderGroups(manyRuns(5));
+
+    tick("v1.4.0");
+    tick("v1.3.0");
+    tick("v1.2.0");
+    tick("v1.1.0");
+
+    expect(screen.getByRole("link", { name: /Compare/i })).toHaveAttribute(
+      "href",
+      "/workspaces/ws-1/models/Face%20recognizer?runs=run-4,run-3,run-2",
+    );
+  });
+
+  it("고르지 않으면 Compare 가 링크가 아니다(빈 비교 화면으로 떨어뜨리지 않는다)", () => {
+    renderGroups(manyRuns(3));
+
+    expect(screen.queryByRole("link", { name: /Compare/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Compare/i })).toBeInTheDocument();
+  });
+
+  it("하나만 고른 것도 비교가 아니다(열이 하나인 표)", () => {
+    renderGroups(manyRuns(3));
+
+    tick("v1.2.0");
+
+    expect(screen.queryByRole("link", { name: /Compare/i })).not.toBeInTheDocument();
+  });
+
+  it("고르지 않고 누르면 최소 두 개를 고르라고 말한다", () => {
+    renderGroups(manyRuns(3));
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Compare/i }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Select at least two versions to compare.",
+    );
+  });
+
+  it("안내가 뜬 뒤 둘을 고르면 안내가 사라지고 링크가 된다", () => {
+    renderGroups(manyRuns(3));
+
+    fireEvent.click(screen.getByRole("button", { name: /Compare/i }));
+    tick("v1.2.0");
+    tick("v1.1.0");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Compare/i })).toHaveAttribute(
+      "href",
+      "/workspaces/ws-1/models/Face%20recognizer?runs=run-2,run-1",
+    );
   });
 });
 

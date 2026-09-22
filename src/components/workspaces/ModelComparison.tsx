@@ -15,9 +15,14 @@
 import { Link } from "react-router";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { ConfusionMatrixChart } from "../report/sections/ConfusionMatrixChart";
 import { formatCreatedAt } from "../../utils/format/format";
 import { NOT_MEASURED, formatMetricCell } from "../../lib/report/metricValueFormat";
-import type { ComparisonColumn, ModelComparison as ModelComparisonData } from "../../lib/workspace/modelComparison";
+import type {
+  ComparisonColumn,
+  ComparisonPerClassMetric,
+  ModelComparison as ModelComparisonData,
+} from "../../lib/workspace/modelComparison";
 
 export function ModelComparison({ comparison }: { comparison: ModelComparisonData }) {
   const { columns, metricRows, taskType } = comparison;
@@ -151,7 +156,119 @@ export function ModelComparison({ comparison }: { comparison: ModelComparisonDat
           )}
         </CardContent>
       </Card>
+
+      <ConfusionMatrixSection columns={columns} />
+      <PerClassSection columns={columns} metrics={comparison.perClassMetrics} />
     </div>
+  );
+}
+
+/**
+ * 버전별 오차 행렬(M21).
+ *
+ * 숫자 한 칸으로 줄일 수 없는 값이라 위 표에는 "See below" 만 들어간다. 여기서 실제
+ * 행렬을 보여준다 — 어느 클래스가 어느 클래스로 새는지는 이 그림에만 있다.
+ *
+ * **가로가 아니라 세로로 쌓는다.** 행렬 하나가 클래스 수에 비례해 넓어져(4클래스면
+ * 540px 남짓) 셋을 나란히 두면 화면 밖으로 밀린다. 가로 스크롤로 오가며 대조하느니
+ * 위아래로 두는 편이 읽힌다.
+ */
+function ConfusionMatrixSection({ columns }: { columns: ComparisonColumn[] }) {
+  const withMatrix = columns.filter((column) => column.confusionMatrix);
+  if (withMatrix.length === 0) return null;
+
+  return (
+    <Card className="rounded-lg">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-semibold">Confusion matrices</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          M21 has no single number, so it is drawn per version here. Only versions that selected it
+          appear.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {withMatrix.map((column) => (
+          <div key={column.runId} className="space-y-2">
+            <VersionHeading column={column} />
+            <ConfusionMatrixChart data={column.confusionMatrix!} />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * 클래스별 세부 성능(M22 를 함께 고른 경우의 M2·M3·M4).
+ *
+ * 클래스가 행, 버전이 열이다. 위 결과 표와 축이 반대인데, 여기서 궁금한 것이
+ * "어느 **클래스**가 나아졌나"라서 클래스를 세로로 세우는 편이 읽힌다.
+ */
+function PerClassSection({
+  columns,
+  metrics,
+}: {
+  columns: ComparisonColumn[];
+  metrics: ComparisonPerClassMetric[];
+}) {
+  if (metrics.length === 0) return null;
+
+  return (
+    <Card className="rounded-lg">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg font-semibold">Per-class metrics</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          M22 breaks these metrics down by class. {NOT_MEASURED} means that class was not measured
+          in that run.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {metrics.map((metric) => (
+          <div key={metric.metricId} className="space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              <span className="font-mono text-xs uppercase text-muted-foreground">
+                {metric.metricId}
+              </span>{" "}
+              {metric.name}
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    <th className="w-44 py-2 pr-4 text-left text-xs font-medium uppercase text-muted-foreground">
+                      Class
+                    </th>
+                    {columns.map((column) => (
+                      <th
+                        key={column.runId}
+                        className="min-w-[110px] py-2 pr-4 text-right text-xs font-medium text-muted-foreground"
+                      >
+                        {column.versionName}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {metric.rows.map((row) => (
+                    <tr key={row.label} className="border-b border-border/50 last:border-b-0">
+                      <td className="py-2 pr-4 align-top text-foreground">{row.label}</td>
+                      {columns.map((column) => (
+                        <td
+                          key={column.runId}
+                          className="py-2 pr-4 text-right align-top font-mono tabular-nums text-foreground"
+                        >
+                          {formatMetricCell(metric.metricId, row.values[column.runId])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
