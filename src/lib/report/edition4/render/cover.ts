@@ -13,7 +13,7 @@ import {
   EX_ISSUED_STATUS,
   FIXED_22_ISSUE,
 } from "../edition4Text";
-import { COVER_INFO_LABEL, COVER_ISSUER_LINE, ISSUE_METHOD_AUTO } from "./coverText";
+import { COVER_INFO_LABEL, COVER_ISSUER_CONTACT, COVER_ISSUER_LINE, ISSUE_METHOD_AUTO } from "./coverText";
 import { isIssuedEd4 } from "./issuance";
 
 export interface CoverRow {
@@ -34,9 +34,23 @@ export function coverStandardLine(data: FinalReportData): string | null {
   return data.materialCheck?.printed.cover ?? null;
 }
 
-/** "발급 기관: {기관명}" — 대응표 31(기관명만). */
+/**
+ * 시험기관 주소·이메일 — run 을 만들 때 저장한 값만(판 4 run, `edition4/institutionEd4.ts`). 없는 칸은 뺀다. 표지와 1.1 이 같이 쓴다.
+ */
+export function institutionContact(data: FinalReportData): { address: string | null; email: string | null } {
+  const { address, email } = data.performer;
+  return { address: address ? address : null, email: email ? email : null };
+}
+
+/**
+ * "발급 기관: {기관명}" — 저장된 주소·이메일이 있으면 뒤 괄호에 "(주소, 이메일)"(D48, 예시본 rev 85). 저장값이 없는 옛 판 4
+ * 데이터는 기관명만(발급 당시 모양).
+ */
 export function coverIssuerLine(data: FinalReportData): string {
-  return COVER_ISSUER_LINE.replace("{기관}", () => data.performer.orgName);
+  const { address, email } = institutionContact(data);
+  const contact = [address, email].filter((v): v is string => v !== null);
+  const line = COVER_ISSUER_LINE.replace("{기관}", () => data.performer.orgName);
+  return contact.length > 0 ? line + COVER_ISSUER_CONTACT.replace("{연락}", () => contact.join(", ")) : line;
 }
 
 /** 고정 문구 22 — 발급본에만(부록 B1). 미발급이면 null. */

@@ -247,7 +247,7 @@ describe("지적 6 — 4.3 판정 칸 미달 지표는 판 3 같은 칸 글자 '
 });
 
 describe("지적 7 — 의뢰자·데이터 값 속 $&·$'·$$·$` 를 그대로 찍는다(문자열 치환 특수 패턴)", () => {
-  const SPECIALS = ["Net$&X", "a$'b", "c$$d", "e$`f", "{조사}g", "h{목록}"];
+  const SPECIALS = ["Net$&X", "a$'b", "c$$d", "e$`f", "{조사}g", "h{목록}", "i{연락}"];
 
   it("rv3 dollarModel: 1.2 목적 문단 모델명, 2.2 클래스 목록 — 화면 글", () => {
     const data = structuredClone(loadEd4("bc_strong", "final"));
@@ -266,11 +266,14 @@ describe("지적 7 — 의뢰자·데이터 값 속 $&·$'·$$·$` 를 그대로
       data.evalScope.targetModel = value;
       data.datasetInfo.classLabels = [value, "z"];
       data.performer.orgName = value;
+      // 시험기관 주소·이메일(D48, 심판 라운드 1단계)도 같은 길 — 괄호 틀 "({연락})" 의 자리 글자가 값 안에 있어도 그대로.
+      data.performer.address = `${value} 4층`;
+      data.performer.email = `${value}@x`;
       expect(purposeParagraph(data)).toContain(`"${value}"`);
       expect(purposeParagraph(data)).not.toMatch(/\{모델\}/);
       const classes = evaluationDataRows(data).find((r) => r[0] === "감지된 클래스 수")!;
       expect(classes[1]).toBe(`2개 — 클래스 목록: ${value}, z`);
-      expect(coverIssuerLine(data)).toBe(`발급 기관: ${value}`);
+      expect(coverIssuerLine(data)).toBe(`발급 기관: ${value} (${value} 4층, ${value}@x)`);
       expect(ed4RuleTail(value)).toContain(`(입력 점검 규칙 ${value})`);
     });
   }

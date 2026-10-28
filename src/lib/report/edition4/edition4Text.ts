@@ -15,26 +15,20 @@ export const FIXED_9_PER_LABEL_ED4 = "본 평가의 예측값은 제출된 확�
 export const FIXED_9_ARGMAX_ED4 =
   "본 평가의 예측값은 제출된 클래스별 확률값 중 가장 큰 값의 클래스를 택하여 산출하였습니다(결정 임계값 없음).";
 
-/** 고정 문구 20 — 4.2 판정 근거. 합격은 확정 글, 나머지 세 갈래는 예시본을 만들며 정한 초안(판 4 를 켜기 전 확인 목록). */
+/** 고정 문구 20 — 4.2 판정 근거 네 갈래(2026-10-26 확정). */
 export const VERDICT_BASIS_PASS = "핵심 지표 {핵심 지표}과(와) 그 밖의 판정 대상 지표가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.";
-export const VERDICT_BASIS_CONDITIONAL_DRAFT =
+export const VERDICT_BASIS_CONDITIONAL =
   "핵심 지표 {핵심 지표}은(는) 목표를 충족하였으나 {미달 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 조건부 합격으로 판정하였다.";
-export const VERDICT_BASIS_FAIL_DRAFT = "핵심 지표 {미달 핵심 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 불합격으로 판정하였다.";
-export const VERDICT_BASIS_INCONCLUSIVE_DRAFT = "{원인}(으)로 3.4의 판정 규칙에 따라 판정할 수 없었다.";
+export const VERDICT_BASIS_FAIL = "핵심 지표 {미달 핵심 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 불합격으로 판정하였다.";
+export const VERDICT_BASIS_INCONCLUSIVE = "{원인}(으)로 3.4의 판정 규칙에 따라 판정할 수 없었다.";
 /** 부록 B13 — 핵심 지표만 판정 대상인 합격. */
 export const VERDICT_BASIS_PASS_CORE_ONLY = "핵심 지표 {핵심 지표}이(가) 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.";
 /**
- * 부록 B31(초안, 2026-10-24 승인 — 판 4 를 켜기 전 확인 목록) — 핵심 지표가 하나도 없는 성적서의 4.2 판정 근거. {판정} 은 판정
- * 글자(`VERDICT_BASIS_WORD`), 조사 (으)로 는 그 글자로 고른다.
+ * 부록 B31(2026-10-26 확정) — 핵심 지표가 하나도 없는 성적서의 4.2 판정 근거. 핵심 지표가 없으면 "핵심 지표는 모두 충족"이 빈
+ * 조건으로 참이라(3.4) 판정은 합격 또는 조건부 합격뿐이고, 미달이 있으면 늘 조건부 합격이다(판정 글자를 끼우지 않는다).
  */
-export const VERDICT_BASIS_PASS_NO_CORE_DRAFT = "판정 대상 지표 {N}개가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.";
-export const VERDICT_BASIS_FAILED_NO_CORE_DRAFT = "{미달 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 {판정}(으)로 판정하였다.";
-/** 근거 문장 끝 "…(으)로 판정하였다" 의 판정 글자(고정 문구 20 의 "합격으로"·"조건부 합격으로"·"불합격으로"). */
-export const VERDICT_BASIS_WORD: Record<"PASS" | "CONDITIONAL_PASS" | "FAIL", string> = {
-  PASS: "합격",
-  CONDITIONAL_PASS: "조건부 합격",
-  FAIL: "불합격",
-};
+export const VERDICT_BASIS_PASS_NO_CORE = "판정 대상 지표 {N}개가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.";
+export const VERDICT_BASIS_CONDITIONAL_NO_CORE = "{미달 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 조건부 합격으로 판정하였다.";
 /** 부록 B13 — 판정 불가의 {원인}. */
 export const INCONCLUSIVE_CAUSE_NOT_COMPUTED = "핵심 지표 {이름}의 산출 실패";
 export const INCONCLUSIVE_CAUSE_NO_TARGET = "핵심 지표 {이름}의 목표값 부재";
@@ -52,7 +46,7 @@ export const VERDICT_LABEL_ED4: Record<"PASS" | "CONDITIONAL_PASS" | "FAIL" | "I
 export const VERDICT_COUNT_CELL = "{N}개 중 {n}개";
 export const VERDICT_COUNT_NONE = "—";
 
-/** 고정 문구 21 — 표지 시험 결과 요약의 줄 이름과 종합 판정·핵심 지표 줄. */
+/** 고정 문구 21 — 표지 시험 결과 요약의 줄 이름과 종합 판정·핵심 지표 줄(2026-10-26 확정). */
 export const COVER_ROW_VERDICT = "종합 판정";
 export const COVER_ROW_CORE = "핵심 지표";
 export const COVER_VERDICT_ROW = "{판정} (판정 대상 지표 {N}개 중 {n}개 충족, 4.2)";
@@ -60,12 +54,15 @@ export const COVER_CORE_ROW = "{이름} {값} (합격 기준 {기준}, {충족/�
 /** 부록 B2 — 판정 대상 0개. */
 export const COVER_VERDICT_NONE = "판정 불가 (판정 대상 지표 없음, 4.2)";
 /**
- * 부록 B32(초안, 2026-10-24 승인 — 판 4 를 켜기 전 확인 목록) — 목표값이 없는 핵심 지표. 값은 판정과 무관해 plain(같은 원값의
- * 판정 대상 지표가 있으면 그 글자 — D2).
+ * 부록 B32(2026-10-26 확정) — 목표값이 없는 핵심 지표. 값은 판정과 무관해 plain(같은 원값의 판정 대상 지표가 있으면 그 글자 —
+ * D2). 줄 이름 "핵심 지표: " 는 표의 첫 칸이다.
  */
-export const COVER_CORE_NO_TARGET_DRAFT = "{이름} {값} (합격 기준 없음, 참고 지표, 4.3)";
-/** 부록 B3 — 핵심 지표 측정 불가. */
-export const COVER_CORE_UNAVAILABLE = "{이름} 측정 불가 (합격 기준 {기준}, 4.3)";
+export const COVER_CORE_NO_TARGET = "{이름} {값} (합격 기준 없음, 참고 지표, 4.3)";
+/**
+ * 고정 문구 21 의 핵심 지표 산출 실패 줄("핵심 지표: {이름} 측정 불가 (4.3)", 2026-10-26 확정 — 합격 기준을 싣던 부록 B3 글을
+ * 바꿈). 목표값이 있든 없든 산출에 실패하면 이 줄이다. 줄 이름 "핵심 지표: " 는 표의 첫 칸이다.
+ */
+export const COVER_CORE_UNAVAILABLE = "{이름} 측정 불가 (4.3)";
 
 /** 고정 문구 19 의 판정 여유 값(4.3 열·표지 핵심 지표 줄). */
 export const JUDGMENT_MARGIN_LABEL: Record<"small" | "ample", string> = { small: "작음", ample: "충분" };
@@ -261,5 +258,5 @@ export const B29_PLACES = "(표지·1.3·부록 1.2)";
  */
 export const B29_RULE_NAME = "입력 점검 규칙";
 export const B30_NOT_PROVIDED = "제공되지 않음";
-/** 부록 B33(초안, 2026-10-24 승인) — 멀티레이블, 학습 표본 수 없음(저장 이유 코드 training_samples_not_provided). */
-export const B33_NO_TRAINING_SAMPLES_DRAFT = "제공되지 않음 — 학습 표본 수가 제공되지 않아 학습·평가 비율을 비교하지 않았다.";
+/** 부록 B33(2026-10-26 확정) — 멀티레이블, 학습 표본 수 없음(저장 이유 코드 training_samples_not_provided). */
+export const B33_NO_TRAINING_SAMPLES = "제공되지 않음 — 학습 표본 수가 제공되지 않아 학습·평가 비율을 비교하지 않았다.";

@@ -11,7 +11,7 @@ import {
   B15_SUBMITTED_PREDICTION,
   B16_NO_TRAINING_DISTRIBUTION,
   B17_NO_CURVES,
-  B33_NO_TRAINING_SAMPLES_DRAFT,
+  B33_NO_TRAINING_SAMPLES,
   FIXED_24_DISTRIBUTION,
 } from "../edition4Text";
 import {
@@ -288,7 +288,7 @@ describe("4.5 데이터 분포", () => {
     expect(a.replacement).toEqual({ title: "학습·평가 클래스 비율", text: B16_NO_TRAINING_DISTRIBUTION });
     const b = distributionView(dist("training_samples_not_provided", []), "multilabel");
     expect(b.table).toBeNull();
-    expect(b.replacement).toEqual({ title: "학습·평가 클래스 비율", text: B33_NO_TRAINING_SAMPLES_DRAFT });
+    expect(b.replacement).toEqual({ title: "학습·평가 클래스 비율", text: B33_NO_TRAINING_SAMPLES });
   });
 
   it("생성값이 없으면 문단·표 없이 24 만", () => {

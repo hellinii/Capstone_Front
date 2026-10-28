@@ -1202,7 +1202,9 @@
   "narrativeSource": "llm",
   "noBenchmarkSentence": "다음 지표는 내부 참조 기준치가 없어 벤치마크 비교를 하지 않았다: Log Loss, Imbalance Ratio.",
   "performer": {
+    "address": "서울특별시 중구 시험로 123, 4층",
     "contact": "—",
+    "email": "contact@litmus.example",
     "evaluator": "자동 평가 엔진",
     "orgName": "리트머스"
   },

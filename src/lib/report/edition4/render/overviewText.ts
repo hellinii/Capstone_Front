@@ -23,8 +23,11 @@ export const OVERVIEW_CLIENT_LABEL = {
   contractDate: "평가 의뢰일",
 } as const;
 
-/** 1.1 시험기관 표 칸 이름(예시본). 값은 기관명과 발급 방식(`coverText.ISSUE_METHOD_AUTO`). */
-export const OVERVIEW_INSTITUTION_LABEL = { orgName: "기관명", issueMethod: "발급 방식" } as const;
+/**
+ * 1.1 시험기관 표 칸 이름(예시본 rev 85 순서 — 기관명, 주소, 이메일, 발급 방식). 값은 기관명, 저장된 주소·이메일(있을 때만, D48),
+ * 발급 방식(`coverText.ISSUE_METHOD_AUTO`).
+ */
+export const OVERVIEW_INSTITUTION_LABEL = { orgName: "기관명", address: "주소", email: "이메일", issueMethod: "발급 방식" } as const;
 
 /**
  * 1.2 목적 문단(예시본 글자 그대로). {모델} 은 따옴표로 감싼 모델명, {조사} 는 그 뒤 을/를(`josa` — 괄호 앞 이름의 읽는 소리).

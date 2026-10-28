@@ -58,6 +58,12 @@ export interface PerformerInfo {
   orgName: string;
   evaluator: string;
   contact: string;
+  /**
+   * 시험기관 주소·이메일 — 판 4 run 에만, run 을 만들 때 찍는다(재료 목록 "시험기관 정보" 고정값, `edition4/institutionEd4.ts`).
+   * 판 4 표지 발급 기관 줄과 1.1 시험기관 표가 읽는다. 판 1~3 데이터와 이 칸 이전의 판 4 데이터에는 없다(없으면 줄·행을 찍지 않는다).
+   */
+  address?: string;
+  email?: string;
 }
 
 export interface EvalScope {

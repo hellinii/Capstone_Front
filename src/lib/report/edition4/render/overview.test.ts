@@ -60,8 +60,32 @@ describe("1.1 표", () => {
     expect(clientRows(d).at(-1)).toEqual({ label: "평가 의뢰일", value: "2026-09-30" });
   });
 
-  it("시험기관 — 기관명·발급 방식 두 줄", () => {
+  it("시험기관 — 기관명·주소·이메일·발급 방식 네 줄(예시본 rev 85, D48 — 주소·이메일은 run 을 만들 때 저장한 값)", () => {
     expect(institutionRows(bc)).toEqual([
+      { label: "기관명", value: "리트머스" },
+      { label: "주소", value: "서울특별시 중구 시험로 123, 4층" },
+      { label: "이메일", value: "contact@litmus.example" },
+      { label: "발급 방식", value: "자동 발급 (사람 승인 없음)" },
+    ]);
+  });
+
+  it("시험기관 — 저장값을 읽는다, 없는 칸·빈 칸은 행을 빼고 둘 다 없으면 두 줄(옛 판 4 데이터)", () => {
+    const changed = copy(bc, (d) => {
+      d.performer.address = "주소A";
+      delete d.performer.email;
+    });
+    expect(institutionRows(changed).map((r) => [r.label, r.value])).toEqual([
+      ["기관명", "리트머스"],
+      ["주소", "주소A"],
+      ["발급 방식", "자동 발급 (사람 승인 없음)"],
+    ]);
+    const emailOnly = copy(bc, (d) => (d.performer.address = ""));
+    expect(institutionRows(emailOnly).map((r) => r.label)).toEqual(["기관명", "이메일", "발급 방식"]);
+    const old = copy(bc, (d) => {
+      delete d.performer.address;
+      delete d.performer.email;
+    });
+    expect(institutionRows(old)).toEqual([
       { label: "기관명", value: "리트머스" },
       { label: "발급 방식", value: "자동 발급 (사람 승인 없음)" },
     ]);

@@ -268,6 +268,10 @@ export function applyIssuance(report: FinalReportData, r: IssuanceResult): Final
       orgName: r.organization.orgName || report.performer.orgName,
       evaluator: r.organization.evaluator ?? report.performer.evaluator,
       contact: r.organization.contact ?? report.performer.contact,
+      // 판 4 run 이 만들 때 찍은 시험기관 주소·이메일은 그대로 둔다(서버 기관 행의 address 는 쓰지 않는다 — `institutionEd4.ts`).
+      // 칸이 없는 데이터(판 1~3)에는 더하지 않는다. 보관본에 performer 가 통째로 없어도 깨지지 않게 `?.`.
+      ...(report.performer?.address !== undefined ? { address: report.performer.address } : {}),
+      ...(report.performer?.email !== undefined ? { email: report.performer.email } : {}),
     },
     signature: {
       issuer: r.issuer,

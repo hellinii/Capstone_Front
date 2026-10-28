@@ -25,7 +25,7 @@ import {
   B15_SUBMITTED_PREDICTION,
   B16_NO_TRAINING_DISTRIBUTION,
   B17_NO_CURVES,
-  B33_NO_TRAINING_SAMPLES_DRAFT,
+  B33_NO_TRAINING_SAMPLES,
   ED4_DASH,
   EX_4_4_BEST_THRESHOLD,
   EX_4_4_CURRENT_THRESHOLD,
@@ -214,7 +214,7 @@ export function distributionView(dist: DistributionEd4 | null | undefined, taskT
   let table: DetailTable | null = null;
   let replacement: DistributionView["replacement"] = null;
   if (status === "not_provided") replacement = { title: EX_4_5_TRAINING_TITLE, text: B16_NO_TRAINING_DISTRIBUTION };
-  else if (status === "training_samples_not_provided") replacement = { title: EX_4_5_TRAINING_TITLE, text: B33_NO_TRAINING_SAMPLES_DRAFT };
+  else if (status === "training_samples_not_provided") replacement = { title: EX_4_5_TRAINING_TITLE, text: B33_NO_TRAINING_SAMPLES };
   else if (dist && dist.training.rows.length > 0) {
     table = {
       title: EX_4_5_TRAINING_TITLE,

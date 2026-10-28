@@ -430,6 +430,8 @@ const STAGE1_CHANGES: Record<Tag, string[]> = {
     ".narrativeFacts.weakest_class.gap_text",
     ".narrativeFacts.weakest_class.share_text",
     ".nearTargetNote",
+    ".performer.address", // 심판 라운드 1단계 — 시험기관 주소·이메일(D48)은 판 4 run 에만, 만들 때 찍는다
+    ".performer.email",
     ".problems",
   ],
   digits_strong: [
@@ -452,6 +454,8 @@ const STAGE1_CHANGES: Record<Tag, string[]> = {
     ".narrativeFacts.weakest_class.gap_text",
     ".narrativeFacts.weakest_class.share_text",
     ".nearTargetNote",
+    ".performer.address", // 심판 라운드 1단계 — 시험기관 주소·이메일(D48)은 판 4 run 에만, 만들 때 찍는다
+    ".performer.email",
     ".problems",
   ],
   yeast_strong: [
@@ -477,6 +481,8 @@ const STAGE1_CHANGES: Record<Tag, string[]> = {
     ".narrativeFacts.weakest_class.low_support",
     ".narrativeFacts.weakest_class.share",
     ".narrativeFacts.weakest_class.share_text",
+    ".performer.address", // 심판 라운드 1단계 — 시험기관 주소·이메일(D48)은 판 4 run 에만, 만들 때 찍는다
+    ".performer.email",
     ".problems",
   ],
 };
@@ -491,6 +497,14 @@ describe.each(TAGS)("판 4 run 저장 데이터 — %s", (tag: Tag) => {
   it("판 4 생성값의 키가 모두 있다 — 해시·크기·엔진 버전(새 응답이라 값 있음), 4.2·표지·4.5", () => {
     expect(stage1().datasetInfo.sourceFile).toEqual({ sha256: expect.stringMatching(/^[0-9a-f]{64}$/), sizeBytes: expect.any(Number) });
     expect(stage1().evalEnv.engineVersion).toBe("1.0.0");
+    // 시험기관 주소·이메일(D48) — 재료 목록 시험기관 정보 행의 고정값을 만들 때 찍는다(판 3 정답에는 없는 칸 — 위 목록).
+    expect(stage1().performer).toEqual({
+      orgName: "리트머스",
+      evaluator: "자동 평가 엔진",
+      contact: "—",
+      address: "서울특별시 중구 시험로 123, 4층",
+      email: "contact@litmus.example",
+    });
     const v = stage1().edition4Values;
     // 저장 데이터는 키를 정렬해 직렬화한 글이다(하네스 stableJson).
     expect(Object.keys(v)).toEqual(["coverResultRows", "distribution", "thresholdTable", "verdict"]);

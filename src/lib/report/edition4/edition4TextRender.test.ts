@@ -1,10 +1,7 @@
 /**
  * 렌더러용 판 4 문구 상수(판 4 라운드 S4·S5) — 고정 문구는 사본(`fixedWording.ed4.json`)과, 예시본 글자는 예시본 사본과,
- * 부록 B 는 사본의 `appendixB_raw`(B30 까지) 또는 아래 주석에 옮겨 적은 계획 부록 B 글과 글자까지 대조한다.
- *
- * 계획 부록 B 원문(2026-10-24 승인, 렌더러가 찍는 것 — 사본에 없는 B33 은 여기 옮긴 글이 기준):
- * - B33 4.5 비율 표 자리(멀티레이블) | 학습 분포는 있으나 학습 표본 수가 없음 | 제공되지 않음 — 학습 표본 수가 제공되지 않아 학습·평가
- *   비율을 비교하지 않았다. (초안, 2026-10-24 승인)
+ * 부록 B 는 사본의 `appendixB_raw`(고정 문구 탭 1.1 표 B1~B33, rev 134 — 심판 라운드 1단계부터 이 표에서 뽑는다)와 글자까지
+ * 대조한다. 그 표에는 코드가 찍지 않는 설명 글(B10 의 "{역할}은 …", B29 의 "판 3은 …")도 붙어 있어, 그 꼬리는 시작 글자로만 본다.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -12,6 +9,7 @@ import { describe, expect, it } from "vitest";
 
 import * as T from "./edition4Text";
 import { CONFIDENCE_INTERVAL_PREMISE } from "../reportConstants";
+import { ed4RecheckMessage } from "./render/recordLines";
 
 type Json = any;
 const WORDING: Json = JSON.parse(readFileSync(resolve(__dirname, "../../../test/edition4/fixedWording.ed4.json"), "utf8"));
@@ -87,7 +85,7 @@ describe("예시본 글자", () => {
   });
 });
 
-describe("부록 B = 사본 appendixB_raw(계획 부록 B) 글자", () => {
+describe("부록 B = 사본 appendixB_raw(고정 문구 1.1 표) 글자", () => {
   it("B1 상태 줄·안내·(미발급)", () => {
     expect(quoted("B1")).toEqual([T.B1_DRAFT_STATUS, T.B1_DRAFT_NOTICE, T.EX_END_MARK, T.B1_UNISSUED]);
     expect(T.B8_UNISSUED).toBe(T.B1_UNISSUED);
@@ -99,7 +97,8 @@ describe("부록 B = 사본 appendixB_raw(계획 부록 B) 글자", () => {
     const head = T.B9_GROUP_HEAD.replace("{counts}", [T.B9_COUNT_ERROR, T.B9_COUNT_WARNING, T.B9_COUNT_PASS].join(", "));
     expect(B.B9.candidate.startsWith(head)).toBe(true);
   });
-  it("B10", () => expect(B.B10.candidate).toBe([T.B10_NO_SAMPLE_ID, T.B10_NO_SCORE, T.B10_NO_ROLE].join(" / ")));
+  it("B10 — 세 글 뒤 '. {역할}은 …' 은 문서 설명이라 코드가 찍지 않는다", () =>
+    expect(B.B10.candidate.startsWith(`${[T.B10_NO_SAMPLE_ID, T.B10_NO_SCORE, T.B10_NO_ROLE].join(" / ")}. {역할}은 `)).toBe(true));
   it("B11", () =>
     expect(B.B11.candidate).toBe([T.B11_LATENCY_STATS, T.B11_ALL_BELOW_ONE, T.B11_UNCHECKED, T.B11_NON_NUMERIC].join(" / ")));
   it("B14", () => expect(quoted("B14")).toEqual([T.B14_UNMEASURABLE, T.ED4_DASH]));
@@ -110,10 +109,17 @@ describe("부록 B = 사본 appendixB_raw(계획 부록 B) 글자", () => {
   it("B25", () => expect(`${T.B25_RECORD_HEADER} · ${T.B25_RECORD_NOTE}`).toBe(B.B25.candidate));
   it("B27", () => expect(B.B27.candidate.startsWith(`${T.B27_PROGRESS_HEAD} `)).toBe(true));
   it("B28", () => expect(B.B28.candidate.startsWith(`…${T.B28_RULE_TAIL} `)).toBe(true));
-  it("B29", () => expect(T.B29_PLACES).toBe(B.B29.candidate));
+  it("B29 — 재확인 안내 문장 전체(지금 흐름 / 아닌 경우 끝 문장) = 문서 글, 판 3 메모 꼬리는 코드가 찍지 않는다", () => {
+    const inFlow = ed4RecheckMessage("{옛 버전}", "{새 버전}", true);
+    const outFlow = ed4RecheckMessage("{옛 버전}", "{새 버전}", false);
+    const shared = inFlow.slice(0, inFlow.indexOf("데이터 검증 화면에서"));
+    expect(outFlow.startsWith(shared)).toBe(true);
+    const outLast = outFlow.slice(shared.length);
+    expect(B.B29.candidate).toBe(`${inFlow} (지금 흐름의 평가가 아니면 끝 문장 대신: ${outLast}) 판 3은 "점검 표"·"(표지·1.4·6.0)" 그대로`);
+    expect(B.B29.candidate).toContain(T.B29_PLACES);
+  });
   it("B30", () => expect(quoted("B30")).toEqual(["하이퍼파라미터", T.B30_NOT_PROVIDED]));
-  it("B33(초안) — 위 주석에 옮긴 계획 부록 B 글", () => {
-    expect(T.B33_NO_TRAINING_SAMPLES_DRAFT).toBe("제공되지 않음 — 학습 표본 수가 제공되지 않아 학습·평가 비율을 비교하지 않았다.");
-    expect(B.B33).toBeUndefined();
+  it("B33(2026-10-26 확정)", () => {
+    expect(T.B33_NO_TRAINING_SAMPLES).toBe(B.B33.candidate);
   });
 });

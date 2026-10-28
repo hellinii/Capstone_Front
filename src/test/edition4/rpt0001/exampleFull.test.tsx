@@ -117,9 +117,10 @@ describe("가림·허용 동치 목록 — 개수 단정", () => {
     expect(m.figure).toBe(2);
   });
 
-  it("예시본 전체 단위 수 329 → 가린 뒤 266(부록 1 뒤 발급 이력·끝 줄은 남는다)", () => {
-    expect(exampleUnits(EXAMPLE)).toHaveLength(329);
-    expect(m.units).toHaveLength(266);
+  it("예시본 전체 단위 수 331 → 가린 뒤 268(부록 1 뒤 발급 이력·끝 줄은 남는다)", () => {
+    // 예시본 rev 85 에서 1.1 시험기관 표에 주소·이메일 두 행이 더해져 329 → 331, 266 → 268(심판 라운드 1단계).
+    expect(exampleUnits(EXAMPLE)).toHaveLength(331);
+    expect(m.units).toHaveLength(268);
     expect(m.units[0]).toEqual(text(TITLE));
     expect(m.units.at(-1)).toEqual(text(END));
     // 부록 1 구간은 "발급 이력" 앞에서 끝난다 — 6.2 권고 마지막 행 뒤에 바로 발급 이력이 온다.
@@ -163,19 +164,19 @@ describe("가림·허용 동치 목록 — 개수 단정", () => {
 describe("bc_strong 판 4 발급본 = 예시본 전체(가림·허용 동치만 빼고) — 세 경로", () => {
   const want = maskedExampleUnits().units;
 
-  it("화면 — 앞뒤 화면 상자 0줄, 단위 266개가 자리마다 같다", () => {
+  it("화면 — 앞뒤 화면 상자 0줄, 단위 268개가 자리마다 같다", () => {
     const body = bodyUnits(screenText(loadEd4("bc_strong", "issued")));
     expect([body.before, body.after]).toEqual([0, 0]);
     expect(compareUnits(want, body.units)).toEqual([]);
   });
 
-  it("인쇄 — 앞뒤 화면 상자 0줄, 단위 266개가 자리마다 같다", async () => {
+  it("인쇄 — 앞뒤 화면 상자 0줄, 단위 268개가 자리마다 같다", async () => {
     const body = bodyUnits(await printText(loadEd4("bc_strong", "issued")));
     expect([body.before, body.after]).toEqual([0, 0]);
     expect(compareUnits(want, body.units)).toEqual([]);
   });
 
-  it("번호 열기 — 앞에 머리 상자 3줄·작성 기록 상자 8줄(보고서 밖), 본문 단위 266개가 자리마다 같다", async () => {
+  it("번호 열기 — 앞에 머리 상자 3줄·작성 기록 상자 8줄(보고서 밖), 본문 단위 268개가 자리마다 같다", async () => {
     const rendered = await byNumberText(loadEd4("bc_strong", "final"), loadEd4Issuance("bc_strong"));
     const body = bodyUnits(rendered);
     expect([body.before, body.after]).toEqual([11, 0]);
@@ -227,20 +228,20 @@ describe("비교기 자체 시험 — 진짜 그린 글(화면)을 하나씩 망
   it("표 행 하나 빠짐(4.3 M19 행)", () => {
     const i = at((l) => l.startsWith("| M19 | Log Loss | 0.053"));
     const diff = compareUnits(want, units(lines.filter((_, j) => j !== i).join("\n")));
-    expect(diff[0]).toBe("단위 수가 다르다: 예시본 266, 그린 글 265");
+    expect(diff[0]).toBe("단위 수가 다르다: 예시본 268, 그린 글 267");
     expect(diff.length).toBeGreaterThan(1);
   });
 
   it("절 하나 통째로 빠짐(4.8 제목·문단)", () => {
     const i = at((l) => l === "4.8 응답시간");
     const diff = compareUnits(want, units(lines.filter((_, j) => j !== i && j !== i + 1).join("\n")));
-    expect(diff[0]).toBe("단위 수가 다르다: 예시본 266, 그린 글 264");
+    expect(diff[0]).toBe("단위 수가 다르다: 예시본 268, 그린 글 266");
   });
 
   it("줄 하나 더 낌(사이에 다른 줄 — expectExampleBlock 은 통과시키는 경우)", () => {
     const i = at((l) => l === "4.8 응답시간");
     const extra = [...lines.slice(0, i), "끼어든 줄", ...lines.slice(i)].join("\n");
-    expect(compareUnits(want, units(extra))[0]).toBe("단위 수가 다르다: 예시본 266, 그린 글 267");
+    expect(compareUnits(want, units(extra))[0]).toBe("단위 수가 다르다: 예시본 268, 그린 글 269");
   });
 
   it("예시본 쪽이 바뀌어도 잡는다(가림 밖 한 글자)", () => {

@@ -45,6 +45,7 @@ import { formatTargetCriteria } from "./metricValueFormat";
 import { checkMaterialSelection } from "./materialCheck";
 import { isSameSourceRelation } from "./problemList";
 import { ed4TargetCriteria } from "./edition4/edition4Number";
+import { performerEd4 } from "./edition4/institutionEd4";
 import { formulaEd4 } from "./edition4/metricFormulasEd4";
 import { imbalanceRatioOf } from "./buildDatasetDiagnosis";
 import type {
@@ -307,7 +308,8 @@ export function mapWorkflowToFinalReport(
     judgedValueDigits: true,
     meta: buildMeta(input, resolvedTaskType, edition4),
     applicant: buildApplicant(input.basicInfo),
-    performer: DEFAULT_PERFORMER,
+    // 판 4 run 은 시험기관 주소·이메일을 함께 찍는다(D48) — 나중에 값을 바꿔도 만든 run·발급본의 글은 그대로다.
+    performer: edition4 ? performerEd4() : DEFAULT_PERFORMER,
     evalScope: buildEvalScope(input.basicInfo),
     datasetInfo: buildDatasetInfo(input, resolvedTaskType, mappedValidation?.summary.totalRows),
     // 데이터 예시 행: 가짜 MOCK 10행 제거. 실제 샘플 렌더링은 백엔드 샘플 반환 + 타입 일반화 후속 작업(P1-7) 필요.
