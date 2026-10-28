@@ -304,6 +304,24 @@ describe("긋지 않는 칸·자리", () => {
     });
   });
 
+  it("소절 문제 일부에만 권고가 있으면 — 서술과 권고표 전체(자리표시 행 포함)를 한 표시로 긋는다", () => {
+    const data = copy(loadEd4("yeast_strong", "issued"));
+    data.recommendations = data.recommendations.filter((r) => r.problemId !== "P3" && r.problemId !== "P4"); // 6.1 은 P2 만
+    withBoth(data, (root) => {
+      expect(markSlots(root)).toEqual(ALL_SLOTS.filter((s) => s !== "7.3"));
+      const side = root.querySelector('[data-ed4-slot="9.1"]')!;
+      const ms = side.querySelectorAll<HTMLElement>(MARK);
+      expect(ms).toHaveLength(1);
+      const table = ms[0].querySelector("table")!;
+      expect(table).not.toBeNull();
+      expect(ms[0].lastElementChild).toBe(table);
+      // 표의 자리표시 행(P3·P4)도 같은 선 안.
+      const pendingRows = [...table.querySelectorAll("tr")].filter((tr) => tr.textContent?.includes("권고 생성 예정"));
+      expect(pendingRows).toHaveLength(2);
+      for (const tr of pendingRows) expect(tr.closest(MARK)).toBe(ms[0]);
+    });
+  });
+
   it("권고는 있는데 소절 서술이 빈 글이면 — 권고표에만 긋는다(서술 자리표시는 밖)", () => {
     const data = copy(loadEd4("bc_strong", "issued"));
     data.recommendationNarrative = { ...data.recommendationNarrative, dataQuality: "" };
