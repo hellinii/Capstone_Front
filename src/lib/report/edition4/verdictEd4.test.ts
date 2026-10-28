@@ -138,6 +138,8 @@ describe("4.2 근거 문장 — 갈래", () => {
     expect([v.verdict, v.label, v.countText]).toEqual(["CONDITIONAL_PASS", VERDICT_LABEL_ED4.CONDITIONAL_PASS, "2개 중 1개"]);
     expect(v.basis).toMatch(/조건부 합격으로 판정하였다\.$/);
     // 표지: 종합 판정 줄 하나뿐(핵심 지표 줄 없음), 판정 이름은 4.2 표와 같은 글자.
+    // 핵심 지표 줄을 빼는 것은 지금 코드의 모양을 굳혀 둔 것이다 — 고정 문구 21번에 이 갈래가 없어 결정 대기
+    // (docs/ARCHITECTURE.md §6.6 켜기 전 확인 목록). 정해지면 이 기대값을 그 글로 바꾼다.
     expect(buildCoverResultRows(v, failing)).toEqual([{ label: "종합 판정", value: "조건부 합격 (판정 대상 지표 2개 중 1개 충족, 4.2)" }]);
     const passing = [kpi({ metricId: "M1", value: 0.99, judgmentMargin: "ample" })];
     const p = verdictOf(passing, []);

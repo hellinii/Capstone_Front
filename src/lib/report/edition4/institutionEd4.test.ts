@@ -11,6 +11,7 @@ import type { FinalReportData } from "../../../types/finalReport.types";
 import { applyIssuance, type IssuanceResult } from "../issuanceApi";
 import { DEFAULT_PERFORMER } from "../reportConstants";
 import { ED4_INSTITUTION_CONTACT, performerEd4 } from "./institutionEd4";
+import { coverIssuerLine } from "./render/cover";
 
 const EXAMPLE = readFileSync(resolve(__dirname, "../../../test/edition4/rpt0001/example.md"), "utf8").split("\n");
 
@@ -67,5 +68,15 @@ describe("applyIssuance — 발급 기록을 덧입혀도 저장된 주소·이�
     const out = applyIssuance(onlyEmail, issuanceWith("서버 주소"));
     expect(out.performer).not.toHaveProperty("address");
     expect(out.performer.email).toBe("contact@litmus.example");
+  });
+
+  // 검토 반영(심판 라운드 1단계): 발급본 한 줄의 출처가 갈리는 것을 알고 둔 모양으로 굳힌다 — 이름은 서버 발급 스냅샷,
+  // 괄호 안 주소·이메일은 run 저장값(`institutionEd4.ts`). 서버를 두 값의 정본으로 옮기기로 정하면(§6.6 켜기 전 확인 목록)
+  // 이 기대값이 바뀌어야 한다.
+  it("발급본 발급 기관 줄 — 이름은 서버 발급 스냅샷, 주소·이메일은 저장값(출처가 갈림, 결정 대기)", () => {
+    const r = issuanceWith("부산광역시 해운대구 센텀로 1");
+    r.organization.orgName = "리트머스 시험소";
+    const out = applyIssuance(loadEd4("bc_strong", "final"), r);
+    expect(coverIssuerLine(out)).toBe("발급 기관: 리트머스 시험소 (서울특별시 중구 시험로 123, 4층, contact@litmus.example)");
   });
 });
