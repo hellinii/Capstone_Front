@@ -186,6 +186,42 @@ describe.each<Path>(["screen", "print", "byNumber"])("경로 %s", (path) => {
 });
 
 /* ------------------------------------------------------------------ *
+ * 여러 문단 서술 — 칸마다 표시 하나(검토 지적: 문단마다 따로 감싸면 문단 사이 여백에서 선이 끊겨 칸 단위가 깨진다)
+ * 판 4 픽스처의 서술은 모두 한 문단이라, 복사본의 칸을 빈 줄로 나눈 여러 문단으로 바꿔 세 경로에서 본다.
+ * ------------------------------------------------------------------ */
+describe.each<Path>(["screen", "print", "byNumber"])("여러 문단 서술 — 경로 %s", (path) => {
+  it("5.1(칸 8.2) 두 문단·5.6(칸 7.3) 세 문단·6.1(칸 9.1) 두 문단 + 권고표 — 칸마다 표시 하나, 그 안에 문단 수만큼 p", async () => {
+    const tag: Ed4Tag = "bc_strong";
+    const data = copy(path === "byNumber" ? loadEd4(tag, "final") : loadEd4(tag, "issued"));
+    const paras = {
+      "8.2": ["5.1 첫 문단 — 여러 문단 시험.", "5.1 둘째 문단 — 여러 문단 시험."],
+      "7.3": ["5.6 첫 문단.", "5.6 둘째 문단.", "5.6 셋째 문단."],
+      "9.1": ["6.1 첫 문단 — 여러 문단 시험.", "6.1 둘째 문단 — 여러 문단 시험."],
+    };
+    data.conclusion.narrative = paras["8.2"].join("\n\n");
+    data.interpretation.additionalObservations = paras["7.3"].join("\n \n"); // 공백 낀 빈 줄도 문단 나눔
+    data.recommendationNarrative = { ...data.recommendationNarrative, dataQuality: paras["9.1"].join("\n\n") };
+    await withPath(path, tag, data, (root) => {
+      expectCommon(root);
+      // 칸마다 표시는 정확히 하나(문단마다 나뉘면 같은 칸 이름이 여러 번 나온다).
+      expect(markSlots(root)).toEqual(ALL_SLOTS);
+      for (const [slot, ps] of Object.entries(paras)) {
+        const m = marks(root).find((x) => x.dataset.ed4AutoMark === slot)!;
+        const inner = [...m.children].filter((c) => c.tagName === "P");
+        expect(inner.map((p) => squash(p.textContent)), `칸 ${slot} 표시 안 문단`).toEqual(ps);
+        expect(m.parentElement?.getAttribute("data-ed4-slot")).toBe(slot);
+      }
+      // 6.1: 문단 둘 다음에 권고표 — 셋 모두 한 표시 안(선이 서술 끝에서 끊기지 않는다).
+      const m91 = marks(root).find((x) => x.dataset.ed4AutoMark === "9.1")!;
+      expect([...m91.children].map((c) => c.tagName)).toEqual(["P", "P", "TABLE"]);
+      // 11a 는 여전히 5.1 표시 바로 다음 형제(표시 밖).
+      const m82 = marks(root).find((x) => x.dataset.ed4AutoMark === "8.2")!;
+      expect(m82.nextElementSibling).toBe(paragraphWith(root, data.sourceRelationSentence!));
+    });
+  });
+});
+
+/* ------------------------------------------------------------------ *
  * 픽스처에 없는 갈래(복사본) — 화면·인쇄(부품 직접 두 mode)
  * ------------------------------------------------------------------ */
 function withBoth(data: FinalReportData, cb: (root: Element, mode: "screen" | "print") => void) {
