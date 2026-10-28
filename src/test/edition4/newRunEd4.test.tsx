@@ -533,7 +533,7 @@ describe("다중·멀티 입력의 판 4 생성값(자리 단정)", () => {
     expect(v.distribution.imbalanceRatioText).toBe("1.058");
   });
 
-  it("yeast_strong(멀티) — 조건부 합격(초안 글), 학습 분포 없음(부록 B16 표지)", () => {
+  it("yeast_strong(멀티) — 조건부 합격(20번 글), 학습 분포 없음(부록 B16 표지)", () => {
     const v = captures.get("yeast_strong")!.stage1.edition4Values;
     expect(v.verdict).toMatchObject({ verdict: "CONDITIONAL_PASS", label: "조건부 합격", countText: "3개 중 2개" });
     expect(v.verdict.basis).toBe(

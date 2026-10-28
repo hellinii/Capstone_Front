@@ -198,7 +198,7 @@ export interface DistributionView {
   paragraph: string | null;
   /** 학습·평가 비율 표(compared·uncovered). */
   table: DetailTable | null;
-  /** 표 대신 찍는 문장(not_provided = B16, training_samples_not_provided = B33 초안). 소제목은 표와 같다(부록 B30 처럼 소제목 아래). */
+  /** 표 대신 찍는 문장(not_provided = B16, training_samples_not_provided = B33). 소제목은 표와 같다(부록 B30 처럼 소제목 아래). */
   replacement: { title: string; text: string } | null;
   /** 고정 문구 24 — 늘. */
   closing: string;
