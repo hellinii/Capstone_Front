@@ -92,6 +92,57 @@ describe("ed4RecommendLayout", () => {
   });
 });
 
+describe("자동 작성 표시(서술 설계 D54) — 9 칸 부분마다 서술·권고표", () => {
+  it("bc_strong — 6.1·6.2 모두 서술과 권고표에 긋는다", () => {
+    expect(sides(loadEd4("bc_strong", "issued")).sides.map((s) => s.autoMarked)).toEqual([
+      { body: true, rows: true },
+      { body: true, rows: true },
+    ]);
+  });
+
+  it("B19 — 문제가 없는 소절은 서술만(표 없음 → rows 거짓)", () => {
+    const data = copy(loadEd4("digits_strong", "issued"));
+    data.problems = data.problems!.filter((p) => p.recommend_section !== "9.2");
+    expect(sides(data).sides.map((s) => s.autoMarked)).toEqual([
+      { body: true, rows: true },
+      { body: true, rows: false },
+    ]);
+  });
+
+  it("대기 — 서술 자리표시, 권고 자리표시 행뿐인 표 → 둘 다 긋지 않는다", () => {
+    expect(sides(loadEd4("bc_strong", "pending")).sides.map((s) => s.autoMarked)).toEqual([
+      { body: false, rows: false },
+      { body: false, rows: false },
+    ]);
+  });
+
+  it("서술은 끝났는데 소절 문제의 권고가 없으면 표는 긋지 않는다 / 권고는 있는데 서술이 빈 글이면 표에만", () => {
+    const data = copy(loadEd4("bc_strong", "issued"));
+    data.recommendations = data.recommendations.filter((r) => r.problemId !== "P2");
+    expect(sides(data).sides.map((s) => s.autoMarked)).toEqual([
+      { body: true, rows: false },
+      { body: true, rows: true },
+    ]);
+    const data2 = copy(loadEd4("bc_strong", "issued"));
+    data2.recommendationNarrative = { ...data2.recommendationNarrative, modelOps: "" };
+    expect(sides(data2).sides.map((s) => s.autoMarked)).toEqual([
+      { body: true, rows: true },
+      { body: false, rows: true },
+    ]);
+  });
+
+  it("평가 전 초안(문제 목록 없음) — 둘 다 긋지 않는다", () => {
+    const data = copy(loadEd4("bc_strong", "issued"));
+    delete data.problems;
+    data.recommendationNarrative = { dataQuality: "", modelOps: "" };
+    delete data.narrativeSource;
+    expect(sides(data).sides.map((s) => s.autoMarked)).toEqual([
+      { body: false, rows: false },
+      { body: false, rows: false },
+    ]);
+  });
+});
+
 describe("ed4RecommendRows", () => {
   it("번호 없는·모르는 번호 권고는 버리고, 우선순위는 문제의 것", () => {
     const data = copy(loadEd4("bc_strong", "issued"));

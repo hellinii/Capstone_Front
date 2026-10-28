@@ -3,12 +3,16 @@
  * (8.2→5.1 +11a·11b, 7.1→5.2, 7.2→5.3 앞 12, 8.1→5.4 빈 칸 B18, 8.3→5.5, 7.3→5.6 빈 글 15). 배치는 순수 함수 `ed4FindingBlocks`.
  * - 서술은 따옴표·blockquote 없는 문단(대응표 18) — `Ed4Narrative`.
  * - 칸 배지(규칙 기반 칸)는 판 3 7·8절처럼 소절 제목 옆에, **화면에만**(인쇄는 그리지 않고, 배지 자체도 print:hidden).
+ * - 자동 작성 표시(서술 설계 D54): 칸의 서술 글만 `Ed4AutoMark` 로 감싸 왼쪽 세로줄 — 소절 제목·앞뒤 고정 문구(11a·11b·12)·빈 칸
+ *   고정 문구(B18·15)·자리표시는 감싸지 않는다(판정은 `ed4FindingBlocks` 의 `autoMarked`). 범례(고정 문구 27)는 ※ 줄 바로 아래에
+ *   늘 찍는다(화면·인쇄·번호 열기 같음).
  */
 import { SectionSourceBadge } from "../shared/SectionSourceBadge";
 import type { Ed4PartProps } from "./shared/ed4PartProps";
+import { Ed4AutoMark } from "./shared/Ed4AutoMark";
 import { Ed4SectionTitle, Ed4SubsectionTitle } from "./shared/Ed4Headings";
 import { Ed4Narrative, Ed4Paragraph } from "./shared/Ed4Paragraph";
-import { FIXED_NOTE_ED4, type Ed4TitleNumber } from "../../../lib/report/edition4/edition4Text";
+import { ED4_FIXED_27, FIXED_NOTE_ED4, type Ed4TitleNumber } from "../../../lib/report/edition4/edition4Text";
 import { ed4FindingBlocks, type Ed4SlotBody } from "../../../lib/report/edition4/render/findingsEd4";
 
 /** 소절 제목 + 화면 전용 칸 배지(6절도 같이 쓴다). */
@@ -46,13 +50,20 @@ export function Ed4Findings({ data, mode }: Ed4PartProps) {
     <section data-ed4-part="Ed4Findings">
       <Ed4SectionTitle number="5" />
       <Ed4Paragraph>{FIXED_NOTE_ED4}</Ed4Paragraph>
+      <Ed4Paragraph>{ED4_FIXED_27}</Ed4Paragraph>
       {ed4FindingBlocks(data).map((block) => (
         <div key={block.place} data-ed4-slot={block.slot}>
           <Ed4SlotHeading place={block.place} badge={block.badge} mode={mode} />
           {block.before.map((line) => (
             <Ed4Paragraph key={line}>{line}</Ed4Paragraph>
           ))}
-          <Ed4SlotBodyView body={block.body} />
+          {block.autoMarked ? (
+            <Ed4AutoMark slot={block.slot}>
+              <Ed4SlotBodyView body={block.body} />
+            </Ed4AutoMark>
+          ) : (
+            <Ed4SlotBodyView body={block.body} />
+          )}
           {block.after.map((line) => (
             <Ed4Paragraph key={line}>{line}</Ed4Paragraph>
           ))}

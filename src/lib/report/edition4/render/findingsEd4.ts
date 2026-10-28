@@ -11,6 +11,9 @@
  *
  * 빈 칸 규칙은 판 3 절과 같다: 서술 대기·실패(`narrativeSource` pending·failed)면 빈 칸 문구 대신 공용 `narrativePlaceholder` 의
  * 대기·실패 글, 그 밖의 빈 칸은 판 3 자리표시 글. 칸 배지(규칙 기반 칸)는 판 3 공용 `sectionBadgeKind` 와 같은 규칙(대기·실패면 없음).
+ *
+ * 자동 작성 표시(서술 설계 D54, 왼쪽 세로줄): 칸 몸통이 서술 글일 때만 긋는다(`ed4AutoMarked` — 6절도 같은 판정).
+ * AI 글·규칙 템플릿 대체 글 모두 긋고, 빈 칸 고정 문구(B18·15)·자리표시(대기·실패·미작성)·앞뒤 고정 문구(11a·11b·12)는 긋지 않는다.
  */
 import type { FinalReportData } from "../../../../types/finalReport.types";
 import { sectionBadgeKind } from "../../../../components/report/shared/SectionSourceBadge";
@@ -38,6 +41,8 @@ export interface Ed4FindingBlock {
   after: string[];
   /** 화면 전용 칸 배지 — 규칙 기반 칸이면 "fallback". */
   badge: "fallback" | null;
+  /** 자동 작성 표시(D54) — 몸통(서술 글)에 왼쪽 세로줄을 긋는가. `before`·`after` 고정 문구는 늘 긋지 않는다. */
+  autoMarked: boolean;
 }
 
 const isWaiting = (data: FinalReportData) => data.narrativeSource === "pending" || data.narrativeSource === "failed";
@@ -57,6 +62,14 @@ export function ed4SlotBody(
   return { kind: "placeholder", text: narrativePlaceholder(data.narrativeSource, draftPlaceholder(otherwise, true)) };
 }
 
+/**
+ * 자동 작성 표시(서술 설계 D54)를 긋는 칸 몸통인가 — 서술 글(AI 든 규칙 템플릿 대체든)일 때만. 빈 칸 고정 문구(B18·15 —
+ * 칸 출처 fixed)와 자리표시(대기·실패·미작성 — 아직 쓴 글이 없음)는 긋지 않는다. 5절·6절이 함께 쓰는 하나뿐인 판정이다.
+ */
+export function ed4AutoMarked(body: Ed4SlotBody): boolean {
+  return body.kind === "narrative";
+}
+
 const present = (s: string | null | undefined): string[] => (s && s.trim() !== "" ? [s] : []);
 
 /** 5.1~5.6 여섯 자리(대응표 순서). */
@@ -69,14 +82,18 @@ export function ed4FindingBlocks(data: FinalReportData): Ed4FindingBlock[] {
     text: string | null | undefined,
     otherwise: string,
     extra: { before?: string[]; after?: string[]; emptyText?: string } = {},
-  ): Ed4FindingBlock => ({
-    place: edition4PlaceOfSlot(slot) as Ed4TitleNumber,
-    slot,
-    before: extra.before ?? [],
-    body: ed4SlotBody(data, text, extra.emptyText, otherwise),
-    after: extra.after ?? [],
-    badge: sectionBadgeKind(true, data.narrativeSource, sections, slot),
-  });
+  ): Ed4FindingBlock => {
+    const body = ed4SlotBody(data, text, extra.emptyText, otherwise);
+    return {
+      place: edition4PlaceOfSlot(slot) as Ed4TitleNumber,
+      slot,
+      before: extra.before ?? [],
+      body,
+      after: extra.after ?? [],
+      badge: sectionBadgeKind(true, data.narrativeSource, sections, slot),
+      autoMarked: ed4AutoMarked(body),
+    };
+  };
   return [
     block("8.2", conclusion?.narrative, ED3_CONCLUSION_PLACEHOLDER, { after: present(data.sourceRelationSentence) }),
     block("7.1", interp.confusionAnalysis, ED3_INTERPRET_PLACEHOLDER),
