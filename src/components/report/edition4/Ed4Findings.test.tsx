@@ -1,7 +1,7 @@
 /**
  * 판 4 5절 분석 소견(갈래 b5) — 세 경로로 그린 글.
- * - bc_strong 발급본: 예시본 "## 5. 분석 소견" 블록과 **줄 단위로 똑같다**(가림 0개 — 픽스처 서술이 예시본 글이다). 다만 ※ 줄 바로
- *   아래의 고정 문구 27(서술 설계 D54 범례)은 예시본 rev 85 에 없어서 예시본 줄에 그 한 줄을 끼워 대조한다(끼운 개수 1 단정).
+ * - bc_strong 발급본: 예시본 "## 5. 분석 소견" 블록과 **줄 단위로 똑같다**(가림 0개 — 픽스처 서술이 예시본 글이다). ※ 줄 바로
+ *   아래의 고정 문구 27(서술 설계 D54 범례)도 예시본 rev 87 에 있어 끼우지 않고 그대로 대조한다(rev 85 까지는 끼웠다).
  * - 다중(digits_strong)·멀티(yeast_strong): 센티널 서술로 칸→자리 배치, 12(다중만), 15(멀티 7.3 빈 글·fixed), 화면 전용 칸 배지(다중 8.1).
  * - 대기·실패: 판 3 공용 자리표시 글. 픽스처에 없는 갈래(B18, 빈 글 자리표시, 11b, 여러 문단)는 복사본의 칸만 바꿔서.
  */
@@ -15,8 +15,8 @@ import { NARRATIVE_FAILED_TEXT, NARRATIVE_PENDING_TEXT } from "../shared/narrati
 import { Ed4Findings } from "./Ed4Findings";
 
 const NOTE = "※ 5절은 4절의 시험 결과를 해석한 참고 의견이며, 시험 결과에 해당하지 않습니다.";
-/** 고정 문구 27(서술 설계 D54) — 성적서 고정 문구 rev 134 의 문안 칸 글자 그대로 옮겨 적음. */
-const LEGEND = "※ 왼쪽에 세로줄이 있는 부분은 평가 시스템이 시험 결과를 바탕으로 자동 작성한 것입니다.";
+/** 고정 문구 27(서술 설계 D54) — 성적서 고정 문구 rev 153 의 문안 칸 글자 그대로 옮겨 적음. */
+const LEGEND = "※ 왼쪽에 세로줄이 있는 부분은 평가 시스템이 자동 작성한 것입니다.";
 const SAME_SOURCE =
   "평가 데이터는 학습 데이터와 동일한 출처에서 수집되었다. 본 결과는 동일 분포 내 성능을 나타내며, 다른 운영 환경에서의 일반화 성능을 보증하지 않는다.";
 const LABEL_CAUTION =
@@ -46,17 +46,17 @@ const section5 = (text: string) => segment(text, "5. 분석 소견", "6. 개선 
 
 const copy = (data: FinalReportData): FinalReportData => structuredClone(data);
 
-describe("bc_strong 발급본 — 예시본 5절(+ 예시본에 없는 27번 범례 한 줄)과 줄 단위로 같다(가림 0개)", () => {
+describe("bc_strong 발급본 — 예시본 5절(27번 범례 포함)과 줄 단위로 같다(가림 0개)", () => {
   const example = exampleLines(exampleBlock("## 5. 분석 소견"));
   const noteAt = example.findIndex((l) => l.kind === "text" && l.text === NOTE);
-  /** 예시본 줄의 ※ 줄 바로 다음에 27번 범례를 끼운 것(예시본 rev 85 에 27번 줄이 없음 — 문서 고칠 곳). */
-  const want: ExampleLine[] = [...example.slice(0, noteAt + 1), { kind: "text", text: LEGEND }, ...example.slice(noteAt + 1)];
+  /** 예시본 줄 그대로(예시본 rev 87 부터 27번 범례가 ※ 줄 바로 다음에 있다). */
+  const want: ExampleLine[] = example;
 
-  it("예시본 블록은 제목·※·소절 6개·서술 6문단·11a 한 줄 — 15줄, 27번 범례는 없다(끼우면 16줄)", () => {
-    expect(example).toHaveLength(15);
+  it("예시본 블록은 제목·※·27번 범례·소절 6개·서술 6문단·11a 한 줄 — 16줄", () => {
+    expect(example).toHaveLength(16);
     expect(noteAt).toBe(1);
-    expect(example.filter((l) => l.kind === "text" && l.text === LEGEND)).toEqual([]);
-    expect(want).toHaveLength(16);
+    expect(example[noteAt + 1]).toEqual({ kind: "text", text: LEGEND });
+    expect(example.filter((l) => l.kind === "text" && l.text === LEGEND)).toHaveLength(1);
     expect(example.filter((l) => l.kind === "text" && /^5\.\d /.test(l.text))).toHaveLength(6);
   });
 

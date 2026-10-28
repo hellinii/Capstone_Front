@@ -10,9 +10,8 @@
  *   3. ○ 칸 — 파일 해시·파일 크기·평가 엔진 버전(3칸, 손으로 적은 실제 값으로 바꿔 대조. 값이 맞는지는 `rpt0001.test.tsx` 가
  *      저장소 안 CSV 로 다시 계산해 단정)
  *   4. 평가 수행 일시 — 픽스처의 평가 응답은 S1 골든(2026-10-22T16:23:38+09:00)이라 발급본의 18:45:58 과 다르다(1칸, 실제 값으로 바꿈)
- *   5. 27번 범례 — 5절 머리 ※ 줄 바로 아래의 고정 문구 27(서술 설계 D54, 2026-10-26 결정)이 예시본 rev 85 에는 없다(문서 고칠 곳).
- *      예시본의 ※ 줄 단위 바로 뒤에 그 한 줄을 끼워 대조한다(1곳, 글은 고정 문구 rev 134 문안 칸을 옮겨 적음). 예시본에 27번 줄이
- *      생기면 이 끼움을 지운다(생긴 채로 두면 아래 함수가 던진다).
+ *   (예시본 rev 85 까지 있던 "가림 5 — 27번 범례 끼움"은 예시본 rev 87 이 5절 ※ 줄 아래에 그 줄을 갖게 되어 지웠다. 이제 범례는
+ *    예시본 글 그대로 대조한다.)
  * - 허용 동치(같은 뜻으로 보는 글 차이):
  *   1. 4.7 그림 줄 — 예시본 줄 끝 " (그림)"은 그림 자리 표시, 그린 글은 그림을 글로 뽑지 않는다(2줄, 꼬리를 떼고 대조)
  * - 계획에 있던 나머지 후보는 필요 없어 목록에 넣지 않았다(필요 없음을 아래에서 단정):
@@ -54,9 +53,9 @@ const CELLS = [
   { name: "평가 수행 일시", label: "평가 수행 일시", from: "2026-10-22T18:45:58+09:00", to: "2026-10-22T16:23:38+09:00" },
 ] as const;
 
-/** 가림 5: 예시본 ※ 줄 뒤에 끼우는 27번 범례(고정 문구 rev 134 문안 칸 글자 그대로). */
+/** 5절 머리 ※ 줄과 그 바로 아래 27번 범례(고정 문구 rev 153 문안 칸 글자 그대로 — 예시본 rev 87 에 있는 줄, 가리지 않음). */
 const NOTE_ED4 = "※ 5절은 4절의 시험 결과를 해석한 참고 의견이며, 시험 결과에 해당하지 않습니다.";
-const LEGEND_27 = "※ 왼쪽에 세로줄이 있는 부분은 평가 시스템이 시험 결과를 바탕으로 자동 작성한 것입니다.";
+const LEGEND_27 = "※ 왼쪽에 세로줄이 있는 부분은 평가 시스템이 자동 작성한 것입니다.";
 
 /** 허용 동치 1: 4.7 그림 줄의 꼬리. */
 const FIGURE_TAIL = " (그림)";
@@ -65,8 +64,6 @@ interface Applied {
   units: Unit[];
   dropped: Record<string, number>;
   cells: Record<string, number>;
-  /** 가림 5 로 끼운 27번 범례 수. */
-  legend: number;
   figure: number;
 }
 
@@ -90,11 +87,6 @@ function maskedExampleUnits(markdown = EXAMPLE): Applied {
       return { kind: "row", cells: [u.cells[0], c.to, ...u.cells.slice(2)] };
     });
   }
-  if (units.some((u) => isText(u, LEGEND_27))) throw new Error("예시본에 27번 범례가 생겼다 — 가림 5(끼움)를 지운다");
-  const notes = units.flatMap((u, i) => (isText(u, NOTE_ED4) ? [i] : []));
-  if (notes.length !== 1) throw new Error(`예시본의 5절 ※ 줄이 ${notes.length}개다`);
-  units = [...units.slice(0, notes[0] + 1), text(LEGEND_27), ...units.slice(notes[0] + 1)];
-  const legend = units.filter((u) => isText(u, LEGEND_27)).length;
   const s47 = units.findIndex((u) => isText(u, "4.7 곡선"));
   const s48 = units.findIndex((u) => isText(u, "4.8 응답시간"));
   let figure = 0;
@@ -104,7 +96,7 @@ function maskedExampleUnits(markdown = EXAMPLE): Applied {
     figure += 1;
     return text(u.text.slice(0, -FIGURE_TAIL.length));
   });
-  return { units, dropped, cells, legend, figure };
+  return { units, dropped, cells, figure };
 }
 
 /** 그린 글 → 보고서 본문 단위(제목 줄 ~ "— 끝 —"). 앞에 붙은 화면 상자 줄 수를 함께 돌려준다. */
@@ -122,26 +114,27 @@ function bodyUnits(rendered: string): { units: Unit[]; before: number; after: nu
 describe("가림·허용 동치 목록 — 개수 단정", () => {
   const m = maskedExampleUnits();
 
-  it("가림: 머리 메모 1단위, 부록 1 62단위, ○ 칸 3개, 평가 수행 일시 1칸, 27번 범례 끼움 1줄", () => {
+  it("가림: 머리 메모 1단위, 부록 1 62단위, ○ 칸 3개, 평가 수행 일시 1칸", () => {
     expect(m.dropped).toEqual({ "머리 메모": 1, "부록 1": 62 });
     expect(m.cells).toEqual({ "○ 파일 해시": 1, "○ 파일 크기": 1, "○ 평가 엔진 버전": 1, "평가 수행 일시": 1 });
-    expect(m.legend).toBe(1);
   });
 
-  it("가림 5: 27번 범례는 5절 ※ 줄 바로 다음, 5.1 소절 제목 앞에 끼운다(예시본 원래 줄에는 없음)", () => {
-    expect(exampleUnits(EXAMPLE).filter((u) => isText(u, LEGEND_27))).toEqual([]);
-    const at = m.units.findIndex((u) => isText(u, LEGEND_27));
-    expect(m.units.slice(at - 2, at + 2)).toEqual([text("5. 분석 소견"), text(NOTE_ED4), text(LEGEND_27), text("5.1 판정과 불확실성")]);
-    expect(() => maskedExampleUnits(EXAMPLE.replace(NOTE_ED4, `${NOTE_ED4}\n\n${LEGEND_27}`))).toThrow("27번 범례가 생겼다");
+  it("27번 범례는 예시본 자체에 있다 — 5절 ※ 줄 바로 다음, 5.1 소절 제목 앞 한 줄(끼우지 않고 그대로 대조)", () => {
+    const all = exampleUnits(EXAMPLE);
+    expect(all.filter((u) => isText(u, LEGEND_27))).toHaveLength(1);
+    const at = all.findIndex((u) => isText(u, LEGEND_27));
+    expect(all.slice(at - 2, at + 2)).toEqual([text("5. 분석 소견"), text(NOTE_ED4), text(LEGEND_27), text("5.1 판정과 불확실성")]);
+    expect(m.units.filter((u) => isText(u, LEGEND_27))).toHaveLength(1);
   });
 
   it("허용 동치: 4.7 그림 줄 2개", () => {
     expect(m.figure).toBe(2);
   });
 
-  it("예시본 전체 단위 수 331 → 가린 뒤 269(부록 1 63단위를 빼고 27번 범례 1줄을 끼움 — 발급 이력·끝 줄은 남는다)", () => {
-    // 예시본 rev 85 에서 1.1 시험기관 표에 주소·이메일 두 행이 더해져 329 → 331(심판 라운드 1단계 FE_B).
-    expect(exampleUnits(EXAMPLE)).toHaveLength(331);
+  it("예시본 전체 단위 수 332 → 가린 뒤 269(머리 메모·부록 1 63단위를 뺌 — 발급 이력·끝 줄은 남는다)", () => {
+    // 예시본 rev 85 에서 1.1 시험기관 표에 주소·이메일 두 행이 더해져 329 → 331(심판 라운드 1단계 FE_B),
+    // rev 87 에서 5절 ※ 줄 아래 27번 범례 1줄이 더해져 331 → 332(옛 "가림 5" 끼움을 지움).
+    expect(exampleUnits(EXAMPLE)).toHaveLength(332);
     expect(m.units).toHaveLength(269);
     expect(m.units[0]).toEqual(text(TITLE));
     expect(m.units.at(-1)).toEqual(text(END));

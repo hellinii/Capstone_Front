@@ -1,5 +1,5 @@
 /**
- * 예시본 사본(`example.md`) — RPT-2026-0001 을 판 4 목차로 다시 묶은 목표 모양(설계 문서 예시본 rev 85, 2026-10-27 내보냄)을 바이트 그대로 옮긴 것.
+ * 예시본 사본(`example.md`) — RPT-2026-0001 을 판 4 목차로 다시 묶은 목표 모양(설계 문서 예시본 rev 87, 2026-10-28 내보냄)을 바이트 그대로 옮긴 것.
  * 렌더러 시험(`render/renderEd4.tsx` 의 `exampleBlock`)이 이 파일에서 절·소절 블록을 뽑아 그린 글과 대조한다.
  *
  * 고정 문구 사본(`fixedWording.ed4.json`)을 뽑을 때 적은 예시본 sha256 과 같아야 한다 — 다르면 두 사본이 서로 다른 판의 예시본이다.
@@ -17,7 +17,7 @@ describe("예시본 사본", () => {
   it("sha256 이 고정 문구 사본의 _about.example_sha256 과 같다", () => {
     const sha = createHash("sha256").update(readFileSync(EXAMPLE)).digest("hex");
     expect(sha).toBe(WORDING._about.example_sha256);
-    expect(sha).toBe("02b8b09bf741ef171950b1595e03b4f1b569705396980bba3fff6d1c673789ef");
+    expect(sha).toBe("35a80be8a587405f23be01ce9a4fb2ffeb327da9808146353c9fd473e490add7");
   });
 
   it("표지 제목과 끝 줄이 있다(잘린 사본이 아님)", () => {

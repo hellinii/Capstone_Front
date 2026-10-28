@@ -293,7 +293,7 @@ AI·규칙 문장이 아니라 코드가 찍는 문장이다. 7~9절 문장은 �
 
 | 위치 | 무엇 | 다시 뜨는 법 |
 |---|---|---|
-| `src/test/edition4/fixedWording.ed4.json` | 판 4 고정 문구·예시본 글자·부록 B 문안 사본(설계 문서 고정 문구 rev 134·예시본 rev 85 에서 뽑음 — 부록 B 는 고정 문구의 1.1 표 B1~B33, sha256 이 `_about` 에) | 손으로 고치지 않는다. 설계 문서가 바뀌면 내보낸 글에서 스크립트로 다시 뽑고 상수(`edition4Text.ts`)를 같이 고친다 |
+| `src/test/edition4/fixedWording.ed4.json` | 판 4 고정 문구·예시본 글자·부록 B 문안 사본(설계 문서 고정 문구 rev 153·예시본 rev 87 에서 뽑음 — 부록 B 는 고정 문구의 1.1 표 B1~B34, sha256 이 `_about` 에) | 손으로 고치지 않는다. 설계 문서가 바뀌면 내보낸 글에서 스크립트로 다시 뽑고 상수(`edition4Text.ts`)를 같이 고친다 |
 | `src/test/edition4/rpt0001/example.md` | 예시본 사본(RPT-2026-0001 을 판 4 목차로 다시 묶은 목표 모양). 렌더 시험이 절·소절 블록을 뽑아 그린 글과 대조한다 | 손으로 고치지 않는다(sha256 이 고정 문구 사본의 `example_sha256` 과 같아야 한다) |
 | `src/test/edition4/render/fixtures/` | 판 4 렌더 픽스처 — 이진 `bc_strong`·다중 `digits_strong`·멀티레이블 `yeast_strong` 의 서술 대기(`pending`)·완료(`final`)·발급본(`issued`), `bc_strong` 서술 실패(`failed`) | `UPDATE_ED4_RENDER=1 npx vitest run src/test/edition4/render/generate.test.tsx`. 평소에는 다시 만든 글이 파일과 `toBe` 로 같은지만 본다. 다르면 생성값이 바뀐 것이니 이유를 적고 뜬다 |
 | `src/test/edition4/render/text/` | 판 4 그린 글 정답 — 세 입력 × (미발급 `final`, 발급본 `issued`) × 세 경로(화면·인쇄·번호 열기)의 글 전체 18개. `render/renderedText.test.tsx` 가 `toBe` 로 대조한다 | `UPDATE_ED4_TEXT=1 npx vitest run src/test/edition4/render/renderedText.test.tsx`(`-u` 로는 안 바뀜). 다시 떠도 되는 경우는 그 폴더 [`README.md`](../src/test/edition4/render/text/README.md) — 판 4 글이 바뀐다는 뜻이니 이유를 적고 diff 를 읽는다 |

@@ -1,7 +1,8 @@
 /**
  * 렌더러용 판 4 문구 상수(판 4 라운드 S4·S5) — 고정 문구는 사본(`fixedWording.ed4.json`)과, 예시본 글자는 예시본 사본과,
- * 부록 B 는 사본의 `appendixB_raw`(고정 문구 탭 1.1 표 B1~B33, rev 134 — 심판 라운드 1단계부터 이 표에서 뽑는다)와 글자까지
- * 대조한다. 그 표에는 코드가 찍지 않는 설명 글(B10 의 "{역할}은 …", B29 의 "판 3은 …")도 붙어 있어, 그 꼬리는 시작 글자로만 본다.
+ * 부록 B 는 사본의 `appendixB_raw`(고정 문구 탭 1.1 표 B1~B34, rev 153 — 심판 라운드 1단계부터 이 표에서 뽑는다)와 글자까지
+ * 대조한다. rev 134 까지 B10·B29 의 문구 칸에 붙어 있던 설명 글("{역할}은 …", "판 3은 …")은 rev 153 에서 나오는 조건 칸으로
+ * 옮겨져, 이제 두 줄도 문구 칸 전체를 같다고 본다.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -40,7 +41,7 @@ describe("고정 문구 = 사본 글자", () => {
     expect(value).toBe(FIXED[key]);
   });
 
-  it("27(D54 범례) = 사본 27_legend(고정 문구 rev 134)", () => {
+  it("27(D54 범례) = 사본 27_legend(고정 문구 rev 153)", () => {
     // 키가 없으면 undefined 와 비교되어 실패한다 — 빈 순회로 조용히 넘어가지 않는다.
     expect(T.ED4_FIXED_27).toBe(FIXED["27_legend"]);
   });
@@ -102,8 +103,8 @@ describe("부록 B = 사본 appendixB_raw(고정 문구 1.1 표) 글자", () => 
     const head = T.B9_GROUP_HEAD.replace("{counts}", [T.B9_COUNT_ERROR, T.B9_COUNT_WARNING, T.B9_COUNT_PASS].join(", "));
     expect(B.B9.candidate.startsWith(head)).toBe(true);
   });
-  it("B10 — 세 글 뒤 '. {역할}은 …' 은 문서 설명이라 코드가 찍지 않는다", () =>
-    expect(B.B10.candidate.startsWith(`${[T.B10_NO_SAMPLE_ID, T.B10_NO_SCORE, T.B10_NO_ROLE].join(" / ")}. {역할}은 `)).toBe(true));
+  it("B10 — 세 글 그대로('{역할}은 …' 설명은 rev 153 부터 나오는 조건 칸)", () =>
+    expect(B.B10.candidate).toBe([T.B10_NO_SAMPLE_ID, T.B10_NO_SCORE, T.B10_NO_ROLE].join(" / ")));
   it("B11", () =>
     expect(B.B11.candidate).toBe([T.B11_LATENCY_STATS, T.B11_ALL_BELOW_ONE, T.B11_UNCHECKED, T.B11_NON_NUMERIC].join(" / ")));
   it("B14", () => expect(quoted("B14")).toEqual([T.B14_UNMEASURABLE, T.ED4_DASH]));
@@ -114,13 +115,13 @@ describe("부록 B = 사본 appendixB_raw(고정 문구 1.1 표) 글자", () => 
   it("B25", () => expect(`${T.B25_RECORD_HEADER} · ${T.B25_RECORD_NOTE}`).toBe(B.B25.candidate));
   it("B27", () => expect(B.B27.candidate.startsWith(`${T.B27_PROGRESS_HEAD} `)).toBe(true));
   it("B28", () => expect(B.B28.candidate.startsWith(`…${T.B28_RULE_TAIL} `)).toBe(true));
-  it("B29 — 재확인 안내 문장 전체(지금 흐름 / 아닌 경우 끝 문장) = 문서 글, 판 3 메모 꼬리는 코드가 찍지 않는다", () => {
+  it("B29 — 재확인 안내 문장 전체(지금 흐름 / 아닌 경우 끝 문장) = 문서 글(판 3 메모는 rev 153 부터 나오는 조건 칸)", () => {
     const inFlow = ed4RecheckMessage("{옛 버전}", "{새 버전}", true);
     const outFlow = ed4RecheckMessage("{옛 버전}", "{새 버전}", false);
     const shared = inFlow.slice(0, inFlow.indexOf("데이터 검증 화면에서"));
     expect(outFlow.startsWith(shared)).toBe(true);
     const outLast = outFlow.slice(shared.length);
-    expect(B.B29.candidate).toBe(`${inFlow} (지금 흐름의 평가가 아니면 끝 문장 대신: ${outLast}) 판 3은 "점검 표"·"(표지·1.4·6.0)" 그대로`);
+    expect(B.B29.candidate).toBe(`${inFlow} (지금 흐름의 평가가 아니면 끝 문장 대신: ${outLast})`);
     expect(B.B29.candidate).toContain(T.B29_PLACES);
   });
   it("B30", () => expect(quoted("B30")).toEqual(["하이퍼파라미터", T.B30_NOT_PROVIDED]));

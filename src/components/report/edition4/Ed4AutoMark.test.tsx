@@ -23,8 +23,8 @@ import { byNumberText, printText } from "../../../test/edition4/render/renderEd4
 import { loadEd4, loadEd4Issuance, type Ed4Tag } from "../../../test/edition4/render/ed4Fixtures";
 import type { FinalReportData } from "../../../types/finalReport.types";
 
-/** 고정 문구 27·※ 줄(고정 문구 rev 134 문안 칸 글자 그대로 옮겨 적음). */
-const LEGEND = "※ 왼쪽에 세로줄이 있는 부분은 평가 시스템이 시험 결과를 바탕으로 자동 작성한 것입니다.";
+/** 고정 문구 27·※ 줄(고정 문구 rev 153 문안 칸 글자 그대로 옮겨 적음). */
+const LEGEND = "※ 왼쪽에 세로줄이 있는 부분은 평가 시스템이 자동 작성한 것입니다.";
 const NOTE = "※ 5절은 4절의 시험 결과를 해석한 참고 의견이며, 시험 결과에 해당하지 않습니다.";
 const MARK = "[data-ed4-auto-mark]";
 const ALL_SLOTS = ["8.2", "7.1", "7.2", "8.1", "8.3", "7.3", "9.1", "9.2"];

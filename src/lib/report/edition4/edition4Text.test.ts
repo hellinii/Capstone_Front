@@ -3,8 +3,8 @@
  * 채우는 `fillTemplate` 이 조사를 끼운 글자의 끝소리로 고르는가.
  *
  * 고정 문구 20·21 과 부록 B31~B33 은 2026-10-26 에 확정됐다(고정 문구 rev 134). 21번에 더해진 핵심 지표 산출 실패 줄
- * ("핵심 지표: {이름} 측정 불가 (4.3)")이 합격 기준을 싣던 옛 부록 B3 글을 대신한다 — 문서 1.1 표의 B3 줄은 아직 옛 글이라
- * B3 과는 대조하지 않는다(심판 라운드 1단계 인계에 문서 고칠 곳으로 적음).
+ * ("핵심 지표: {이름} 측정 불가 (4.3)")이 합격 기준을 싣던 옛 부록 B3 글을 대신한다 — 문서 1.1 표의 B3 줄도 고정 문구 rev 153
+ * (2026-10-28)에서 21번 줄과 같게 고쳐져, B3 은 그 글 + 문서 설명 꼬리 "(21번과 같은 줄)"로 대조한다.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -70,6 +70,7 @@ describe("판 4 문구 = 고정 문구 사본(글자 대조)", () => {
     expect(`${COVER_ROW_CORE}: ${COVER_CORE_UNAVAILABLE}`).toBe(FIXED["21_core_unavailable"]);
     expect(FIXED["21_core_unavailable"]).toBe("핵심 지표: {이름} 측정 불가 (4.3)");
     expect(COVER_CORE_UNAVAILABLE).not.toContain("합격 기준");
+    expect(B.B3.candidate).toBe(`${FIXED["21_core_unavailable"]} (21번과 같은 줄)`);
   });
 
   it("부록 B31 — 핵심 지표가 없는 성적서의 4.2 근거 두 갈래(합격 / 미달이 있으면 늘 조건부 합격)", () => {
