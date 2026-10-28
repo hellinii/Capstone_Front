@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { loadEd4 } from "../../../../test/edition4/render/ed4Fixtures";
 import type { FinalReportData } from "../../../../types/finalReport.types";
 import { NARRATIVE_FAILED_TEXT, NARRATIVE_PENDING_TEXT } from "../../../../components/report/shared/narrativePlaceholder";
-import { ed4FindingBlocks, ed4SlotBody } from "./findingsEd4";
+import { ed4AutoMarked, ed4FindingBlocks, ed4SlotBody } from "./findingsEd4";
 
 const copy = (d: FinalReportData) => structuredClone(d);
 
@@ -81,5 +81,36 @@ describe("ed4SlotBody — 판 3 NarrativeBlock 규칙", () => {
     expect(ed4SlotBody(pending, "", "빈칸", "미작성(LLM)")).toEqual({ kind: "placeholder", text: NARRATIVE_PENDING_TEXT });
     expect(ed4SlotBody(failed, null, "빈칸", "미작성(LLM)")).toEqual({ kind: "placeholder", text: NARRATIVE_FAILED_TEXT });
     expect(ed4SlotBody(done, undefined, undefined, "미작성(LLM)")).toEqual({ kind: "placeholder", text: "미작성" });
+  });
+});
+
+describe("자동 작성 표시(서술 설계 D54) — autoMarked 는 몸통이 서술 글일 때만", () => {
+  it("ed4AutoMarked — 서술 글만 참, 빈 칸 고정 문구·자리표시는 거짓", () => {
+    expect(ed4AutoMarked({ kind: "narrative", text: "글" })).toBe(true);
+    expect(ed4AutoMarked({ kind: "fixed", text: "해당 없음" })).toBe(false);
+    expect(ed4AutoMarked({ kind: "placeholder", text: NARRATIVE_PENDING_TEXT })).toBe(false);
+  });
+
+  it("AI 칸(bc_strong)·규칙 템플릿 대체 칸(digits_strong 8.1 fallback) 모두 긋는다", () => {
+    expect(ed4FindingBlocks(loadEd4("bc_strong", "issued")).map((b) => b.autoMarked)).toEqual([true, true, true, true, true, true]);
+    const digits = loadEd4("digits_strong", "issued");
+    expect(digits.narrativeSections?.["8.1"]).toBe("fallback");
+    expect(ed4FindingBlocks(digits).map((b) => b.autoMarked)).toEqual([true, true, true, true, true, true]);
+  });
+
+  it("빈 칸 고정 문구 — 15(yeast_strong 7.3 fixed)·B18(8.1 fixed)은 긋지 않는다", () => {
+    expect(ed4FindingBlocks(loadEd4("yeast_strong", "issued")).map((b) => b.autoMarked)).toEqual([true, true, true, true, true, false]);
+    const data = copy(loadEd4("bc_strong", "issued"));
+    data.conclusion.benchmark = "";
+    data.narrativeSections = { ...data.narrativeSections, "8.1": "fixed" };
+    expect(ed4FindingBlocks(data).map((b) => b.autoMarked)).toEqual([true, true, true, false, true, true]);
+  });
+
+  it("자리표시 — 대기·실패·미작성(빈 글)에는 긋지 않는다", () => {
+    expect(ed4FindingBlocks(loadEd4("bc_strong", "pending")).map((b) => b.autoMarked)).toEqual([false, false, false, false, false, false]);
+    expect(ed4FindingBlocks(loadEd4("bc_strong", "failed")).map((b) => b.autoMarked)).toEqual([false, false, false, false, false, false]);
+    const data = copy(loadEd4("bc_strong", "issued"));
+    data.interpretation.confusionAnalysis = " ";
+    expect(ed4FindingBlocks(data).map((b) => b.autoMarked)).toEqual([true, false, true, true, true, true]);
   });
 });

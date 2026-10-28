@@ -40,6 +40,11 @@ describe("고정 문구 = 사본 글자", () => {
     expect(value).toBe(FIXED[key]);
   });
 
+  it("27(D54 범례) = 사본 27_legend(고정 문구 rev 134)", () => {
+    // 키가 없으면 undefined 와 비교되어 실패한다 — 빈 순회로 조용히 넘어가지 않는다.
+    expect(T.ED4_FIXED_27).toBe(FIXED["27_legend"]);
+  });
+
   it("25_steps 일곱 줄, 26_source_values 두 값", () => {
     expect([...T.FIXED_25_STEPS]).toEqual(FIXED["25_steps"]);
     expect([T.FIXED_26_SOURCE_CLIENT, T.FIXED_26_SOURCE_SYSTEM]).toEqual(FIXED["26_source_values"]);
