@@ -196,6 +196,9 @@ function reportingItems(input: MaterialCheckInput): JudgedItem[] {
           : { provided: false, missing: ["지표 선택 이유"], parts: 1 };
       default: {
         // 여러 줄 항목은 모든 줄이 있어야 제공이다.
+        // 항목 2(평가 데이터 출처)는 백엔드도 같은 규칙으로 따로 판정한다 — 종합 총평 "평가 데이터의 대표성과 한계"(판 4 는
+        // 5.1)의 조건 `required_items._eval_data_source`. 이 셈을 바꾸면 백엔드도 같이 바꾸고, 두 저장소가 같은 바이트로 두는
+        // 대조 표 `src/test/contract/reporting_item2_cases.json`(시험 `reportingItem2Contract.test.ts`)을 함께 고친다.
         const rows = tagged.filter((row) => row.item === item);
         const missing = rows.filter((row) => row.value === null).map((row) => row.label);
         return {
