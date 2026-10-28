@@ -13,7 +13,11 @@ import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-const ctl = vi.hoisted(() => ({ redirected: 0, requestCalls: [] as Array<{ contentSchema: unknown; result: unknown }> }));
+const ctl = vi.hoisted(() => ({
+  redirected: 0,
+  requestCalls: [] as Array<{ contentSchema: unknown; result: unknown }>,
+  attachCalls: [] as Array<{ input: unknown; result: unknown }>,
+}));
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
@@ -39,6 +43,11 @@ vi.mock("../../lib/report/narrativeRequest", async (importOriginal) => {
       ctl.requestCalls.push({ contentSchema: args[0].contentSchema, result });
       return result;
     }) as typeof actual.buildNarrativeRequest,
+    attachJudgeMaterial: ((...args: Parameters<typeof actual.attachJudgeMaterial>) => {
+      const result = actual.attachJudgeMaterial(...args);
+      ctl.attachCalls.push({ input: args[0], result });
+      return result;
+    }) as typeof actual.attachJudgeMaterial,
   };
 });
 
@@ -57,6 +66,7 @@ interface Ed4Capture {
   requestText: string;
   storedInput: Json;
   calls: typeof ctl.requestCalls;
+  attaches: typeof ctl.attachCalls;
 }
 
 const captures = new Map<Tag, Ed4Capture>();
@@ -64,6 +74,7 @@ const captures = new Map<Tag, Ed4Capture>();
 async function captureEd4(tag: Tag): Promise<Ed4Capture> {
   const redirected = ctl.redirected;
   ctl.requestCalls = [];
+  ctl.attachCalls = [];
   vi.stubEnv("VITE_REPORT_EDITION", "4");
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(FROZEN_NOW());
@@ -76,6 +87,7 @@ async function captureEd4(tag: Tag): Promise<Ed4Capture> {
       requestText: c.request,
       storedInput: c.storedInput,
       calls: ctl.requestCalls,
+      attaches: ctl.attachCalls,
     };
   } finally {
     vi.useRealTimers();
@@ -244,7 +256,8 @@ describe("RPT-2026-0001 입력(bc_strong) 판 4 run — 실제 서술 요청 본
   const metric = (id: string) => (req().fact_sheet.metrics as Json[]).find((m) => m.metric_id === id);
 
   it("판 신호 report_edition 4 가 최상위 셋째 키", () => {
-    expect(Object.keys(req())).toEqual(["task_type", "report_purpose", "report_edition", "fact_sheet", "client_inputs"]);
+    // judge_material 은 심판 읽기 재료(심판 라운드 J2) — 맨 끝 키, 계약은 judge_material_ed4.json
+    expect(Object.keys(req())).toEqual(["task_type", "report_purpose", "report_edition", "fact_sheet", "client_inputs", "judge_material"]);
     expect(req().report_edition).toBe(4);
   });
 
@@ -373,6 +386,8 @@ const ED4_CHANGEABLE = [
 /** 문제 칸(제목·종류)은 판 4 에서 목록 자체가 달라질 수 있다(같은 출처 문제가 더해짐) — 목록 자리로 본다. */
 const problemsList = (p: string) => p.replace(/\.fact_sheet\.problems\[\]\..*$/, ".fact_sheet.problems");
 
+const isJudgeMaterial = (path: string) => path === ".judge_material" || path.startsWith(".judge_material.");
+
 function changeable(path: string): boolean {
   return ED4_CHANGEABLE.some((allowed) => {
     const a = problemsList(allowed);
@@ -389,21 +404,29 @@ describe.each(TAGS)("판 4 run 과 같은 입력의 판 3 정답 — 달라진 �
     expect(missing).toEqual([]);
     expect(added).toContain(".report_edition");
     expect(added).toContain(".fact_sheet.metrics[].ci_low_text");
-    expect(added.filter((p) => !ED4_ONLY.has(p))).toEqual([]);
+    // 심판 읽기 재료(심판 라운드 J2)는 판 4 요청에만 있는 한 묶음이다 — 그 안 모양은 judge_material_ed4.json 계약이 본다.
+    expect(added).toContain(".judge_material");
+    expect(added.filter((p) => !ED4_ONLY.has(p) && !isJudgeMaterial(p))).toEqual([]);
   });
 
   it("서술 요청: 값이 바뀐 자리는 계약이 판 4 표기·뜻으로 적은 칸뿐", () => {
     const changed = sorted(changedPaths(golden(tag, "request"), captures.get(tag)!.request));
     expect(changed.length).toBeGreaterThan(0);
-    expect(changed.filter((p) => !changeable(p))).toEqual([]);
+    expect(changed.filter((p) => !changeable(p) && !isJudgeMaterial(p))).toEqual([]);
   });
 
-  it("요청을 만든 곳은 buildNarrativeRequest 한 번(판 4 바탕), 그 결과가 그대로 보내졌다", () => {
+  it("요청을 만든 곳은 buildNarrativeRequest 한 번(판 4 바탕) → attachJudgeMaterial 한 번, 그 결과가 그대로 보내졌다", () => {
     const c = captures.get(tag)!;
     expect(c.calls.length).toBe(1);
     expect(c.calls[0].contentSchema).toBe(4);
-    expect(c.calls[0].result).toEqual(c.request);
-    expect(c.requestText).toBe(JSON.stringify(c.calls[0].result));
+    expect(c.attaches.length).toBe(1);
+    expect(c.attaches[0].input).toBe(c.calls[0].result);
+    expect(c.attaches[0].result).toEqual(c.request);
+    expect(c.requestText).toBe(JSON.stringify(c.attaches[0].result));
+    // 재료를 빼면 buildNarrativeRequest 결과 그대로다(재료만 더했다)
+    const { judge_material: material, ...rest } = c.request as Json;
+    expect(material).toBeTruthy();
+    expect(rest).toEqual(c.calls[0].result);
   });
 });
 

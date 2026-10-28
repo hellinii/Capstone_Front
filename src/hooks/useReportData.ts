@@ -28,7 +28,7 @@ import { buildClientInputs } from "../lib/report/reportMaterials";
 import { assembleEvaluatedReport } from "../lib/report/assembleEvaluatedReport";
 import { normalizeReportContent } from "../lib/report/normalizeReportContent";
 import type { NarrativeRequestPayload } from "../lib/report/buildFactSheet";
-import { buildNarrativeRequest } from "../lib/report/narrativeRequest";
+import { attachJudgeMaterial, buildNarrativeRequest } from "../lib/report/narrativeRequest";
 import { sameFile, type FileFingerprint } from "../lib/report/evaluationRequest";
 import {
   createNarrativeJob,
@@ -215,17 +215,19 @@ async function evaluateAndStartNarrativeUnsafe(id: string, file: File): Promise<
 
   // 서술 요청 조립은 한 곳(`buildNarrativeRequest` — 계약 시험과 같은 함수). 판 신호는 바탕 성적서의 찍힌 판으로만 정하고,
   // 본문이 백엔드 상한(2MB)에 가까우면 클래스 단위 칸을 비운다 — 413 으로 서술을 잃지 않게(유-11).
-  const payload: NarrativeRequestPayload = buildNarrativeRequest(baseReport, {
+  const fitted: NarrativeRequestPayload = buildNarrativeRequest(baseReport, {
     taskType: resolveTaskType(snapshot.assemble.taskType),
     factSheet,
     clientInputs,
   });
+  // 성적서 데이터의 facts 는 실제로 보낸 값(예산으로 목록을 비웠으면 비운 값)과 같아야 한다 — S7 D6 표가 이 값을 그린다.
+  const stored = fitted.fact_sheet.facts ? { ...stage1Report, narrativeFacts: fitted.fact_sheet.facts } : stage1Report;
+  // 판 4 면 심판 읽기 재료를 붙인다 — 저장본(화면이 그릴 값)으로 만들어야 재료 글자가 인쇄 글과 같다(심판 라운드 J2).
+  const payload = attachJudgeMaterial(fitted, stored);
 
   const created = await createNarrativeJob(payload);
   // 1단계 성적서는 완성본이 아니다(isEvaluated=false) — 서술이 끝나야(done) 완성본이 된다.
   const input = storableInput(payload);
-  // 성적서 데이터의 facts 는 실제로 보낸 값(예산으로 목록을 비웠으면 비운 값)과 같아야 한다 — S7 D6 표가 이 값을 그린다.
-  const stored = payload.fact_sheet.facts ? { ...stage1Report, narrativeFacts: payload.fact_sheet.facts } : stage1Report;
   const saveError = saveRun(id, (r) => applyCreated(r, stored, created, input));
   // 작업 번호를 저장하지 못했으면 새로고침 뒤 이어 조회할 수 없다 — 평가와 서술 작업을 다시 만들게 되니 알린다.
   const notice =
