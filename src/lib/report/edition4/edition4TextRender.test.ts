@@ -48,9 +48,15 @@ describe("고정 문구 = 사본 글자", () => {
     expect(value).toBe(FIXED[key]);
   });
 
-  it("27(D54 범례) — 위 주석에 옮긴 고정 문구 rev 134 문안 칸 글(사본을 다시 뽑아 27 이 생기면 그 글과도 같아야 한다)", () => {
+  it("27(D54 범례) — 위 주석에 옮긴 고정 문구 rev 134 문안 칸 글", () => {
     expect(T.ED4_FIXED_27).toBe("※ 왼쪽에 세로줄이 있는 부분은 평가 시스템이 시험 결과를 바탕으로 자동 작성한 것입니다.");
-    for (const [, value] of Object.entries(FIXED).filter(([k]) => k.startsWith("27"))) expect(value).toBe(T.ED4_FIXED_27);
+  });
+
+  it("27 은 지금 사본에 없다 — 사본을 다시 뽑아 27 이 생기면 이 시험이 깨진다: 그때 사본 값과 ED4_FIXED_27 의 대조로 바꾼다", () => {
+    // 빈 순회로 조용히 넘어가지 않게 '없음'을 바로 단정한다. 키 이름이 "27…"이 아니어도 걸리게 사본 전체에서 범례 낱말도 찾는다.
+    expect(Object.keys(FIXED).length).toBeGreaterThan(0);
+    expect(Object.keys(FIXED).filter((k) => k.startsWith("27"))).toEqual([]);
+    expect(JSON.stringify(WORDING)).not.toContain("세로줄");
   });
 
   it("25_steps 일곱 줄, 26_source_values 두 값", () => {
