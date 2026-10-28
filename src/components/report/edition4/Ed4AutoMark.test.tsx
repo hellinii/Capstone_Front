@@ -72,13 +72,35 @@ const paragraphWith = (root: Element, text: string) => {
 };
 const partOf = (el: Element) => el.closest("[data-ed4-part]")?.getAttribute("data-ed4-part");
 
+/** "#rrggbb" → jsdom 이 정규화한 "rgb(r, g, b)". */
+const rgbOf = (hex: string) => {
+  const n = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgb(${n.join(", ")})`;
+};
+
 /** 표시 하나의 모양 — 선 굵기·종류·색이 있고 글과 간격이 있다(선 빼기 변이 잡기). */
 function expectLine(mark: HTMLElement) {
   expect(mark.style.borderLeftWidth).toBe(ED4_AUTO_MARK_LINE.width);
   expect(mark.style.borderLeftStyle).toBe("solid");
-  expect(mark.style.borderLeftColor).not.toBe("");
+  expect(mark.style.borderLeftColor).toBe(rgbOf(ED4_AUTO_MARK_LINE.color));
   expect(mark.style.paddingLeft).toBe(ED4_AUTO_MARK_LINE.gap);
 }
+
+describe("선 모양 — 흑백 인쇄에 남는 값(PDF 회색조·1비트 비교로 정함)", () => {
+  it("2px #444 · 글과 10px, 회색값은 1비트 임계 128 보다 충분히 어둡다(≤ 100 — #777=119 는 임계에 붙고 #999 부터 사라졌다)", () => {
+    expect(ED4_AUTO_MARK_LINE).toEqual({ width: "2px", color: "#444444", gap: "10px" });
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(ED4_AUTO_MARK_LINE.color.slice(i, i + 2), 16));
+    expect(Math.round(0.299 * r + 0.587 * g + 0.114 * b)).toBeLessThanOrEqual(100);
+  });
+
+  it("선은 글 왼쪽 여백 쪽(음수 margin = 굵기 + 간격) — 칸 글의 시작 위치가 다른 문단과 같다(실제 위치는 화면 스모크에서 확인)", () => {
+    const shift = parseFloat(ED4_AUTO_MARK_LINE.width) + parseFloat(ED4_AUTO_MARK_LINE.gap);
+    withScreen(loadEd4("bc_strong", "issued"), (root) => {
+      expect(marks(root).length).toBeGreaterThan(0);
+      for (const m of marks(root)) expect(m.style.marginLeft).toBe(`calc(-${shift}px)`);
+    });
+  });
+});
 
 /** 공통 단정 — 범례 자리, 긋지 않는 자리(제목·※·범례·1~4절 표). */
 function expectCommon(root: Element) {
