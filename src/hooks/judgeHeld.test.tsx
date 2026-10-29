@@ -418,9 +418,15 @@ describe("부록 1 배선(J7) — 통과한 서술을 합칠 때 한 번 만들�
     expect(screen.getByText(a.summary, { exact: false })).toBeInTheDocument();
   });
 
-  it("보류 → appendix1 없음·부록 제목도 없음(B58)", async () => {
+  it("보류 → appendix1 없음·부록 제목도 없음(B58) — 대기 중 저장본에 옛 부록이 남아 있어도 합칠 때 버린다", async () => {
     stub({ views: [{ body: doneWith(held("gate_failed", false)) }] });
     seedEd4Pending();
+    useWorkspaceStore.setState((st) => ({
+      evaluationRuns: st.evaluationRuns.map((r) => ({
+        ...r,
+        reportData: { ...r.reportData, appendix1: { ...readJson(resolve(FIX, "bc_strong.final.json")).appendix1, summary: "옛 부록" } },
+      })),
+    }));
     renderPage();
     await waitFor(() => expect(banner()).toHaveTextContent(B38_HELD_GATE_FAILED));
     expect(storedRun(RUN)!.reportData).not.toHaveProperty("appendix1");

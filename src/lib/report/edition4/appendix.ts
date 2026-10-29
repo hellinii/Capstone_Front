@@ -129,7 +129,8 @@ export function buildAppendix1(report: FinalReportData, judge: JudgeBundle | und
   ];
 
   // 1.2 점검 수 밖 — 12·13번(판정 때 만든 행) + 14번(신뢰구간 유무).
-  const hasCi = report.confidenceIntervalNote !== undefined;
+  // 1.3 의 14번 고정 문장(`constraintLines`)과 같은 판정 — 글이 있을 때만(빈 글은 없음으로).
+  const hasCi = !!report.confidenceIntervalNote;
   const outside: AppendixRow3[] = [
     ...rows.outside,
     hasCi

@@ -6,7 +6,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { JUDGE_HELD_KINDS, toJudgeBundle } from "./judgeBundle";
+import { COVERAGE_IDS, JUDGE_HELD_KINDS, toJudgeBundle } from "./judgeBundle";
+import { COVERAGE_ITEMS } from "./edition4/appendix";
 import { isEdition4Content, reportLock, type LockPhase } from "./reportLock";
 import { heldNotice, isJudgeRejection, lockReasonText, serverRejectedText } from "./judgeNotice";
 import { fetchNarrativeJob, mapNarrativeResult } from "./narrativeJobApi";
@@ -79,9 +80,20 @@ describe("심판 묶음 읽기(toJudgeBundle) — 계약 예시는 읽고, 틀�
     ["축 순서 바뀜", { ...PASSED, axes: ["consistency", "faithfulness", "coverage", "readability"] }],
     ["축 겹침", { ...PASSED, axes: ["faithfulness", "faithfulness"] }],
     ["모델 이름 없음", { ...PASSED, model: null }],
+    ["서술됨인데 자리 없음", { ...PASSED, counts: { ...PASSED.counts, coverage: { ...PASSED.counts.coverage, items: [{ id: "분석-1", described: true, place: null }, PASSED.counts.coverage.items[1]] } } }],
+    ["서술 안 됨인데 자리 있음", { ...PASSED, counts: { ...PASSED.counts, coverage: { ...PASSED.counts.coverage, described: 1, items: [{ id: "분석-1", described: false, place: "5.2" }, PASSED.counts.coverage.items[1]] } } }],
+    ["모르는 항목 id", { ...PASSED, counts: { ...PASSED.counts, coverage: { ...PASSED.counts.coverage, items: [{ id: "분석-9", described: true, place: "5.2" }, PASSED.counts.coverage.items[1]] } } }],
+    ["항목 id 겹침", { ...PASSED, counts: { ...PASSED.counts, coverage: { ...PASSED.counts.coverage, items: [PASSED.counts.coverage.items[0], PASSED.counts.coverage.items[0]] } } }],
+    ["적용 수 ≠ 항목 수", { ...PASSED, counts: { ...PASSED.counts, coverage: { ...PASSED.counts.coverage, applicable: 3, not_applicable: 15 } } }],
+    ["서술 수 ≠ 서술된 항목 수", { ...PASSED, counts: { ...PASSED.counts, coverage: { ...PASSED.counts.coverage, described: 1 } } }],
+    ["적용 + 해당 없음 ≠ 18", { ...PASSED, counts: { ...PASSED.counts, coverage: { ...PASSED.counts.coverage, not_applicable: 15 } } }],
     ["기준 버전 없음", { ...PASSED, criteria_version: 1 }],
   ])("%s → undefined", (_name, raw) => {
     expect(toJudgeBundle(raw)).toBeUndefined();
+  });
+
+  it("필수 내용 항목 id 목록 = 부록 필수 내용 18개(같은 순서)", () => {
+    expect(COVERAGE_IDS).toEqual(COVERAGE_ITEMS.map((c) => c.id));
   });
 
   it("작업 결과 매핑에 묶음이 실린다 — 판 3 결과(키 없음)는 undefined", () => {

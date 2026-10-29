@@ -242,10 +242,18 @@ function reportingItems(input: MaterialCheckInput): JudgedItem[] {
  * 줄짜리 항목, 빠진 줄이 항목 이름 그 자체이면(10번 "하이퍼파라미터") 이름만. 판정·경고 ID·점검 표 버전은 그대로라 저장하는
  * `items` 에는 넣지 않고 찍는 글(표지 보고 항목 줄·1.3 제공되지 않은 정보·영향 줄)만 바뀐다. 판 3 은 이름만(얼린 출력).
  */
-function printedItemNameEd4(item: JudgedItem): string {
+/**
+ * 판 4 "일부만 빠짐" 판정 — 여러 줄 항목에서 제공된 줄이 하나 이상이고, 빠진 줄이 항목 이름 그 자체가 아님. 찍는 이름(`printedItemNameEd4`
+ * — 표지·1.3·1.1)과 부록 1.2 결과 칸(B49)이 이 한 함수를 함께 쓴다(판정 지점 하나 — J7 검토).
+ */
+function isPartialMissingEd4(item: JudgedItem): boolean {
   const partial = item.missing.length > 0 && item.parts > item.missing.length;
   const self = item.missing.length === 1 && item.missing[0] === item.name;
-  return partial && !self ? `${item.name}(빠진 것: ${item.missing.join("·")})` : item.name;
+  return partial && !self;
+}
+
+function printedItemNameEd4(item: JudgedItem): string {
+  return isPartialMissingEd4(item) ? `${item.name}(빠진 것: ${item.missing.join("·")})` : item.name;
 }
 
 /** 선언의 선택값. 글만 쓴 답은 선택값이 없어 3층 줄을 만들지 않는다(`chosenText` — 1층은 선택 필수). */
@@ -351,7 +359,7 @@ function metricName(id: string): string {
  */
 function appendixEd4(input: MaterialCheckInput, judged: JudgedItem[], lines: JudgedLine[]): MaterialCheckAppendixEd4 {
   const reporting: AppendixRow3[] = judged.map((item) => {
-    const partial = !item.provided && item.parts > item.missing.length && !(item.missing.length === 1 && item.missing[0] === item.name);
+    const partial = !item.provided && isPartialMissingEd4(item);
     return {
       name: item.name,
       middle: REPORTING_PLACE_ED4[item.item] ?? APPENDIX_NONE_PLACE,

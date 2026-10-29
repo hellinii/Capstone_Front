@@ -48,6 +48,16 @@ export interface JudgeBundle {
   counts: JudgeCounts | null;
 }
 
+/**
+ * 필수 내용 항목 id(심판 기준 18개 — 고객용 이름·영향 문장은 `edition4/appendix.ts` COVERAGE_ITEMS, 같은 목록을 시험이 대조).
+ * 모르는 id 가 오면(기준과 화면이 어긋남) 묶음을 버린다 — 고객 성적서에 내부 id 를 찍지 않게(닫힌 쪽, J7 검토).
+ */
+export const COVERAGE_IDS: readonly string[] = [
+  "분석-1", "분석-2", "분석-3", "분석-4", "분석-5", "분석-6", "분석-7",
+  "소견-1", "소견-2", "소견-3", "소견-4", "소견-5", "소견-6", "소견-7", "소견-8",
+  "권고-1", "권고-2", "권고-3",
+];
+
 const isCount = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= 0;
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 
@@ -68,9 +78,14 @@ function toCounts(raw: unknown, axes: JudgeAxis[]): JudgeCounts | null {
       const items: JudgeCoverageItem[] = [];
       for (const it of c.items) {
         if (!isObj(it) || typeof it.id !== "string" || typeof it.described !== "boolean") return null;
-        if (!(it.place === null || typeof it.place === "string")) return null;
-        items.push({ id: it.id, described: it.described, place: it.described ? (it.place as string | null) : null });
+        if (!COVERAGE_IDS.includes(it.id) || items.some((x) => x.id === it.id)) return null;
+        // 서술된 항목은 찍힌 자리가 있어야 한다 — 없으면 체크리스트("서술되지 않음")와 건수가 어긋난다(J7 검토).
+        if (it.described ? typeof it.place !== "string" || it.place.trim() === "" : it.place !== null) return null;
+        items.push({ id: it.id, described: it.described, place: it.described ? (it.place as string) : null });
       }
+      // 건수와 체크리스트가 맞아야 한다 — 1.1 요약·1.3 표(건수)와 체크리스트·빠진 목록(항목)이 같은 성적서에서 어긋나지 않게.
+      if (items.length !== c.applicable || items.filter((x) => x.described).length !== c.described) return null;
+      if (c.applicable + c.not_applicable !== COVERAGE_IDS.length) return null;
       out.coverage = { applicable: c.applicable, described: c.described, notApplicable: c.not_applicable, items };
     } else {
       if (!isCount(c.rules) || !isCount(c.violations)) return null;
