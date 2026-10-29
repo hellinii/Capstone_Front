@@ -445,6 +445,7 @@ const STAGE1_CHANGES: Record<Tag, string[]> = {
     ".evalEnv.engineVersion",
     ".kpiResults[].ciRaw",
     ".kpiResults[].judgmentMargin",
+    ".materialCheck.printed.appendix", // 심판 라운드 J7 — 부록 1.2 의 재료 선택 점검 행(판 4 run 에만, 판정할 때 함께)
     ".materialCheck.printed.cover",
     ".materialCheck.printed.coverRows",
     ".materialCheck.printed.notProvided",
@@ -470,6 +471,7 @@ const STAGE1_CHANGES: Record<Tag, string[]> = {
     ".evalEnv.engineVersion",
     ".kpiResults[].ciRaw",
     ".kpiResults[].judgmentMargin",
+    ".materialCheck.printed.appendix", // 심판 라운드 J7 — 부록 1.2 의 재료 선택 점검 행(판 4 run 에만, 판정할 때 함께)
     ".materialCheck.printed.cover",
     ".materialCheck.printed.coverRows",
     ".materialCheck.printed.notProvided",
@@ -495,6 +497,7 @@ const STAGE1_CHANGES: Record<Tag, string[]> = {
     ".evalEnv.engineVersion",
     ".kpiResults[].ciRaw",
     ".kpiResults[].judgmentMargin",
+    ".materialCheck.printed.appendix", // 심판 라운드 J7 — 부록 1.2 의 재료 선택 점검 행(판 4 run 에만, 판정할 때 함께)
     ".materialCheck.printed.cover",
     ".materialCheck.printed.coverRows",
     ".materialCheck.printed.impacts[]", // S6 뒤 사용자 결정 2 — 일부만 빠진 학습 데이터 항목에 "(빠진 것: 학습 클래스 분포)"

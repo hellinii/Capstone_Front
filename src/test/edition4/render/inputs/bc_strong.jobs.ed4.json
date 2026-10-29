@@ -1,5 +1,5 @@
 {
-  "$provenance": "판 4 렌더 시험 입력(bc_strong = RPT-2026-0001). benchmark_refs = 백엔드 build_benchmark_refs(edition=4)를 판 4 계약 예시 fact_sheet_binary_ed4.json(앱이 보낸 판 4 요청)에 돌린 값(출처 글 SOURCE_NOTE_ED4). 서술 칸 글 = 예시본(rpt0001/example.md) 5~6절 문단 글자 그대로: 8.2→5.1 첫 문단(둘째 문단은 앱이 찍는 고정 문구 11a라 뺌), 7.1→5.2, 7.2→5.3, 8.1→5.4, 8.3→5.5, 7.3→5.6, 9 의 data_quality→6.1 문단, model_ops→6.2 문단. 권고 행 = 예시본 6.1(P2 1행)·6.2(P1 2행)의 권고·기대 효과 글자 그대로. category 는 예시본에 열이 없어 지어 넣은 글(P2 는 부록 B23 분류). 심판 라운드 J6(2026-10-29): done.result.judge 에 통과 묶음을 더함 — 건수·체크리스트 자리는 렌더 시험용 합성 값(bc_strong 체크리스트 자리는 예시본 부록 1.3, 6절 권고는 실제 인쇄 자리 6.1), 실호출 결과가 아니다.",
+  "$provenance": "판 4 렌더 시험 입력(bc_strong = RPT-2026-0001). benchmark_refs = 백엔드 build_benchmark_refs(edition=4)를 판 4 계약 예시 fact_sheet_binary_ed4.json(앱이 보낸 판 4 요청)에 돌린 값(출처 글 SOURCE_NOTE_ED4). 서술 칸 글 = 예시본(rpt0001/example.md) 5~6절 문단 글자 그대로: 8.2→5.1 첫 문단(둘째 문단은 앱이 찍는 고정 문구 11a라 뺌), 7.1→5.2, 7.2→5.3, 8.1→5.4, 8.3→5.5, 7.3→5.6, 9 의 data_quality→6.1 문단, model_ops→6.2 문단. 권고 행 = 예시본 6.1(P2 1행)·6.2(P1 2행)의 권고·기대 효과 글자 그대로. category 는 예시본에 열이 없어 지어 넣은 글(P2 는 부록 B23 분류). 심판 라운드 J6(2026-10-29): done.result.judge 에 통과 묶음을 더함 — 건수·체크리스트 자리는 렌더 시험용 합성 값(bc_strong 체크리스트 자리는 예시본 부록 1.3 글자 그대로 — 5.4, 5.5·6 포함), 실호출 결과가 아니다.",
   "created": {
     "job_id": "job-ed4r-bc_strong",
     "status": "running",
@@ -361,7 +361,7 @@
               {
                 "id": "소견-2",
                 "described": true,
-                "place": "5.4"
+                "place": "5.4, 5.5"
               },
               {
                 "id": "소견-3",
@@ -391,17 +391,17 @@
               {
                 "id": "권고-1",
                 "described": true,
-                "place": "6.1"
+                "place": "6"
               },
               {
                 "id": "권고-2",
                 "described": true,
-                "place": "6.1"
+                "place": "6"
               },
               {
                 "id": "권고-3",
                 "described": true,
-                "place": "6.1"
+                "place": "6"
               }
             ]
           },

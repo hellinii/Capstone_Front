@@ -6,14 +6,16 @@
  * - 줄: B26 순서 "5.1 판정과 불확실성(8.2 칸) — AI 작성(모델)" 꼴(`ed4RecordLines`). 모르는 칸은 판 3 처럼 뒤에.
  * - 숨는 규칙은 판 3 과 같다(`showsNarrativeRecord` — 서술 대기·실패면 낡은 칸 출처로 그리지 않는다, 칸 출처가 없으면 없음).
  * - 혹시 화면을 브라우저로 인쇄해도 빠지게 `print:hidden`.
+ * - 심판을 통과한 판 4 면 마지막 줄에 B47 "검증 모델: {모델 이름} (점검 기준 {버전})"(심판 라운드 J7 15-5 — 묶음 값 그대로, 화면에만).
  */
 import type { FinalReportData } from "../../../types/finalReport.types";
-import { B25_RECORD_HEADER, B25_RECORD_NOTE } from "../../../lib/report/edition4/edition4Text";
+import { B25_RECORD_HEADER, B25_RECORD_NOTE, B47_JUDGE_MODEL, fillTemplate } from "../../../lib/report/edition4/edition4Text";
 import { ed4RecordLines } from "../../../lib/report/edition4/render/recordLines";
 import { showsNarrativeRecord } from "../NarrativeRecordPanel";
 
 export function Ed4NarrativeRecord({ data }: { data: FinalReportData }) {
   if (!showsNarrativeRecord(data)) return null;
+  const judge = data.judge?.gate === "passed" ? data.judge : undefined;
   return (
     <details
       aria-label="작성 기록"
@@ -32,6 +34,11 @@ export function Ed4NarrativeRecord({ data }: { data: FinalReportData }) {
             <span>{line.label}</span>
           </li>
         ))}
+        {judge && (
+          <li data-testid="judge-model-line">
+            {fillTemplate(B47_JUDGE_MODEL, { "모델 이름": judge.model, 버전: judge.criteriaVersion })}
+          </li>
+        )}
       </ul>
     </details>
   );

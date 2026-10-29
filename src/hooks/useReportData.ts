@@ -42,6 +42,7 @@ import {
 import { resolveTaskType } from "../data/evaluationData";
 import { reportLock, type ReportLockReason } from "../lib/report/reportLock";
 import { heldNotice } from "../lib/report/judgeNotice";
+import { buildAppendix1 } from "../lib/report/edition4/appendix";
 
 /** 조회 설정. 테스트가 간격을 줄이려고 고칠 수 있게 객체로 둔다(수치를 테스트에 박지 않는다). */
 export const narrativePolling = {
@@ -267,9 +268,12 @@ function stillWaitingFor(run: WorkspaceEvaluationRun, jobId: string): boolean {
 function mergeNarrative(report: FinalReportData, fields: NarrativeFields, benchmarkRefs: BenchmarkRef[]): FinalReportData {
   // 칸별 모델(작성 기록, 사용자 결정 4). 모델을 알려 주지 않은 응답이면 키를 두지 않는다 — 이전 서술의 기록도 남기지 않는다.
   // 심판 묶음도 통째로 갈아 끼운다 — 이번 작업이 묶음을 주지 않았으면 옛 작업의 묶음을 남기지 않는다(심판 라운드 J6).
-  const { narrativeModels: _previous, judge: _previousJudge, ...rest } = report;
+  // 부록 1 글도 이때 한 번 만든다(심판 라운드 J7) — 통과한 판 4 만, 아니면 키를 두지 않는다(B58 비움). 그릴 때 다시 만들지 않는다.
+  const { narrativeModels: _previous, judge: _previousJudge, appendix1: _previousAppendix, ...rest } = report;
+  const appendix1 = buildAppendix1(report, fields.judge);
   return {
     ...rest,
+    ...(appendix1 ? { appendix1 } : {}),
     ...(fields.sectionModels ? { narrativeModels: fields.sectionModels } : {}),
     ...(fields.judge ? { judge: fields.judge } : {}),
     conclusion: {
@@ -309,9 +313,9 @@ function saveDone(id: string, jobId: string, view: Extract<JobView, { kind: "don
   );
 }
 
-/** 새 서술 작업을 만들 때 옛 작업의 심판 묶음을 지운다 — 새 서술에 옛 판정이 붙어 보이거나 잠금이 풀리지 않게. */
+/** 새 서술 작업을 만들 때 옛 작업의 심판 묶음과 부록 1 글을 지운다 — 새 서술에 옛 판정이 붙어 보이거나 잠금이 풀리지 않게. */
 function withoutJudge(report: FinalReportData): FinalReportData {
-  const { judge: _judge, ...rest } = report;
+  const { judge: _judge, appendix1: _appendix1, ...rest } = report;
   return rest;
 }
 

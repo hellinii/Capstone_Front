@@ -403,3 +403,59 @@ describe("검토 반영(J6) — 보류에서 빠져나갈 길", () => {
     expect(screen.queryByTestId("judge-held-banner")).toBeNull();
   });
 });
+
+describe("부록 1 배선(J7) — 통과한 서술을 합칠 때 한 번 만들고, 보류면 비우고, 새 작업 때 지운다", () => {
+  const APPENDIX = "부록 1. 성적서 점검 결과";
+
+  it("통과 → appendix1 저장·화면에 부록 1(요약 문장 그대로)", async () => {
+    stub({ views: [{ body: doneWith(JOBS_INPUT.done.result.judge) }] });
+    seedEd4Pending();
+    renderPage();
+    await waitFor(() => expect(storedRun(RUN)!.narrative!.status).toBe("done"));
+    const a = storedRun(RUN)!.reportData.appendix1!;
+    expect(a.summary).toMatch(/^이 성적서는 TS 4213 보고 항목 \d+개/);
+    expect(await screen.findByRole("heading", { name: APPENDIX })).toBeInTheDocument();
+    expect(screen.getByText(a.summary, { exact: false })).toBeInTheDocument();
+  });
+
+  it("보류 → appendix1 없음·부록 제목도 없음(B58)", async () => {
+    stub({ views: [{ body: doneWith(held("gate_failed", false)) }] });
+    seedEd4Pending();
+    renderPage();
+    await waitFor(() => expect(banner()).toHaveTextContent(B38_HELD_GATE_FAILED));
+    expect(storedRun(RUN)!.reportData).not.toHaveProperty("appendix1");
+    expect(screen.queryByRole("heading", { name: APPENDIX })).toBeNull();
+  });
+
+  it("검증 중(대기) — 부록 제목 없음", async () => {
+    stub({ views: [{ body: running("judging") }] });
+    seedEd4Pending();
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("검증 중"));
+    expect(screen.queryByRole("heading", { name: APPENDIX })).toBeNull();
+  });
+
+  it("다시 만들기로 새 작업을 만들면 옛 부록 글을 지운다(합칠 때가 아니라 새 작업을 만들 때)", async () => {
+    const { toJudgeBundle } = await import("../lib/report/judgeBundle");
+    const s = stub({
+      views: [{ body: running("generating") }],
+      create: [{ body: { job_id: "job-j6-3", status: "running", stage: "queued", benchmark_refs: [], result: null } }],
+    });
+    seedEd4Pending();
+    // 보류로 저장된 run 에 옛 부록 글이 남아 있는 경우(합성) — 새 작업이 시작되면 지워져야 한다.
+    const final = readJson(resolve(FIX, "bc_strong.final.json"));
+    useWorkspaceStore.setState((st) => ({
+      evaluationRuns: st.evaluationRuns.map((r) => ({
+        ...r,
+        reportData: { ...final, judge: toJudgeBundle(held("budget", true)), appendix1: { ...final.appendix1, summary: "옛 부록" } },
+        narrative: { status: "held", jobId: JOB_ID, input: r.narrative!.input },
+      })),
+    }));
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "서술 다시 만들기" }));
+    await waitFor(() => expect(storedRun(RUN)!.narrative).toMatchObject({ status: "pending", jobId: "job-j6-3" }));
+    expect(s.count("POST", JOBS)).toBe(1);
+    expect(storedRun(RUN)!.reportData).not.toHaveProperty("appendix1");
+    expect(storedRun(RUN)!.reportData).not.toHaveProperty("judge");
+  });
+});

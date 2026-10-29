@@ -320,14 +320,14 @@ describe("rv2 지적 1 — 인쇄 입구(ReportPrint)가 판 4 를 mode=print �
     return { pageBreaks, badges };
   };
 
-  it("digits_strong(8.1 규칙 기반 칸): ReportPrint 경로 DOM 에 PageBreak 6개, 칸 배지 요소 0개(print:hidden 으로 가린 것도 없음)", async () => {
+  it("digits_strong(8.1 규칙 기반 칸): ReportPrint 경로 DOM 에 PageBreak 7개(부록 1 앞 포함 — 심판 라운드 J7), 칸 배지 요소 0개(print:hidden 으로 가린 것도 없음)", async () => {
     // 같은 데이터의 화면에는 배지가 있다(위 0 단정이 빈 이빨이 아님).
     expect(screenText(loadEd4("digits_strong", "issued"))).toContain(SECTION_SOURCE_BADGE_TEXT);
-    expect(await inspectPrint("digits_strong")).toEqual({ pageBreaks: 6, badges: 0 });
+    expect(await inspectPrint("digits_strong")).toEqual({ pageBreaks: 7, badges: 0 });
   });
 
-  it("bc_strong: ReportPrint 경로 PageBreak 6개", async () => {
-    expect((await inspectPrint("bc_strong")).pageBreaks).toBe(6);
+  it("bc_strong: ReportPrint 경로 PageBreak 7개(부록 1 앞 포함)", async () => {
+    expect((await inspectPrint("bc_strong")).pageBreaks).toBe(7);
   });
 });
 

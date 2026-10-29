@@ -595,6 +595,11 @@ export interface FinalReportData {
    */
   judge?: JudgeBundle;
   /**
+   * 판 4 부록 1(성적서 점검 결과)에 찍는 글 — 심판을 통과한 서술을 합칠 때 한 번 만든다(심판 라운드 J7, `appendix.ts`). 그릴 때 다시
+   * 계산하지 않는다(발급 보관본 모양 고정). 검증 중·발급 보류·판 3 에는 없다(부록 자리를 비움 — B58). 새 서술 작업 때 지운다.
+   */
+  appendix1?: Appendix1Ed4;
+  /**
    * 서술까지 끝난 완성본인가. 이것이 true 일 때만 발급·PDF·인쇄가 열린다(서술 라운드 S3b — 끝나지 않은 서술은
    * 완성본이 아니다). 성적서 훅이 서술 작업이 끝났을(done) 때만 세운다.
    */
@@ -715,7 +720,33 @@ export interface MaterialCheckResult {
      * 만들어 따로 저장한다.
      */
     coverRows?: Array<{ label: string; value: string }>;
+    /**
+     * 판 4 부록 1.2 의 재료 선택 점검 행(심판 라운드 J7, 계획 15-1) — 판 4 run 에만 있다. 판정할 때 함께 만든다(충족시킨 지표 포함 —
+     * 판정 지점 하나). 14번(통계적 유의성 검정)은 신뢰구간을 평가 뒤에 알아서 부록을 만들 때 더한다(`appendix.ts`).
+     */
+    appendix?: MaterialCheckAppendixEd4;
   };
+}
+
+/** 판 4 부록 1.2 표의 한 행(찍는 글 그대로). */
+export interface AppendixRow3 {
+  /** 첫 칸(보고 항목·보고 요구·선언). */
+  name: string;
+  /** 둘째 칸(실린 곳·필요한 것). */
+  middle: string;
+  /** 결과 칸. */
+  result: string;
+}
+
+export interface MaterialCheckAppendixEd4 {
+  /** TS 4213 보고 항목 표(2층, 항목 번호 순). */
+  reporting: AppendixRow3[];
+  /** 점검 수 밖의 보고 요구 중 13번·12번(멀티레이블이 아닐 때) — 예시본 순서. 14번은 부록을 만들 때 더한다. */
+  outside: AppendixRow3[];
+  /** 적용되는 목적별 점검(점검 순서). 0개면 빈 배열. */
+  purpose: AppendixRow3[];
+  /** 적용되지 않아 싣지 않은 목적별 점검 수(점검 줄 4개 중). */
+  purposeNotApplied: number;
 }
 
 /**
@@ -774,4 +805,27 @@ export interface ReportMaterials {
     algorithm: MaterialValue;
     rows: Array<{ name: string; value: string }> | null;
   };
+}
+
+/** 판 4 부록 1 의 찍는 글(`appendix.ts` 가 만든 그대로 — 화면·인쇄·번호 열기가 같은 부품으로 그린다). */
+export interface Appendix1Ed4 {
+  /** 1.1 요약 문장(고정 문구 3절). */
+  summary: string;
+  /** 1.1 빠진 목록 줄("{이름}: {영향 문장}"). 없으면 빈 배열(머리 글도 찍지 않음). */
+  missing: string[];
+  /** 1.2 보고 항목 표·점검 수 밖 표(머리 글 포함)·목적별 점검(행 없으면 B52 글)·입력 점검 기록. */
+  reporting: AppendixRow3[];
+  outsideHead: string;
+  outside: AppendixRow3[];
+  purpose: AppendixRow3[];
+  /** 목적별 점검 표 아래 글(적용되지 않은 수) 또는 0개일 때 B52. 없으면 null. */
+  purposeNote: string | null;
+  inputRecord: string;
+  /** 1.3 검증 결과 표(실은 축만, 순서 고정) — [검사, 확인한 것, 검사 건수, 결과]. */
+  axes: Array<[string, string, string, string]>;
+  /** 1.3 필수 내용 확인 — [필수 내용, 서술 위치]. 필수 내용 축을 뺐으면 빈 배열. */
+  checklist: Array<[string, string]>;
+  checklistNote: string | null;
+  /** 1.4 줄. */
+  method: string[];
 }

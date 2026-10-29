@@ -32,11 +32,11 @@ const asExampleLines = (lines: string[]): ExampleLine[] =>
     l.startsWith("|") ? { kind: "row", cells: l.split("|").slice(1).map((c) => c.trim()) } : { kind: "text", text: l },
   );
 
-/** 6절 — 절 제목부터 끝 표시 앞까지(발급본은 발급 이력 앞까지). */
+/** 6절 — 절 제목부터 끝 표시 앞까지(부록 1 이 있으면 그 앞, 발급본은 발급 이력 앞까지 — 심판 라운드 J7 에 부록이 6절 뒤에 생김). */
 const section6 = (text: string) => {
   const lines = segment(text, "6. 개선 권고", "— 끝 —");
-  const history = lines.indexOf("발급 이력");
-  return history >= 0 ? lines.slice(0, history) : lines;
+  const stop = ["부록 1. 성적서 점검 결과", "발급 이력"].map((l) => lines.indexOf(l)).filter((i) => i >= 0);
+  return stop.length > 0 ? lines.slice(0, Math.min(...stop)) : lines;
 };
 
 const copy = (data: FinalReportData): FinalReportData => structuredClone(data);
