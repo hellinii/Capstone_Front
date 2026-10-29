@@ -5,8 +5,8 @@
  * 그대로, 예시본에 없는 갈래(보고 항목 일부 빠짐, 신뢰구간 없음, 충족 지표 여럿, 목적별 점검 0개, 1.3 검사 건수의 셈)는 고정 문구
  * B49~B58. 시험(`appendix.test.ts`)이 고정 문구 사본(`fixedWording.ed4.json` 의 appendix1·appendixB_raw)과 글자를 대조한다.
  *
- * `CANDIDATE_` 로 시작하는 글은 문서에 없는 글이다 — 재료 선택 점검 4.3 "점검 줄 4개" 표의 칸 글을 예시본 목적별 점검 행 꼴로 옮긴
- * 것이다(예시본 "위험 방향이 FN | 재현율 또는 β가 1보다 큰 Fβ" 가 그 표의 FN 갈래와 같은 글). 승인 전 후보(세션 4 끝 보고).
+ * 예시본·B49~B58 에 없던 글(목적별 점검 행의 선언·필요한 것, 지연시간 "충족", 점검 수 밖 머리의 곳 수 등)은 고정 문구 3절 "예시본과
+ * B49~B58에 없는 부록 글" 문단(2026-10-29 민서 승인)이 정본이다 — 사본 `appendix1.approved_extra` 와 글자 대조.
  */
 
 /** 예시본 부록 1 글자. */
@@ -87,8 +87,8 @@ export const B56_VIOLATIONS = "위반 {n}건";
 export const CONSISTENCY_CONTRADICTIONS = "모순 {n}건";
 /** 목적별 점검 미충족(심판 설계 5.5 표 "충족 (지표 이름)" 또는 "미충족"). */
 export const PURPOSE_UNMET = "미충족";
-/** 목적별 점검 충족인데 지표로 채우는 줄이 아님(지연시간) — 지표 이름 없이. */
-export const CANDIDATE_PURPOSE_MET_NO_METRIC = "충족";
+/** 목적별 점검 충족인데 지표로 채우는 줄이 아님(지연시간) — 지표 이름 없이(고정 문구 3절 승인 글). */
+export const PURPOSE_MET_NO_METRIC = "충족";
 
 /** 목적별 점검 행의 선언·필요한 것(재료 선택 점검 4.3 "점검 줄 4개"). FN 갈래는 예시본 글자. */
 export const PURPOSE_ROW_TEXT = {

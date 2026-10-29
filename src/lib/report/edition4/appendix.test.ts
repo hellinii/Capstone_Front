@@ -83,6 +83,17 @@ describe("문안 = 고정 문구 사본·예시본 부록 1 글자", () => {
     for (const c of COVERAGE_ITEMS) expect({ name: c.name, impact: c.impact }).toEqual(WORDING.appendix1.coverage[c.id]);
   });
 
+  it("예시본·B49~B58 에 없는 글 = 고정 문구 3절 승인 문단(2026-10-29)", () => {
+    const extra: string = WORDING.appendix1.approved_extra;
+    for (const row of Object.values(A.PURPOSE_ROW_TEXT)) expect(extra).toContain(`"${row.name} / ${row.need}"`);
+    expect(extra).toContain(`결과는 지표 이름 없이 "${A.PURPOSE_MET_NO_METRIC}"이다`);
+    expect(extra).toContain(`"${A.APPENDIX_OUTSIDE_HEAD}"(멀티레이블은 2곳)`);
+    expect(extra).toContain('"…제공받았다." 또는 "…충족하였다."');
+    expect(extra).toContain('"확인 후 진행 ({시각})" / "확인 기록 없음" / "안내할 부족 없음"');
+    expect(extra).toContain(`보고 항목 표에서 "멀티레이블 지표 선택 기준", 점검 수 밖 표에서 "${A.OUTSIDE_12.name}"`);
+    expect(extra).toContain(`"${A.AXIS_ROWS.faithfulness.all}"·"${A.AXIS_ROWS.coverage.all}", 아니면 B53·B55 꼴`);
+  });
+
   it("B49~B56 = 고정 문구 1.1 표 문구 칸", () => {
     expect(B(49).startsWith(`${A.B49_PARTIAL} / 예: `)).toBe(true);
     expect(B(50)).toBe(`실린 곳 "${A.APPENDIX_NONE_PLACE}", 결과 "${A.B50_NO_CI}"`);

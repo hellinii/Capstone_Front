@@ -46,7 +46,7 @@ import {
   APPENDIX_PROVIDED,
   B49_PARTIAL,
   B51_MET,
-  CANDIDATE_PURPOSE_MET_NO_METRIC,
+  PURPOSE_MET_NO_METRIC,
   OUTSIDE_12,
   OUTSIDE_13,
   OUTSIDE_13_PLACE,
@@ -396,7 +396,7 @@ function appendixEd4(input: MaterialCheckInput, judged: JudgedItem[], lines: Jud
       ? PURPOSE_UNMET
       : line.metBy.length > 0
         ? fillTemplate(B51_MET, { "지표 이름": line.metBy.map(metricName).join(", ") })
-        : CANDIDATE_PURPOSE_MET_NO_METRIC;
+        : PURPOSE_MET_NO_METRIC;
     return { name: text.name, middle: text.need, result };
   });
   return { reporting, outside, purpose, purposeNotApplied: 4 - lines.length };
