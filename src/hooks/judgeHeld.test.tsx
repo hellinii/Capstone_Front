@@ -351,3 +351,55 @@ describe("훅의 다시 만들기 막기 — 버튼 밖에서 불러도 retry_al
     expect(storedRun(RUN)!.narrative!.status).toBe("held");
   });
 });
+
+describe("검토 반영(J6) — 보류에서 빠져나갈 길", () => {
+  function seedEd4Stored(narrative: unknown, judge?: unknown) {
+    const final = readJson(resolve(FIX, "bc_strong.final.json"));
+    if (judge === undefined) delete final.judge;
+    else final.judge = judge;
+    seedEd4Pending();
+    useWorkspaceStore.setState((st) => ({
+      evaluationRuns: st.evaluationRuns.map((r) => ({ ...r, reportData: final, narrative: narrative as never })),
+    }));
+  }
+
+  it("P1 — 보류인데 저장된 요청이 없으면(너무 큼) 다시 만들기는 평가부터: 완성본 표시·옛 묶음을 거둬 잠긴 채 갇히지 않는다", async () => {
+    const { toJudgeBundle } = await import("../lib/report/judgeBundle");
+    const s = stub({});
+    seedEd4Stored({ status: "held", jobId: JOB_ID, input: null }, toJudgeBundle(held("budget", true)));
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "서술 다시 만들기" }));
+    await waitFor(() => expect(storedRun(RUN)!.narrative).toBeUndefined());
+    expect(storedRun(RUN)!.reportData.isEvaluated).toBe(false);
+    expect(storedRun(RUN)!.reportData).not.toHaveProperty("judge");
+    expect(s.count("POST", JOBS)).toBe(0);
+    // 평가 효과가 다시 돈다 — 이 run 은 평가 요청 스냅샷이 없어 '다시 평가' 안내로 간다(잠긴 성적서에 머물지 않음).
+    expect(await screen.findByText("이 평가는 다시 평가해야 합니다")).toBeInTheDocument();
+  });
+
+  it("P2 — done 으로 저장된 판 4 run 인데 심판 기록이 없으면 보류로 보여 B46 띠와 다시 만들기, 인쇄도 잠김", async () => {
+    stub({});
+    seedEd4Stored({ status: "done", jobId: JOB_ID });
+    const view = renderPage();
+    await waitFor(() => expect(banner()).toHaveTextContent(B46_LOCK_NO_RECORD));
+    expect(retryButton()).not.toBeNull();
+    expect(issueButton()).toBeDisabled();
+    view.unmount();
+    vi.stubGlobal("print", vi.fn());
+    const print = renderPrint();
+    expect(await screen.findByRole("heading", { name: B46_LOCK_NO_RECORD })).toBeInTheDocument();
+    print.unmount();
+    // 버튼이 실제로 동작한다 — 저장 상태가 done 이어도 다시 만들기가 받아 준다(요청이 없으니 평가부터).
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "서술 다시 만들기" }));
+    await waitFor(() => expect(storedRun(RUN)!.narrative).toBeUndefined());
+  });
+
+  it("판 4 통과 묶음으로 done 저장된 run 은 그대로 done(띠 없음, 발급 열림)", async () => {
+    stub({});
+    seedEd4Stored({ status: "done", jobId: JOB_ID }, readJson(resolve(FIX, "bc_strong.final.json")).judge);
+    renderPage();
+    await waitFor(() => expect(issueButton()).toBeEnabled());
+    expect(screen.queryByTestId("judge-held-banner")).toBeNull();
+  });
+});

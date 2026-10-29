@@ -66,8 +66,14 @@ export type NarrativePhase = "none" | "pending" | "done" | "held" | "failed";
 /** run 의 서술 상태. 서술 칸이 없는 옛 run 은 완성본이면 done, 아니면 아직 시작 전(none). */
 export function narrativePhaseOf(run: WorkspaceEvaluationRun | undefined): NarrativePhase {
   if (!run) return "none";
-  if (run.narrative) return run.narrative.status;
-  return run.reportData?.isEvaluated ? "done" : "none";
+  const phase: NarrativePhase = run.narrative ? run.narrative.status : run.reportData?.isEvaluated ? "done" : "none";
+  // 끝난 판 4 서술인데 심판 통과 기록이 없으면(이 칸이 생기기 전에 done 으로 저장된 판 4 run 등) 보류로 본다 — 잠금은 그대로이고,
+  // 보류 띠(B46)와 "서술 다시 만들기"가 보여 빠져나갈 길이 생긴다(심판 라운드 J6 검토 P2). 판 3 은 reportLock 이 늘 null 이다.
+  if (phase === "done" && run.reportData) {
+    const lock = reportLock("done", run.reportData);
+    if (lock === "judge_held" || lock === "judge_missing") return "held";
+  }
+  return phase;
 }
 
 /**
@@ -451,7 +457,8 @@ export function useReportData(id: string): UseReportDataResult {
     const current = getRun(id);
     // 연달아 누르면 상태가 바뀌기 전 두 번째 호출이 들어온다 — ref 로 막는다(작업이 둘 생기지 않게).
     if (!current || !current.narrative || retryingRef.current) return;
-    const status = current.narrative.status;
+    // 저장 상태가 아니라 화면과 같은 서술 상태로 본다 — done 으로 저장된 옛 판 4 run 도 보류로 다룬다(narrativePhaseOf).
+    const status = narrativePhaseOf(current);
     // 보류(판 4)는 심판 묶음이 다시 만들기를 허용할 때만(Q6 — 판정은 백엔드 retry_allowed 하나, 기록 없음은 B46 대로 허용).
     if (status === "held" ? !heldNotice(current.reportData.judge).retry : status !== "failed") return;
     const { failure, jobId: oldJobId } = current.narrative;
@@ -468,7 +475,13 @@ export function useReportData(id: string): UseReportDataResult {
     const input = current.narrative.input;
     if (!input) {
       // 저장해 둔 요청이 없으면(너무 컸음) 평가부터 다시 — 서술 상태를 지우면 평가 효과가 파일을 찾는다.
-      const err = saveRun(id, (r) => ({ ...r, narrative: undefined }));
+      // 보류(판 4)에서 왔으면 서술이 병합돼 완성본 표시가 서 있다 — 그대로 두면 서술 상태가 done 으로 읽혀 평가가 다시 돌지 않고
+      // 잠긴 채 버튼도 사라진다(J6 검토 P1). 완성본 표시와 옛 심판 묶음도 함께 거둔다.
+      const err = saveRun(id, (r) => ({
+        ...r,
+        narrative: undefined,
+        reportData: { ...withoutJudge(r.reportData), isEvaluated: false },
+      }));
       if (err) setSaveError(err);
       return;
     }
