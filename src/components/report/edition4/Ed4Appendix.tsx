@@ -31,7 +31,7 @@ import { MISSING_LEAD } from "../../../lib/report/edition4/appendix";
 import type { AppendixRow3 } from "../../../types/finalReport.types";
 
 function Subtitle({ number }: { number: keyof typeof APPENDIX_TITLES }) {
-  return <h3 className="mt-6 text-base font-semibold text-slate-800">{APPENDIX_TITLES[number]}</h3>;
+  return <h3 className="mt-6 break-after-avoid text-base font-semibold text-slate-800">{APPENDIX_TITLES[number]}</h3>;
 }
 
 function Bullets({ items }: { items: string[] }) {
@@ -47,6 +47,14 @@ function Bullets({ items }: { items: string[] }) {
 
 const rows3 = (rows: AppendixRow3[]) => rows.map((r) => [r.name, r.middle, r.result]);
 
+/**
+ * 부록 표의 인쇄 모양(J7 PDF 눈 확인) — 좁은 칸에서 한국어 낱말 중간이 끊기지 않게(keep-all), 표 머리는 한 줄로, 표 제목이 쪽 끝에
+ * 홀로 남지 않게. 글자는 바꾸지 않는다.
+ */
+const TABLE = "[word-break:keep-all] [&_th]:whitespace-nowrap";
+const AXES_TABLE = `${TABLE} [&_td:first-child]:whitespace-nowrap`;
+const TITLE = "break-after-avoid";
+
 export function Ed4Appendix({ data }: Ed4PartProps) {
   const a = data.appendix1;
   if (!a) return null;
@@ -60,23 +68,23 @@ export function Ed4Appendix({ data }: Ed4PartProps) {
       <Bullets items={a.missing} />
 
       <Subtitle number="1.2" />
-      <Ed4TableTitle>{APPENDIX_REPORTING_TITLE}</Ed4TableTitle>
-      <Ed4Table columns={APPENDIX_REPORTING_COLUMNS} rows={rows3(a.reporting)} />
+      <Ed4TableTitle className={TITLE}>{APPENDIX_REPORTING_TITLE}</Ed4TableTitle>
+      <Ed4Table className={TABLE} columns={APPENDIX_REPORTING_COLUMNS} rows={rows3(a.reporting)} />
       <Ed4Paragraph>{a.outsideHead}</Ed4Paragraph>
-      <Ed4Table columns={APPENDIX_OUTSIDE_COLUMNS} rows={rows3(a.outside)} />
-      <Ed4TableTitle>{APPENDIX_PURPOSE_TITLE}</Ed4TableTitle>
-      {a.purpose.length > 0 && <Ed4Table columns={APPENDIX_PURPOSE_COLUMNS} rows={rows3(a.purpose)} />}
+      <Ed4Table className={TABLE} columns={APPENDIX_OUTSIDE_COLUMNS} rows={rows3(a.outside)} />
+      <Ed4TableTitle className={TITLE}>{APPENDIX_PURPOSE_TITLE}</Ed4TableTitle>
+      {a.purpose.length > 0 && <Ed4Table className={TABLE} columns={APPENDIX_PURPOSE_COLUMNS} rows={rows3(a.purpose)} />}
       {a.purposeNote && <Ed4Paragraph>{a.purposeNote}</Ed4Paragraph>}
-      <Ed4TableTitle>{APPENDIX_RECORD_TITLE}</Ed4TableTitle>
-      <Ed4Table columns={APPENDIX_RECORD_COLUMNS} rows={[[APPENDIX_RECORD_ACK, a.inputRecord]]} />
+      <Ed4TableTitle className={TITLE}>{APPENDIX_RECORD_TITLE}</Ed4TableTitle>
+      <Ed4Table className={TABLE} columns={APPENDIX_RECORD_COLUMNS} rows={[[APPENDIX_RECORD_ACK, a.inputRecord]]} />
 
       <Subtitle number="1.3" />
-      <Ed4TableTitle>{APPENDIX_AXES_TITLE}</Ed4TableTitle>
-      <Ed4Table columns={APPENDIX_AXES_COLUMNS} rows={a.axes} />
+      <Ed4TableTitle className={TITLE}>{APPENDIX_AXES_TITLE}</Ed4TableTitle>
+      <Ed4Table className={AXES_TABLE} columns={APPENDIX_AXES_COLUMNS} rows={a.axes} />
       {a.checklist.length > 0 && (
         <>
-          <Ed4TableTitle>{APPENDIX_CHECKLIST_TITLE}</Ed4TableTitle>
-          <Ed4Table columns={APPENDIX_CHECKLIST_COLUMNS} rows={a.checklist} />
+          <Ed4TableTitle className={TITLE}>{APPENDIX_CHECKLIST_TITLE}</Ed4TableTitle>
+          <Ed4Table className={TABLE} columns={APPENDIX_CHECKLIST_COLUMNS} rows={a.checklist} />
         </>
       )}
       {a.checklistNote && <Ed4Paragraph>{a.checklistNote}</Ed4Paragraph>}
