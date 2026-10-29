@@ -133,3 +133,20 @@ describe("발급 글 상한 — 백엔드 대조(B16)", () => {
     expect(Number(match![1].replace(/_/g, ""))).toBe(ISSUANCE_TEXT_MAX_CHARS);
   });
 });
+
+describe("서술 작업 번호(심판 라운드 J6)", () => {
+  it("발급·정정 발급 본문에 narrative_job_id — 번호가 없으면 키를 싣지 않는다(판 3 본문 그대로)", async () => {
+    await issueReport({ runId: "run-abc", narrativeJobId: "job-1" });
+    expect(bodyOf().narrative_job_id).toBe("job-1");
+    await reissueReport("RPT-2026-0001", "정정", { runId: "run-abc", narrativeJobId: "job-2" });
+    expect(bodyOf(1).narrative_job_id).toBe("job-2");
+    await issueReport({ runId: "run-abc" });
+    expect(bodyOf(2)).not.toHaveProperty("narrative_job_id");
+  });
+
+  it("실패는 상태 코드를 함께 싣는다(409 심판 거절 안내용)", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 409, json: async () => ({ detail: "보류 (judge_not_passed)" }) });
+    await expect(issueReport({ runId: "r" })).rejects.toMatchObject({ status: 409, message: "보류 (judge_not_passed)" });
+    await expect(reissueReport("RPT-2026-0001", "x", { runId: "r" })).rejects.toMatchObject({ status: 409 });
+  });
+});

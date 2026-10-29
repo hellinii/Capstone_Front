@@ -13,12 +13,17 @@ import { Button } from "../ui/button";
 import type { FileFingerprint } from "../../lib/report/evaluationRequest";
 import { isRetryable, type NarrativeFailure, type NarrativeJobStage } from "../../lib/report/narrativeJobApi";
 import { ed4ProgressHeadBefore } from "../../lib/report/edition4/render/recordLines";
+import { B35_STAGE_JUDGING } from "../../lib/report/edition4/edition4Text";
+import type { JudgeBundle } from "../../lib/report/judgeBundle";
+import { heldNotice } from "../../lib/report/judgeNotice";
 
 /** 진행 단계 이름(화면용). */
 export const NARRATIVE_STAGE_LABEL: Record<NarrativeJobStage, string> = {
   queued: "대기 중",
   generating: "생성 중",
   checking: "검사 중",
+  // 판 4 심판 채점(고정 문구 B35). 판 3 작업은 이 단계를 거치지 않는다. 심판이 건 칸을 다시 만들 때도 "다시 만드는 중"(B36).
+  judging: B35_STAGE_JUDGING,
   regenerating: "다시 만드는 중",
   done: "완료",
   failed: "실패",
@@ -136,7 +141,7 @@ export function ReportNeedsReevaluationState() {
   );
 }
 
-/** 서술 진행 띠(pending) 또는 실패 띠(failed) + "서술 다시 만들기". */
+/** 서술 진행 띠(pending), 실패 띠(failed), 판 4 발급 보류 띠(held) + "서술 다시 만들기". */
 export function NarrativeStatusBanner({
   phase,
   stage,
@@ -144,14 +149,17 @@ export function NarrativeStatusBanner({
   retrying,
   onRetry,
   edition4 = false,
+  judge,
 }: {
-  phase: "none" | "pending" | "done" | "failed";
+  phase: "none" | "pending" | "done" | "held" | "failed";
   stage: NarrativeJobStage | null;
   failure?: NarrativeFailure;
   retrying: boolean;
   onRetry: () => void;
   /** 판 4 run 이면 띠 앞 글을 판 4 절 번호로(부록 B27). 판 3 글은 그대로. */
   edition4?: boolean;
+  /** 판 4 심판 묶음 — 보류 띠의 둘째 줄과 다시 만들기를 정한다(B37~B46). 없으면 "심판 기록 없음". */
+  judge?: JudgeBundle;
 }) {
   // 서버에 닿지 않았거나 기다리다 포기했으면 다시 만들기는 원래 작업부터 다시 본다 — 버튼 이름도 그렇게.
   const recheck = failure === "unreachable" || failure === "gave_up";
@@ -167,6 +175,26 @@ export function NarrativeStatusBanner({
           지표·차트는 이미 확정된 결과이며, 서술은 끝나는 대로 채워집니다. 그동안 인쇄·발급은 잠깁니다.
         </span>
       </div>
+    );
+  }
+  if (phase === "held") {
+    const notice = heldNotice(judge);
+    return (
+      <Alert variant="destructive" className="mb-4" data-testid="judge-held-banner">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            <span className="block font-medium">{notice.head}</span>
+            {notice.line && <span className="block">{notice.line}</span>}
+          </span>
+          {notice.retry && (
+            <Button size="sm" variant="outline" className="shrink-0 gap-1.5" disabled={retrying} onClick={onRetry}>
+              <RefreshCw className="size-4" />
+              {retrying ? "다시 만드는 중..." : "서술 다시 만들기"}
+            </Button>
+          )}
+        </AlertDescription>
+      </Alert>
     );
   }
   if (phase === "failed") {
@@ -237,8 +265,12 @@ export function IssuedEmptyNarrativeNotice() {
   );
 }
 
-/** 인쇄 화면 — 서술까지 끝난 완성본만 인쇄한다. */
-export function NotPrintableState() {
+/**
+ * 인쇄 화면 — 서술까지 끝난 완성본만 인쇄한다. 판 4 가 심판 보류·기록 없음으로 잠겼으면 제목을 그 잠금 이유(B45·B46)로 바꾼다
+ * (`reason` — 서술이 끝나지 않았다는 판 3 글은 이 경우에 틀린 말이다).
+ */
+export function NotPrintableState({ reason }: { reason?: string }) {
+  if (reason) return <CenteredState title={reason}>{null}</CenteredState>;
   return (
     <CenteredState title="서술이 끝나지 않아 인쇄할 수 없습니다">
       <p>성적서 화면에서 서술이 끝난 뒤(또는 서술을 다시 만든 뒤) PDF 다운로드를 다시 눌러 주세요.</p>

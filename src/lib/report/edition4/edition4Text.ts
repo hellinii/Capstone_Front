@@ -265,3 +265,27 @@ export const B29_RULE_NAME = "입력 점검 규칙";
 export const B30_NOT_PROVIDED = "제공되지 않음";
 /** 부록 B33(2026-10-26 확정) — 멀티레이블, 학습 표본 수 없음(저장 이유 코드 training_samples_not_provided). */
 export const B33_NO_TRAINING_SAMPLES = "제공되지 않음 — 학습 표본 수가 제공되지 않아 학습·평가 비율을 비교하지 않았다.";
+
+/*
+ * 심판 라운드 J6 화면 문안(고정 문구 1.1 표 B35~B48, 2026-10-29 Q7 승인 문안 그대로) — 판 4 성적서 화면에만. 판 3 화면 글은 그대로다.
+ */
+/** B35 — 진행 단계 judging 이름. B36(regenerating)은 지금 이름 "다시 만드는 중" 그대로라 상수를 따로 두지 않는다. */
+export const B35_STAGE_JUDGING = "검증 중";
+/** B37 — 발급 보류 띠 머리(모든 보류 공통). */
+export const B37_HELD_HEAD = "발급 보류 — 자동 검증을 통과하지 못해 인쇄·발급할 수 없습니다. 운영자에게 알렸습니다.";
+/** B38~B44 — 보류 띠 둘째 줄(보류 종류별). judge_error 는 백엔드 retry_allowed 로 두 글 중 하나를 고른다(B40). */
+export const B38_HELD_GATE_FAILED = "서술이 시험 결과와 맞는지 확인하지 못했습니다.";
+export const B39_HELD_TIMEOUT = "검증이 제한 시간(10분) 안에 끝나지 않았습니다.";
+export const B40_HELD_JUDGE_ERROR_RETRY = "검증 서버와 연결이 원활하지 않아 검증을 마치지 못했습니다.";
+export const B40_HELD_JUDGE_ERROR = "검증을 마치지 못했습니다.";
+export const B41_HELD_NO_KEY = "검증 기능이 설정되지 않아 검증하지 못했습니다.";
+export const B42_HELD_BUDGET = "검증 요청이 많아 잠시 받을 수 없습니다. 한 시간쯤 뒤에 서술을 다시 만들어 주세요.";
+export const B43_HELD_JOB_LIMIT = "요청이 많아 검증하지 못했습니다. 한 시간쯤 뒤에 다시 평가해 주세요.";
+export const B44_HELD_NO_MATERIAL = "성적서가 너무 커서 검증 자료를 함께 보내지 못했습니다.";
+/** B45·B46 — 인쇄·발급 버튼 옆 잠금 이유(보류 / 심판 기록 없음·모르는 값). */
+export const B45_LOCK_HELD = "자동 검증을 통과하지 못해 인쇄·발급할 수 없습니다.";
+export const B46_LOCK_NO_RECORD = "자동 검증 기록이 없어 인쇄·발급할 수 없습니다. 서술을 다시 만들어 주세요.";
+/** B47 — 작성 기록 "검증 모델" 줄(통과한 판 4, 화면에만). */
+export const B47_JUDGE_MODEL = "검증 모델: {모델 이름} (점검 기준 {버전})";
+/** B48 — 화면 잠금을 피해 서버가 발급을 거절(409)했을 때. 서버 글 끝 괄호의 사유 코드는 그대로 둔다(문의용). */
+export const B48_SERVER_REJECTED = "서버가 발급을 거절했습니다: {서버 글}";

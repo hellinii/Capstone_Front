@@ -371,6 +371,105 @@
     "distributionAnalysis": "〔7.2 칸 서술 — yeast_strong〕"
   },
   "isEvaluated": true,
+  "judge": {
+    "axes": [
+      "faithfulness",
+      "consistency",
+      "coverage",
+      "readability"
+    ],
+    "counts": {
+      "consistency": {
+        "checked": 21,
+        "contradictions": 0
+      },
+      "coverage": {
+        "applicable": 13,
+        "described": 12,
+        "items": [
+          {
+            "described": true,
+            "id": "분석-1",
+            "place": "5.2"
+          },
+          {
+            "described": true,
+            "id": "분석-3",
+            "place": "5.3"
+          },
+          {
+            "described": true,
+            "id": "분석-4",
+            "place": "5.2"
+          },
+          {
+            "described": true,
+            "id": "분석-5",
+            "place": "5.2"
+          },
+          {
+            "described": true,
+            "id": "소견-1",
+            "place": "5.1"
+          },
+          {
+            "described": true,
+            "id": "소견-2",
+            "place": "5.4"
+          },
+          {
+            "described": true,
+            "id": "소견-3",
+            "place": "5.4"
+          },
+          {
+            "described": true,
+            "id": "소견-5",
+            "place": "5.5"
+          },
+          {
+            "described": false,
+            "id": "소견-6",
+            "place": null
+          },
+          {
+            "described": true,
+            "id": "소견-8",
+            "place": "5.4"
+          },
+          {
+            "described": true,
+            "id": "권고-1",
+            "place": "6.1"
+          },
+          {
+            "described": true,
+            "id": "권고-2",
+            "place": "6.2"
+          },
+          {
+            "described": true,
+            "id": "권고-3",
+            "place": "6.1"
+          }
+        ],
+        "notApplicable": 5
+      },
+      "faithfulness": {
+        "checked": 52,
+        "matched": 52
+      },
+      "readability": {
+        "rules": 2,
+        "violations": 0
+      }
+    },
+    "criteriaVersion": "1.0",
+    "gate": "passed",
+    "heldKind": null,
+    "model": "gpt-6.1-sol",
+    "retryAllowed": false
+  },
   "judgedValueDigits": true,
   "kpiResults": [
     {

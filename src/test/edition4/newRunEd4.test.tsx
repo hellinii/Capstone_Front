@@ -21,6 +21,7 @@ const ctl = vi.hoisted(() => ({
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
+  const { JOBS_JSON, withPassedJudge } = await import("./passedJudge");
   const OLD = /([\\/])edition3\1newRun\1inputs\1(\w+)\.evaluate\.json$/;
   const readFileSync = ((path: unknown, ...rest: unknown[]) => {
     const m = typeof path === "string" ? OLD.exec(path) : null;
@@ -28,6 +29,11 @@ vi.mock("node:fs", async (importOriginal) => {
       ctl.redirected += 1;
       const sep = m[1];
       path = (path as string).replace(OLD, `${sep}edition4${sep}evaluateNewKeys${sep}${m[2]}.evaluate.json`);
+    }
+    // 판 4 run 의 작업 응답에 통과 심판 묶음(심판 라운드 J6 — 없으면 닫힌 쪽 기본값대로 보류된다, `passedJudge.ts`).
+    if (typeof path === "string" && JOBS_JSON.test(path)) {
+      const raw = (actual.readFileSync as (...a: unknown[]) => unknown)(path, "utf8") as string;
+      return withPassedJudge(raw, (p) => (actual.readFileSync as (...a: unknown[]) => unknown)(p, "utf8") as string);
     }
     return (actual.readFileSync as (...a: unknown[]) => unknown)(path, ...rest);
   }) as typeof actual.readFileSync;

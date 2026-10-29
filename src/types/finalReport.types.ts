@@ -2,6 +2,7 @@ import type { NarrativeFacts } from "../lib/report/narrativeFacts";
 import type { DistributionEd4 } from "../lib/report/edition4/distributionEd4";
 import type { ThresholdTableEd4 } from "../lib/report/edition4/thresholdGainEd4";
 import type { VerdictEd4 } from "../lib/report/edition4/verdictEd4";
+import type { JudgeBundle } from "../lib/report/judgeBundle";
 import type { TaskType } from "../data/evaluationData";
 import type { ConfusionMatrixData, ReportRecommendation } from "./report.types";
 import type { ValidationGroup } from "./validation.types";
@@ -587,6 +588,12 @@ export interface FinalReportData {
    * 이 칸이 생기기 전 저장본과 모델을 알려 주지 않는 서버 응답에는 없다.
    */
   narrativeModels?: Record<string, string | null>;
+  /**
+   * 판 4 서술 작업의 고객용 심판 묶음(심판 라운드 J6, 작업 응답 result.judge — `judgeBundle.ts`). 판 4 성적서는 이 묶음의
+   * gate 가 passed 일 때만 인쇄·발급이 열린다(`reportLock.ts`). 판 3 작업 결과에는 없다. 서술을 합칠 때 통째로 갈아 끼우고,
+   * 새 서술 작업을 만들 때 지운다(옛 작업의 기록이 새 서술에 남지 않게).
+   */
+  judge?: JudgeBundle;
   /**
    * 서술까지 끝난 완성본인가. 이것이 true 일 때만 발급·PDF·인쇄가 열린다(서술 라운드 S3b — 끝나지 않은 서술은
    * 완성본이 아니다). 성적서 훅이 서술 작업이 끝났을(done) 때만 세운다.

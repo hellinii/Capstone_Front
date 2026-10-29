@@ -1,5 +1,5 @@
 {
-  "$provenance": "판 4 렌더 시험 입력(digits_strong). benchmark_refs = 백엔드 build_benchmark_refs(edition=4)를 판 4 계약 예시 fact_sheet_multiclass_ed4.json 에 돌린 값. 서술 칸은 센티널 글, 권고 행은 그 요청의 문제마다 한 행(실제 문제 번호). 8.1 칸만 규칙 문장(fallback, 모델 없음).",
+  "$provenance": "판 4 렌더 시험 입력(digits_strong). benchmark_refs = 백엔드 build_benchmark_refs(edition=4)를 판 4 계약 예시 fact_sheet_multiclass_ed4.json 에 돌린 값. 서술 칸은 센티널 글, 권고 행은 그 요청의 문제마다 한 행(실제 문제 번호). 8.1 칸만 규칙 문장(fallback, 모델 없음). 심판 라운드 J6(2026-10-29): done.result.judge 에 통과 묶음을 더함 — 건수·체크리스트 자리는 렌더 시험용 합성 값(bc_strong 체크리스트 자리는 예시본 부록 1.3, 6절 권고는 실제 인쇄 자리 6.1), 실호출 결과가 아니다.",
   "created": {
     "job_id": "job-ed4r-digits_strong",
     "status": "running",
@@ -224,6 +224,115 @@
         "8.2": "claude-sonnet-5-5",
         "8.3": "claude-sonnet-5-5",
         "9": "claude-sonnet-5-5"
+      },
+      "judge": {
+        "gate": "passed",
+        "held_kind": null,
+        "retry_allowed": false,
+        "criteria_version": "1.0",
+        "model": "gpt-6.1-sol",
+        "axes": [
+          "faithfulness",
+          "consistency",
+          "coverage",
+          "readability"
+        ],
+        "counts": {
+          "faithfulness": {
+            "checked": 64,
+            "matched": 64
+          },
+          "consistency": {
+            "checked": 27,
+            "contradictions": 0
+          },
+          "coverage": {
+            "applicable": 15,
+            "described": 12,
+            "not_applicable": 3,
+            "items": [
+              {
+                "id": "분석-1",
+                "described": true,
+                "place": "5.2"
+              },
+              {
+                "id": "분석-2",
+                "described": true,
+                "place": "5.2"
+              },
+              {
+                "id": "분석-3",
+                "described": true,
+                "place": "5.3"
+              },
+              {
+                "id": "분석-4",
+                "described": true,
+                "place": "4.4"
+              },
+              {
+                "id": "분석-5",
+                "described": false,
+                "place": null
+              },
+              {
+                "id": "분석-6",
+                "described": true,
+                "place": "5.3"
+              },
+              {
+                "id": "소견-1",
+                "described": true,
+                "place": "5.1"
+              },
+              {
+                "id": "소견-2",
+                "described": true,
+                "place": "5.4"
+              },
+              {
+                "id": "소견-3",
+                "described": true,
+                "place": "5.4"
+              },
+              {
+                "id": "소견-5",
+                "described": true,
+                "place": "5.5"
+              },
+              {
+                "id": "소견-6",
+                "described": true,
+                "place": "5.1"
+              },
+              {
+                "id": "소견-8",
+                "described": false,
+                "place": null
+              },
+              {
+                "id": "권고-1",
+                "described": true,
+                "place": "6.1"
+              },
+              {
+                "id": "권고-2",
+                "described": true,
+                "place": "6.1"
+              },
+              {
+                "id": "권고-3",
+                "described": false,
+                "place": null
+              }
+            ]
+          },
+          "readability": {
+            "rules": 2,
+            "violations": 0
+          }
+        }
       }
     }
   }

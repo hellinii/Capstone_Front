@@ -40,6 +40,8 @@ import {
   type NarrativeJobStage,
 } from "../lib/report/narrativeJobApi";
 import { resolveTaskType } from "../data/evaluationData";
+import { reportLock, type ReportLockReason } from "../lib/report/reportLock";
+import { heldNotice } from "../lib/report/judgeNotice";
 
 /** 조회 설정. 테스트가 간격을 줄이려고 고칠 수 있게 객체로 둔다(수치를 테스트에 박지 않는다). */
 export const narrativePolling = {
@@ -58,7 +60,8 @@ export const narrativePolling = {
 /** 다시 만들기용 서술 요청을 run 에 저장하는 상한(직렬화 글자 수). 넘으면 남기지 않고 다시 만들기는 평가부터 한다. */
 export const NARRATIVE_INPUT_MAX_CHARS = 400_000;
 
-export type NarrativePhase = "none" | "pending" | "done" | "failed";
+/** held — 판 4 서술은 끝났지만 심판 보류·심판 기록 없음(인쇄·발급 잠김, 서술은 보임). 심판 라운드 J6. */
+export type NarrativePhase = "none" | "pending" | "done" | "held" | "failed";
 
 /** run 의 서술 상태. 서술 칸이 없는 옛 run 은 완성본이면 done, 아니면 아직 시작 전(none). */
 export function narrativePhaseOf(run: WorkspaceEvaluationRun | undefined): NarrativePhase {
@@ -257,10 +260,12 @@ function stillWaitingFor(run: WorkspaceEvaluationRun, jobId: string): boolean {
 /** 1단계 성적서에 끝난 서술을 병합해 완성본으로. verdict/score 는 규칙 산출값, 서술(benchmark/narrative/risks)만 병합한다. */
 function mergeNarrative(report: FinalReportData, fields: NarrativeFields, benchmarkRefs: BenchmarkRef[]): FinalReportData {
   // 칸별 모델(작성 기록, 사용자 결정 4). 모델을 알려 주지 않은 응답이면 키를 두지 않는다 — 이전 서술의 기록도 남기지 않는다.
-  const { narrativeModels: _previous, ...rest } = report;
+  // 심판 묶음도 통째로 갈아 끼운다 — 이번 작업이 묶음을 주지 않았으면 옛 작업의 묶음을 남기지 않는다(심판 라운드 J6).
+  const { narrativeModels: _previous, judge: _previousJudge, ...rest } = report;
   return {
     ...rest,
     ...(fields.sectionModels ? { narrativeModels: fields.sectionModels } : {}),
+    ...(fields.judge ? { judge: fields.judge } : {}),
     conclusion: {
       ...report.conclusion,
       ...fields.conclusionText,
@@ -275,13 +280,33 @@ function mergeNarrative(report: FinalReportData, fields: NarrativeFields, benchm
   };
 }
 
+/**
+ * 끝난 서술의 저장 상태 — 판 4 성적서가 심판을 통과하지 못했거나 심판 기록이 없으면 held(서술 요청을 남겨 다시 만들기에 쓴다),
+ * 그 밖은 done. 갈림은 잠금 판정 한 곳(`reportLock`)으로 본다 — 여기서 gate 를 따로 읽지 않는다.
+ */
+function finishedState(
+  merged: FinalReportData,
+  jobId: string | null,
+  input: NarrativeRequestPayload | null | undefined,
+): NonNullable<WorkspaceEvaluationRun["narrative"]> {
+  const lock = reportLock("done", merged);
+  if (lock === "judge_held" || lock === "judge_missing") return { status: "held", jobId, input: input ?? null };
+  return { status: "done", jobId };
+}
+
 function saveDone(id: string, jobId: string, view: Extract<JobView, { kind: "done" }>): string | null {
   const run = getRun(id);
   if (!run || !stillWaitingFor(run, jobId)) return null;
   const merged = mergeNarrative(run.reportData, view.fields, view.benchmarkRefs);
   return saveRun(id, (r) =>
-    stillWaitingFor(r, jobId) ? { ...r, reportData: merged, narrative: { status: "done", jobId } } : r,
+    stillWaitingFor(r, jobId) ? { ...r, reportData: merged, narrative: finishedState(merged, jobId, r.narrative?.input) } : r,
   );
+}
+
+/** 새 서술 작업을 만들 때 옛 작업의 심판 묶음을 지운다 — 새 서술에 옛 판정이 붙어 보이거나 잠금이 풀리지 않게. */
+function withoutJudge(report: FinalReportData): FinalReportData {
+  const { judge: _judge, ...rest } = report;
+  return rest;
 }
 
 /** 작업 생성 결과를 run 에 저장할 모양으로 — 처음 평가 뒤와 다시 만들기가 같이 쓴다. */
@@ -292,19 +317,25 @@ function applyCreated(
   input: NarrativeRequestPayload | null,
 ): WorkspaceEvaluationRun {
   if (created.kind === "finished") {
-    return { ...run, reportData: mergeNarrative(report, created.fields, created.benchmarkRefs), narrative: { status: "done", jobId: null } };
+    // 행 없이 바로 끝난 결과(작업 행 상한) — 판 4 면 심판 보류(job_limit)가 함께 온다. 다시 만들기용 요청도 같은 규칙으로 남긴다.
+    const merged = mergeNarrative(report, created.fields, created.benchmarkRefs);
+    return { ...run, reportData: merged, narrative: finishedState(merged, null, input) };
   }
   if (created.kind === "started") {
     return {
       ...run,
       // 8.1 표는 작업 생성 응답으로 서술보다 먼저 채운다(점검 유-2).
-      reportData: { ...report, conclusion: { ...report.conclusion, benchmarkRefs: created.benchmarkRefs }, isEvaluated: false },
+      reportData: {
+        ...withoutJudge(report),
+        conclusion: { ...report.conclusion, benchmarkRefs: created.benchmarkRefs },
+        isEvaluated: false,
+      },
       narrative: { status: "pending", jobId: created.jobId, input, startedAt: new Date().toISOString() },
     };
   }
   return {
     ...run,
-    reportData: { ...report, isEvaluated: false },
+    reportData: { ...withoutJudge(report), isEvaluated: false },
     narrative: { status: "failed", jobId: null, failure: created.failure, input },
   };
 }
@@ -419,7 +450,10 @@ export function useReportData(id: string): UseReportDataResult {
   const retryNarrative = useCallback(async () => {
     const current = getRun(id);
     // 연달아 누르면 상태가 바뀌기 전 두 번째 호출이 들어온다 — ref 로 막는다(작업이 둘 생기지 않게).
-    if (!current || current.narrative?.status !== "failed" || retryingRef.current) return;
+    if (!current || !current.narrative || retryingRef.current) return;
+    const status = current.narrative.status;
+    // 보류(판 4)는 심판 묶음이 다시 만들기를 허용할 때만(Q6 — 판정은 백엔드 retry_allowed 하나, 기록 없음은 B46 대로 허용).
+    if (status === "held" ? !heldNotice(current.reportData.judge).retry : status !== "failed") return;
     const { failure, jobId: oldJobId } = current.narrative;
     // 서버에 닿지 않았거나 프론트가 기다리다 포기한 경우, 원래 작업은 서버에서 아직 돌거나 끝났을 수 있다. 새 유료 작업을
     // 만들기 전에 원래 작업 번호로 다시 조회한다 — 서버가 실패·유실을 알리면 그때 다시 만들기가 새 작업을 만든다.
@@ -484,11 +518,15 @@ export function useReportData(id: string): UseReportDataResult {
 export function useStoredReport(id: string): {
   data: FinalReportData | null;
   status: "not_found" | "not_printable" | "ready";
+  /** 잠금 이유(not_printable 일 때). */
+  lock?: ReportLockReason | null;
 } {
   const run = useWorkspaceStore((state) => state.evaluationRuns.find((item) => item.id === id));
   const reportData = run?.reportData;
   const data = useMemo(() => (reportData ? normalizeReportContent(reportData) : null), [reportData]);
   if (!run || !data) return { data: null, status: "not_found" };
-  if (narrativePhaseOf(run) !== "done" || !data.isEvaluated) return { data, status: "not_printable" };
-  return { data, status: "ready" };
+  // 잠금 판정은 성적서 화면·발급 훅과 같은 한 곳(`reportLock`) — 판 4 는 심판 통과 기록이 있어야 인쇄한다.
+  const lock = reportLock(narrativePhaseOf(run), data);
+  if (lock !== null) return { data, status: "not_printable", lock };
+  return { data, status: "ready", lock: null };
 }

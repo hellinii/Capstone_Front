@@ -17,9 +17,10 @@ import type {
 import type { ReportRecommendation } from "../../types/report.types";
 import type { NarrativeRequestPayload } from "./buildFactSheet";
 import { apiUrl } from "@/lib/apiBase";
+import { toJudgeBundle, type JudgeBundle } from "./judgeBundle";
 
-/** 작업 단계 — 백엔드 `JobStage`. 화면 진행 표시에만 쓰고 저장하지 않는다. */
-export type NarrativeJobStage = "queued" | "generating" | "checking" | "regenerating" | "done" | "failed";
+/** 작업 단계 — 백엔드 `JobStage`. 화면 진행 표시에만 쓰고 저장하지 않는다. judging 은 판 4 심판 채점(심판 라운드 J5b·J6). */
+export type NarrativeJobStage = "queued" | "generating" | "checking" | "judging" | "regenerating" | "done" | "failed";
 
 /**
  * 실패 종류. 앞의 넷은 백엔드가 알려 준다(timeout: 전체 10분 제한, lost: 서버 재시작 등으로 멈춤, error: 작업 중 오류,
@@ -56,6 +57,11 @@ export interface NarrativeFields {
   sectionModels?: Record<string, string | null>;
   /** 성적서 전체 출처(옛 배지용) — 칸이 모두 llm 이면 llm, 하나라도 아니면 fallback. */
   source: "llm" | "fallback";
+  /**
+   * 판 4 고객용 심판 묶음(`result.judge`). 판 3 작업이거나, 키가 없거나 모양이 틀리면 undefined — 판 4 성적서는 그때 잠긴다
+   * (닫힌 쪽, `reportLock.ts`).
+   */
+  judge?: JudgeBundle;
 }
 
 const TARGET_POSITIONS: readonly BenchmarkTargetPosition[] = ["below", "within", "above"];
@@ -156,6 +162,7 @@ export function mapNarrativeResult(n: any): NarrativeFields {
     sectionSources,
     sectionModels: toSectionModels(n?.section_models),
     source: values.length > 0 && values.every((v) => v === "llm") ? "llm" : "fallback",
+    judge: toJudgeBundle(n?.judge),
   };
 }
 
@@ -204,7 +211,7 @@ export type JobView =
   | { kind: "unreachable" };
 
 const SERVER_FAILURES: readonly NarrativeFailure[] = ["timeout", "lost", "error", "expired"];
-const STAGES: readonly NarrativeJobStage[] = ["queued", "generating", "checking", "regenerating", "done", "failed"];
+const STAGES: readonly NarrativeJobStage[] = ["queued", "generating", "checking", "judging", "regenerating", "done", "failed"];
 
 /** 작업 하나를 조회한다. 없는 번호(404)는 유실로 본다 — 서버 DB 가 바뀌었거나 행이 지워졌다. */
 export async function fetchNarrativeJob(jobId: string): Promise<JobView> {

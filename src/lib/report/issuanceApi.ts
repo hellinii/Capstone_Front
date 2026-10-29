@@ -54,6 +54,11 @@ export interface IssuePayload {
    * 인쇄물 진위를 대조할 수 있게 한다(F-01). 상한 1 MiB.
    */
   content?: unknown;
+  /**
+   * 서술 작업 번호(심판 라운드 J6). 판 4 성적서는 서버가 이 작업이 "판 4 · 완료 · 심판 통과"인지 보고 아니면 409 로 거절한다
+   * (`app/issuance/judge_gate.py`). 판 3 성적서는 서버가 보지 않는다.
+   */
+  narrativeJobId?: string;
 }
 
 export interface ReissueOptions {
@@ -66,6 +71,19 @@ export interface ReissueOptions {
   /** 정정된 성적서 원본. 이전 차수 스냅샷은 서버가 보존한다. */
   content?: unknown;
   issuer?: string;
+  /** 서술 작업 번호 — 정정 발급도 첫 발급과 같은 서버 검사를 받는다(계획 14-9a). */
+  narrativeJobId?: string;
+}
+
+/** 발급·정정 발급 실패 — 서버 상태 코드를 함께 싣는다(409 심판 거절 안내를 고르려고, 심판 라운드 J6). */
+export class IssuanceRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "IssuanceRequestError";
+  }
 }
 
 // ── KST 표시 포맷터 ────────────────────────────────────────────────────────────
@@ -180,9 +198,10 @@ export async function issueReport(payload: IssuePayload): Promise<IssuanceResult
       note: payload.note ?? null,
       issuer: payload.issuer ?? null,
       content: payload.content ?? null,
+      ...(payload.narrativeJobId ? { narrative_job_id: payload.narrativeJobId } : {}),
     }),
   });
-  if (!resp.ok) throw new Error(await errorDetail(resp, "발급에 실패했습니다."));
+  if (!resp.ok) throw new IssuanceRequestError(await errorDetail(resp, "발급에 실패했습니다."), resp.status);
   return mapIssuance(await resp.json());
 }
 
@@ -200,9 +219,10 @@ export async function reissueReport(
       note,
       issuer: options.issuer ?? null,
       content: options.content ?? null,
+      ...(options.narrativeJobId ? { narrative_job_id: options.narrativeJobId } : {}),
     }),
   });
-  if (!resp.ok) throw new Error(await errorDetail(resp, "재발급에 실패했습니다."));
+  if (!resp.ok) throw new IssuanceRequestError(await errorDetail(resp, "재발급에 실패했습니다."), resp.status);
   return mapIssuance(await resp.json());
 }
 
