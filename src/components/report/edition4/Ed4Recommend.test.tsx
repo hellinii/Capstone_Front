@@ -5,6 +5,8 @@
  * - 대기·실패, B19(한쪽만 문제), 고정 문구 6(문제 0개), 번호 없는 권고, 9 칸 배지는 픽스처 복사본으로.
  */
 import { render } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { byNumberText, exampleBlock, exampleLines, printText, screenText, type ExampleLine } from "../../../test/edition4/render/renderEd4";
@@ -211,5 +213,55 @@ describe("픽스처에 없는 갈래(복사본)", () => {
     expect(lines[2]).toBe("자동 서술 생성 연동 예정 — 계산된 지표를 바탕으로 한 권고가 표시됩니다.");
     const at = lines.indexOf("6.2 모델과 운영");
     expect(lines.slice(at + 1, at + 3)).toEqual(["첫 문단.", "둘째 문단."]);
+  });
+});
+
+/**
+ * 권고 표 인쇄 모양(심판 라운드 세션 5 끝) — PDF 눈 확인에서 6절 권고 표 칸이 낱말 중간에서 끊겼다("우/선/순/위"·"데이/터가").
+ * 부록 1 표(J7)와 같은 keep-all·머리 한 줄에 우선순위 칸 한 줄을 판 4 권고 표에만 건다. 판 3 9절 권고 표(RecommendSection)는
+ * 다른 부품이라 그대로여야 한다 — 같은 모양이 판 3 쪽으로 새면 아래 대조 시험이 깨진다(판 3 정답은 archive·edition3 정답 시험이 지킴).
+ */
+describe("권고 표 모양 — 판 4 에만 낱말 단위 줄바꿈", () => {
+  const KEEP = ["[word-break:keep-all]", "[&_th]:whitespace-nowrap", "[&_td:first-child]:whitespace-nowrap"];
+  const recommendTables = (root: Element) => [
+    ...root.querySelectorAll<HTMLTableElement>('[data-ed4-part="Ed4Recommend"] table'),
+  ];
+
+  it.each(["bc_strong", "digits_strong", "yeast_strong"] as const)("%s 인쇄 — 6절 권고 표마다 keep-all·머리 한 줄·우선순위 한 줄", async (tag) => {
+    let tables: HTMLTableElement[] = [];
+    await printText(loadEd4(tag, "issued"), undefined, { inspect: (root) => (tables = recommendTables(root)) });
+    expect(tables.length).toBeGreaterThan(0);
+    for (const table of tables) {
+      expect(table.querySelector("th")?.textContent).toBe("우선순위");
+      for (const cls of KEEP) expect(table.classList.contains(cls), cls).toBe(true);
+    }
+  });
+
+  it("화면도 같은 모양(부품 하나)", () => {
+    const view = render(<Ed4Recommend data={loadEd4("bc_strong", "issued")} mode="screen" />);
+    const tables = recommendTables(view.container);
+    expect(tables).toHaveLength(2);
+    for (const table of tables) for (const cls of KEEP) expect(table.classList.contains(cls), cls).toBe(true);
+    view.unmount();
+  });
+
+  it("판 3 대조 — 실제 판 3 발급본(RPT-2026-0001) 인쇄의 9절 권고 표에는 keep-all 이 없고 표 class 가 예전 그대로", async () => {
+    const ed3 = JSON.parse(
+      readFileSync(resolve(__dirname, "../../../test/archive/issued/RPT-2026-0001.content.json"), "utf8"),
+    ) as FinalReportData;
+    let html = "";
+    let classes: string[] = [];
+    await printText(ed3, undefined, {
+      inspect: (root) => {
+        html = root.innerHTML;
+        classes = [...root.querySelectorAll("table")]
+          .filter((t) => t.querySelector("th")?.textContent === "우선순위")
+          .map((t) => t.className);
+      },
+    });
+    expect(html).not.toContain('data-ed4-part="Ed4Recommend"');
+    expect(classes.length, "판 3 권고 표가 그려져야 대조가 빈 이빨이 아니다").toBeGreaterThan(0);
+    for (const c of classes) expect(c).toBe("w-full text-sm border-collapse");
+    expect(html).not.toContain("keep-all");
   });
 });

@@ -5,6 +5,8 @@
  * - 9 칸 배지(규칙 기반)는 판 3 9절처럼 절 제목 옆에, **화면에만**.
  * - 자동 작성 표시(서술 설계 D54): 9 칸은 6.1·6.2 서술과 권고표가 한 칸(D36)이라 소절마다 서술과 권고표를 `Ed4AutoMark` 로 감싼다
  *   (둘 다면 한 줄로 이어서). 소절 제목·고정 문구 6·자리표시는 감싸지 않는다(판정은 `ed4RecommendLayout` 의 `autoMarked`).
+ * - 권고 표 모양(심판 라운드 세션 5 끝): 부록 1 표처럼 한국어 낱말 단위 줄바꿈(keep-all)·표 머리 한 줄·우선순위 칸 한 줄
+ *   (`ED4_KEEP_WORDS_TABLE_SHORT_FIRST`). 판 3 9절 권고 표(`sections/RecommendSection`)는 다른 부품이라 그대로다.
  */
 import { SectionSourceBadge } from "../shared/SectionSourceBadge";
 import { Ed4SlotBodyView, Ed4SlotHeading } from "./Ed4Findings";
@@ -12,7 +14,7 @@ import { Ed4AutoMark } from "./shared/Ed4AutoMark";
 import type { Ed4PartProps } from "./shared/ed4PartProps";
 import { Ed4SectionTitle } from "./shared/Ed4Headings";
 import { Ed4Paragraph } from "./shared/Ed4Paragraph";
-import { Ed4Table } from "./shared/Ed4Table";
+import { ED4_KEEP_WORDS_TABLE_SHORT_FIRST, Ed4Table } from "./shared/Ed4Table";
 import { NO_PROBLEM_SENTENCE } from "../../../lib/report/reportConstants";
 import { ed4RecommendLayout, type Ed4RecommendSide } from "../../../lib/report/edition4/render/recommendEd4";
 import { EX_RECOMMEND_COLUMNS } from "../../../lib/report/edition4/render/recommendText";
@@ -23,7 +25,7 @@ import { EX_RECOMMEND_COLUMNS } from "../../../lib/report/edition4/render/recomm
  */
 function Ed4RecommendSideBody({ side }: { side: Ed4RecommendSide }) {
   const body = <Ed4SlotBodyView body={side.body} />;
-  const table = side.rows && <Ed4Table columns={EX_RECOMMEND_COLUMNS} rows={side.rows} />;
+  const table = side.rows && <Ed4Table className={ED4_KEEP_WORDS_TABLE_SHORT_FIRST} columns={EX_RECOMMEND_COLUMNS} rows={side.rows} />;
   const marked = side.autoMarked;
   if (marked.body && marked.rows) {
     return (

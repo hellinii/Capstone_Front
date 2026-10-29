@@ -8,7 +8,7 @@
  */
 import { Ed4TableTitle } from "./shared/Ed4Headings";
 import { Ed4Paragraph } from "./shared/Ed4Paragraph";
-import { Ed4Table } from "./shared/Ed4Table";
+import { ED4_KEEP_WORDS_TABLE, ED4_KEEP_WORDS_TABLE_SHORT_FIRST, Ed4Table } from "./shared/Ed4Table";
 import type { Ed4PartProps } from "./shared/ed4PartProps";
 import {
   APPENDIX_AXES_COLUMNS,
@@ -51,8 +51,8 @@ const rows3 = (rows: AppendixRow3[]) => rows.map((r) => [r.name, r.middle, r.res
  * 부록 표의 인쇄 모양(J7 PDF 눈 확인) — 좁은 칸에서 한국어 낱말 중간이 끊기지 않게(keep-all), 표 머리는 한 줄로, 표 제목이 쪽 끝에
  * 홀로 남지 않게. 글자는 바꾸지 않는다.
  */
-const TABLE = "[word-break:keep-all] [&_th]:whitespace-nowrap";
-const AXES_TABLE = `${TABLE} [&_td:first-child]:whitespace-nowrap`;
+const TABLE = ED4_KEEP_WORDS_TABLE;
+const AXES_TABLE = ED4_KEEP_WORDS_TABLE_SHORT_FIRST;
 const TITLE = "break-after-avoid";
 
 export function Ed4Appendix({ data }: Ed4PartProps) {
