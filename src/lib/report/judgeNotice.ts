@@ -70,7 +70,7 @@ export function serverRejectedText(detail: string): string {
 /**
  * 평가 목록(워크스페이스의 run 표)에서 판 4 서술이 발급 보류인 평가에 다는 표시(심판 라운드 J9, 계획 14-8).
  *
- * `CANDIDATE_` 로 시작하는 글은 고정 문구(B35~B58)·Q7·Q8 후보표에 없는 글이다 — 민서 승인 전 후보다. 보류 띠 머리 B37 의 앞
- * 낱말("발급 보류")을 그대로 따 왔다. 승인되면 이름에서 `CANDIDATE_` 를 뗀다.
+ * 보류 띠 머리 B37 의 앞 낱말("발급 보류")을 그대로 따 왔다. 고정 문구(B35~B58)·Q7·Q8 후보표 밖의 글이라 후보(`CANDIDATE_`)로
+ * 두었다가 2026-10-29 사용자가 승인했다(세션 5 끝 결정 1). 심판 묶음이 없는 판 4 완료 run 도 화면처럼 보류로 보이는 동작도 함께 확정.
  */
-export const CANDIDATE_LIST_HELD_BADGE = "발급 보류";
+export const LIST_HELD_BADGE = "발급 보류";

@@ -13,7 +13,7 @@ import {
 import { formatCreatedAt } from "../../utils/format/format";
 import type { WorkspaceEvaluationRun } from "../../types/workspace.types";
 import { narrativePhaseOf } from "../../hooks/useReportData";
-import { CANDIDATE_LIST_HELD_BADGE } from "../../lib/report/judgeNotice";
+import { LIST_HELD_BADGE } from "../../lib/report/judgeNotice";
 
 /**
  * 워크스페이스의 평가 실행(run) 이력 테이블. WorkspaceDetail 페이지에서 사용한다.
@@ -64,7 +64,7 @@ export function EvaluationRunsTable({ runs, onDelete }: EvaluationRunsTableProps
                 )}
                 {held && (
                   <Badge variant="outline" className="ml-1.5 border-destructive text-destructive" data-testid="run-held-badge">
-                    {CANDIDATE_LIST_HELD_BADGE}
+                    {LIST_HELD_BADGE}
                   </Badge>
                 )}
               </TableCell>

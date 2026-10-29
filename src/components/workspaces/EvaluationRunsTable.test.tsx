@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router";
 import { EvaluationRunsTable } from "./EvaluationRunsTable";
 import type { WorkspaceEvaluationRun } from "../../types/workspace.types";
 import { toJudgeBundle } from "../../lib/report/judgeBundle";
-import { CANDIDATE_LIST_HELD_BADGE } from "../../lib/report/judgeNotice";
+import { LIST_HELD_BADGE } from "../../lib/report/judgeNotice";
 import * as reportData from "../../hooks/useReportData";
 
 // 배선 시험용 — 기본은 진짜 판정 함수 그대로, 한 시험에서만 돌려 값을 바꾼다.
@@ -127,16 +127,16 @@ describe("평가 목록 — 판 4 발급 보류 표시", () => {
 
     expect(screen.getAllByTestId("run-held-badge")).toHaveLength(HELD_CASES.length);
     for (const [, run] of HELD_CASES) {
-      expect(within(rowOf(run.versionName)).getByText(CANDIDATE_LIST_HELD_BADGE)).toBeInTheDocument();
+      expect(within(rowOf(run.versionName)).getByText(LIST_HELD_BADGE)).toBeInTheDocument();
     }
     for (const [, run] of PLAIN_CASES) {
-      expect(within(rowOf(run.versionName)).queryByText(CANDIDATE_LIST_HELD_BADGE)).toBeNull();
+      expect(within(rowOf(run.versionName)).queryByText(LIST_HELD_BADGE)).toBeNull();
     }
   });
 
   it.each(HELD_CASES)("%s → 표시", (_name, run) => {
     renderTable([run]);
-    expect(screen.getByTestId("run-held-badge")).toHaveTextContent(CANDIDATE_LIST_HELD_BADGE);
+    expect(screen.getByTestId("run-held-badge")).toHaveTextContent(LIST_HELD_BADGE);
   });
 
   it.each(PLAIN_CASES)("%s → 표시 없음", (_name, run) => {
@@ -149,7 +149,7 @@ describe("평가 목록 — 판 4 발급 보류 표시", () => {
     renderTable([edRun("ed4-held", 4, "held", HELD)]);
     const row = rowOf("ed4-held");
     expect(within(row).getByText("초안")).toBeInTheDocument();
-    expect(within(row).getByText(CANDIDATE_LIST_HELD_BADGE)).toBeInTheDocument();
+    expect(within(row).getByText(LIST_HELD_BADGE)).toBeInTheDocument();
   });
 
   it("배선 — 판단은 성적서 화면과 같은 narrativePhaseOf 가 한다(그 값만 바꿔도 표시가 따라간다)", async () => {
@@ -161,17 +161,23 @@ describe("평가 목록 — 판 4 발급 보류 표시", () => {
     try {
       renderTable(runs);
       expect(phase).toHaveBeenCalled();
-      expect(within(rowOf("ed4-passed")).getByText(CANDIDATE_LIST_HELD_BADGE)).toBeInTheDocument();
-      expect(within(rowOf("ed4-held")).queryByText(CANDIDATE_LIST_HELD_BADGE)).toBeNull();
+      expect(within(rowOf("ed4-passed")).getByText(LIST_HELD_BADGE)).toBeInTheDocument();
+      expect(within(rowOf("ed4-held")).queryByText(LIST_HELD_BADGE)).toBeNull();
     } finally {
       phase.mockImplementation(actual.narrativePhaseOf);
     }
   });
 
+  it("표시 글은 승인된 글 \"발급 보류\" 그대로(2026-10-29 사용자 승인) — 화면에 그 글자가 보인다", () => {
+    expect(LIST_HELD_BADGE).toBe("발급 보류");
+    renderTable([edRun("ed4-held", 4, "held", HELD)]);
+    expect(screen.getByTestId("run-held-badge").textContent).toBe("발급 보류");
+  });
+
   it("표시 글 — 이모지·금지어 없음, 보류 띠 머리 B37 의 앞 낱말 그대로", async () => {
     const { B37_HELD_HEAD } = await import("../../lib/report/edition4/edition4Text");
-    expect(B37_HELD_HEAD.startsWith(`${CANDIDATE_LIST_HELD_BADGE} — `)).toBe(true);
-    expect(CANDIDATE_LIST_HELD_BADGE).not.toMatch(/\p{Extended_Pictographic}/u);
-    expect(CANDIDATE_LIST_HELD_BADGE).not.toMatch(/AI|LLM|심판|gpt|claude|sonnet/i);
+    expect(B37_HELD_HEAD.startsWith(`${LIST_HELD_BADGE} — `)).toBe(true);
+    expect(LIST_HELD_BADGE).not.toMatch(/\p{Extended_Pictographic}/u);
+    expect(LIST_HELD_BADGE).not.toMatch(/AI|LLM|심판|gpt|claude|sonnet/i);
   });
 });
