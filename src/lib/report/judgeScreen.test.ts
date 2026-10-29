@@ -13,6 +13,7 @@ import { heldNotice, isJudgeRejection, lockReasonText, serverRejectedText } from
 import { fetchNarrativeJob, mapNarrativeResult } from "./narrativeJobApi";
 import * as T from "./edition4/edition4Text";
 import { NARRATIVE_STAGE_LABEL } from "../../components/report/ReportStateNotices";
+import { JUDGE_SERVER_MESSAGES, judgeServerDetail, type JudgeRejectionCode } from "../../test/judgeServerRejections";
 
 const CONTRACT = JSON.parse(readFileSync(resolve(__dirname, "../../test/contract/judge_bundle_ed4.json"), "utf8"));
 const WORDING = JSON.parse(readFileSync(resolve(__dirname, "../../test/edition4/fixedWording.ed4.json"), "utf8"));
@@ -205,6 +206,30 @@ describe("화면 글 고르기(judgeNotice)", () => {
     expect(isJudgeRejection(409, "기관 정보가 시드되지 않았습니다.")).toBe(false);
     expect(isJudgeRejection(undefined, "글 (judge_not_passed)")).toBe(false);
     expect(serverRejectedText("글 (judge_not_passed)")).toBe("서버가 발급을 거절했습니다: 글 (judge_not_passed)");
+  });
+
+  it("서버의 실제 거절 글 여덟 개(2026-10-29 문안, 마침표 둘·두 문장) — 모두 심판 거절로 알아보고 B48 에 글 그대로", () => {
+    const codes = Object.keys(JUDGE_SERVER_MESSAGES) as JudgeRejectionCode[];
+    expect(codes).toHaveLength(8);
+    for (const code of codes) {
+      const detail = judgeServerDetail(code);
+      // 사유 코드 괄호 앞 글은 두 문장이고 마침표로 끝난다 — 정규식이 앞 문장의 마침표·쉼표에 흔들리지 않아야 한다.
+      expect(JUDGE_SERVER_MESSAGES[code].split(". ")).toHaveLength(2);
+      expect(isJudgeRejection(409, detail), code).toBe(true);
+      expect(isJudgeRejection(409, `${detail}\n`), `${code} 끝 줄바꿈`).toBe(true);
+      expect(isJudgeRejection(400, detail), `${code} 400`).toBe(false);
+      expect(serverRejectedText(detail)).toBe(`서버가 발급을 거절했습니다: ${JUDGE_SERVER_MESSAGES[code]} (${code})`);
+    }
+  });
+
+  it("사유 코드는 글 끝 괄호에서만 — 앞 문장에 괄호·코드가 있어도 끝이 아니면 심판 거절이 아니다", () => {
+    const msg = JUDGE_SERVER_MESSAGES.judge_not_passed;
+    expect(isJudgeRejection(409, `${msg} (judge_not_passed).`)).toBe(false);
+    expect(isJudgeRejection(409, `(judge_not_passed) ${msg}`)).toBe(false);
+    expect(isJudgeRejection(409, `${msg} (judge_not_passed) 다시 시도해 주세요.`)).toBe(false);
+    expect(isJudgeRejection(409, `${msg}(judge_not_passed)`)).toBe(true);
+    expect(isJudgeRejection(409, `앞 문장(발급 보류). 뒤 문장, 쉼표. (judge_not_passed)`)).toBe(true);
+    expect(isJudgeRejection(409, `${msg} (발급 보류)`)).toBe(false);
   });
 });
 

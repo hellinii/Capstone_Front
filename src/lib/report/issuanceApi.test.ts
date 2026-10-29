@@ -10,6 +10,7 @@ import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ISSUANCE_TEXT_MAX_CHARS, issueReport, reissueReport } from "./issuanceApi";
+import { judgeServerDetail } from "../../test/judgeServerRejections";
 
 const ISSUANCE_RESPONSE = {
   report_no: "RPT-2026-0001",
@@ -145,8 +146,9 @@ describe("서술 작업 번호(심판 라운드 J6)", () => {
   });
 
   it("실패는 상태 코드를 함께 싣는다(409 심판 거절 안내용)", async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 409, json: async () => ({ detail: "보류 (judge_not_passed)" }) });
-    await expect(issueReport({ runId: "r" })).rejects.toMatchObject({ status: 409, message: "보류 (judge_not_passed)" });
+    const detail = judgeServerDetail("judge_job_missing");
+    fetchMock.mockResolvedValue({ ok: false, status: 409, json: async () => ({ detail }) });
+    await expect(issueReport({ runId: "r" })).rejects.toMatchObject({ status: 409, message: detail });
     await expect(reissueReport("RPT-2026-0001", "x", { runId: "r" })).rejects.toMatchObject({ status: 409 });
   });
 });

@@ -23,6 +23,7 @@ import { Report } from "../pages/report/Report";
 import { ReportPrint } from "../pages/report/ReportPrint";
 import { useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
 import type { WorkspaceEvaluationRun } from "../types/workspace.types";
+import { judgeServerDetail } from "../test/judgeServerRejections";
 import {
   B37_HELD_HEAD,
   B38_HELD_GATE_FAILED,
@@ -324,7 +325,7 @@ describe("서버 발급 거절(409) — B48", () => {
   }
 
   it("심판 사유 코드가 붙은 409 → '서버가 발급을 거절했습니다: {서버 글}'(코드 그대로)", async () => {
-    const detail = "심판을 통과하지 않은 서술이어서 판 4 성적서를 발급할 수 없습니다(발급 보류) (judge_not_passed)";
+    const detail = judgeServerDetail("judge_not_passed");
     expect(await issueWith({ status: 409, body: { detail } })).toBe(`서버가 발급을 거절했습니다: ${detail}`);
   });
 

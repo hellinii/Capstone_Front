@@ -14,6 +14,7 @@ import { issueReport, reissueReport } from "../lib/report/issuanceApi";
 import { useIssuance } from "./useIssuance";
 import { ISSUE_CONTENT_MAX_BYTES } from "../utils/image/examplePreview";
 import type { FinalReportData } from "../types/finalReport.types";
+import { JUDGE_SERVER_MESSAGES, judgeServerDetail } from "../test/judgeServerRejections";
 
 function report(extraBytes: number): FinalReportData {
   return {
@@ -160,9 +161,11 @@ describe("판 4 심판 잠금·작업 번호 (심판 라운드 J6)", () => {
     const alert = vi.spyOn(window, "alert").mockImplementation(() => {});
     await seedRun("job-77");
     const { IssuanceRequestError } = await import("../lib/report/issuanceApi");
-    vi.mocked(reissueReport).mockRejectedValueOnce(new IssuanceRequestError("보류 (judge_not_passed)", 409));
+    vi.mocked(reissueReport).mockRejectedValueOnce(new IssuanceRequestError(judgeServerDetail("judge_narrative_mismatch"), 409));
     const b = renderHook(() => useIssuance("run-1", ed4(PASSED, "RPT-2026-0009"), "done"));
     await act(() => b.result.current.reissue("정정"));
-    expect(alert).toHaveBeenCalledWith("서버가 발급을 거절했습니다: 보류 (judge_not_passed)");
+    expect(alert).toHaveBeenCalledWith(
+      `서버가 발급을 거절했습니다: ${JUDGE_SERVER_MESSAGES.judge_narrative_mismatch} (judge_narrative_mismatch)`,
+    );
   });
 });
