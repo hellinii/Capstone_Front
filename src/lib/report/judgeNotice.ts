@@ -66,3 +66,11 @@ export function isJudgeRejection(status: number | undefined, detail: string): bo
 export function serverRejectedText(detail: string): string {
   return fillTemplate(B48_SERVER_REJECTED, { "서버 글": detail });
 }
+
+/**
+ * 평가 목록(워크스페이스의 run 표)에서 판 4 서술이 발급 보류인 평가에 다는 표시(심판 라운드 J9, 계획 14-8).
+ *
+ * `CANDIDATE_` 로 시작하는 글은 고정 문구(B35~B58)·Q7·Q8 후보표에 없는 글이다 — 민서 승인 전 후보다. 보류 띠 머리 B37 의 앞
+ * 낱말("발급 보류")을 그대로 따 왔다. 승인되면 이름에서 `CANDIDATE_` 를 뗀다.
+ */
+export const CANDIDATE_LIST_HELD_BADGE = "발급 보류";

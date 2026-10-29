@@ -12,6 +12,8 @@ import {
 } from "../ui/table";
 import { formatCreatedAt } from "../../utils/format/format";
 import type { WorkspaceEvaluationRun } from "../../types/workspace.types";
+import { narrativePhaseOf } from "../../hooks/useReportData";
+import { CANDIDATE_LIST_HELD_BADGE } from "../../lib/report/judgeNotice";
 
 /**
  * 워크스페이스의 평가 실행(run) 이력 테이블. WorkspaceDetail 페이지에서 사용한다.
@@ -20,6 +22,10 @@ import type { WorkspaceEvaluationRun } from "../../types/workspace.types";
  * 하므로, 입력 도중 멈춘 run 이나 아직 발급하지 않은 run 이 목록에 남는다. 둘이 같아 보이면
  * 사용자는 무엇을 마무리해야 하는지 알 수 없다. 판별 기준은 `reportId` 다 — 발급 시
  * `useIssuance` 가 채운다(useIssuance.ts 의 `persist`). 비어 있으면 초안이다.
+ *
+ * **판 4 서술이 발급 보류면 표시를 하나 더 단다**(심판 라운드 J9, 계획 14-8). 판단은 성적서 화면과 같은 `narrativePhaseOf` 하나를
+ * 부른다 — 여기서 심판 묶음을 따로 읽으면 화면은 보류인데 목록은 아닌 식의 판정 지점 이중화가 난다. 그래서 심판 묶음이 없거나
+ * 모양이 틀린 판 4 완료 run 도 화면처럼(닫힌 쪽, B46 띠) 보류로 보인다. 판 3·판 4 통과·서술 없음·진행 중·실패는 표시 없음.
  */
 interface EvaluationRunsTableProps {
   runs: WorkspaceEvaluationRun[];
@@ -42,6 +48,7 @@ export function EvaluationRunsTable({ runs, onDelete }: EvaluationRunsTableProps
       <TableBody>
         {runs.map((run) => {
           const issued = Boolean(run.reportId);
+          const held = narrativePhaseOf(run) === "held";
 
           return (
             <TableRow key={run.id}>
@@ -53,6 +60,11 @@ export function EvaluationRunsTable({ runs, onDelete }: EvaluationRunsTableProps
                 ) : (
                   <Badge variant="outline" className="border-warning-border text-warning-strong">
                     초안
+                  </Badge>
+                )}
+                {held && (
+                  <Badge variant="outline" className="ml-1.5 border-destructive text-destructive" data-testid="run-held-badge">
+                    {CANDIDATE_LIST_HELD_BADGE}
                   </Badge>
                 )}
               </TableCell>
