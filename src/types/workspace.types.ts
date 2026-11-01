@@ -17,11 +17,13 @@ export interface Workspace {
  * - pending: 작업을 만들었다(jobId). 새로고침하면 이 번호로 이어 조회한다.
  * - done: 서술이 끝나 reportData 에 병합됐다(reportData.isEvaluated = true).
  * - failed: 서술을 만들지 못했다(failure). "서술 다시 만들기"가 input 으로 새 작업을 만든다.
+ * - held: 판 4 서술은 끝났지만 심판을 통과하지 못했다(보류) 또는 심판 기록이 없다(심판 라운드 J6). 서술은 reportData 에 병합돼
+ *   화면에 보이지만 인쇄·발급은 잠긴다(`reportLock.ts`). 심판 묶음이 다시 만들기를 허용하면 input 으로 새 작업을 만든다.
  * input 은 다시 만들기용 서술 요청 본문이다. 너무 크면(저장 공간) 남기지 않고, 그때 다시 만들기는 파일을 다시 올려
- * 평가부터 한다. 끝나면(done) 지운다.
+ * 평가부터 한다. 끝나면(done) 지운다 — 보류(held)면 다시 만들기용으로 남긴다.
  */
 export interface RunNarrativeState {
-  status: "pending" | "done" | "failed";
+  status: "pending" | "done" | "held" | "failed";
   jobId: string | null;
   failure?: NarrativeFailure;
   input?: NarrativeRequestPayload | null;

@@ -3,7 +3,8 @@
  * 1.3 "제공되지 않은 정보"·3.3 평균 방식 미충족)이 판 4 글이며, 표지 요약의 보고 항목·주요 제약 줄(`coverRows`)을 더 만든다.
  *
  * 글자는 고정 문구 사본(`src/test/edition4/fixedWording.ed4.json`)과 대조한다 — 고정 문구 탭(2.2·2.3·21) → 부록 B(B4·B7).
- * 주요 제약 규칙(21번)과 B4 는 예시본을 만들며 정한 초안이다(판 4 를 켜기 전 확인 목록) — 시험 이름에 "초안".
+ * 주요 제약 규칙(21번)과 B4 는 예시본을 만들며 정했고 2026-10-26 에 확정됐다(두 조건이 함께면 같은 출처 → 목적별 순서로 쉼표로
+ * 이어 한 줄).
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -191,24 +192,28 @@ describe("표지 요약 두 줄(coverRows, 고정 문구 21)", () => {
     expect(rows(multilabel)[0].value).toMatch(/^TS 4213 보고 항목 12개 /);
   });
 
-  it("주요 제약(초안) — 같은 출처만: '평가 데이터가 학습 데이터와 같은 출처 (5.1)'", () => {
-    expect(rows(ed4(input({ latencyMapped: true }), true))[1].value).toBe(FIXED["21_constraint_same_source_draft"]);
+  it("주요 제약 — 같은 출처만: '평가 데이터가 학습 데이터와 같은 출처 (5.1)'", () => {
+    expect(rows(ed4(input({ latencyMapped: true }), true))[1].value).toBe(FIXED["21_constraint_same_source"]);
   });
 
-  it("주요 제약(초안) — 목적별 점검 미충족만: '목적별 점검 {K}개 중 {k}개 충족 (1.3)'", () => {
+  it("주요 제약 — 목적별 점검 미충족만: '목적별 점검 {K}개 중 {k}개 충족 (1.3)'", () => {
     const value = rows(ed4(MISSING, false))[1].value;
-    expect(value).toBe(FIXED["21_constraint_purpose_draft"].replace("{K}", "2").replace("{k}", "1"));
+    expect(value).toBe(FIXED["21_constraint_purpose"].replace("{K}", "2").replace("{k}", "1"));
     expect(value).toBe("목적별 점검 2개 중 1개 충족 (1.3)");
   });
 
-  it("주요 제약(초안, B4) — 같은 출처와 목적별 미충족이 함께면 쉼표로 잇는다", () => {
+  it("주요 제약(21번·B4) — 같은 출처와 목적별 미충족이 함께면 그 순서로 쉼표로 이어 한 줄", () => {
     const value = rows(ed4(MISSING, true))[1].value;
+    expect(rows(ed4(MISSING, true))).toHaveLength(2);
+    expect(FIXED["21_constraint_both_rule"]).toBe("둘 다이면 이 순서로 쉼표로 이어 한 줄에 싣는다.");
+    const purpose = FIXED["21_constraint_purpose"].replace("{K}", "2").replace("{k}", "1");
+    expect(value).toBe(`${FIXED["21_constraint_same_source"]}, ${purpose}`);
     expect(value).toBe(B.B4.candidate.replace("{K}", "2").replace("{k}", "1"));
     expect(value).toBe("평가 데이터가 학습 데이터와 같은 출처 (5.1), 목적별 점검 2개 중 1개 충족 (1.3)");
   });
 
-  it("주요 제약(초안) — 둘 다 아니면 '없음'. 목적별 점검이 모두 충족이거나 적용 줄이 없으면 목적별 줄을 싣지 않는다", () => {
-    expect(rows(ed4(input()))[1].value).toBe(FIXED["21_constraint_none_draft"]);
+  it("주요 제약 — 둘 다 아니면 '없음'. 목적별 점검이 모두 충족이거나 적용 줄이 없으면 목적별 줄을 싣지 않는다", () => {
+    expect(rows(ed4(input()))[1].value).toBe(FIXED["21_constraint_none"]);
     const allMet = ed4(input({ perspective: answer({ criticalErrorType: "Missed (FN)" }), selectedMetricIds: ["M3"] }));
     expect(allMet.purpose).toMatchObject({ applicable: 1, met: 1 });
     expect(rows(allMet)[1].value).toBe("없음");

@@ -22,8 +22,12 @@ const MODEL = "claude-sonnet-5-5";
 const HEADER = "작성 기록 · 5·6절 칸마다 쓴 방식(화면에만 보이며 인쇄본에는 없습니다)";
 const ED3_HEADER_MARK = "7·8·9절 칸마다";
 
-/** 픽스처마다 상자 일곱 줄(B26 앞 글 — 판 3 이름표). 손으로 적은 정확값. */
+/**
+ * 픽스처마다 상자 일곱 줄(B26 앞 글 — 판 3 이름표) + 심판을 통과한 판 4 의 B47 검증 모델 줄(심판 라운드 J7 — 픽스처 묶음 값).
+ * 손으로 적은 정확값.
+ */
 const AI = `AI 작성(${MODEL})`;
+const JUDGE_LINE = "검증 모델: gpt-6.1-sol (점검 기준 1.0)";
 const LINES: Record<Ed4Tag, string[]> = {
   bc_strong: [
     `5.1 판정과 불확실성(8.2 칸) — ${AI}`,
@@ -33,6 +37,7 @@ const LINES: Record<Ed4Tag, string[]> = {
     `5.5 운영 위험(8.3 칸) — ${AI}`,
     `5.6 추가 관찰(7.3 칸) — ${AI}`,
     `6 개선 권고(9 칸) — ${AI}`,
+    JUDGE_LINE,
   ],
   digits_strong: [
     `5.1 판정과 불확실성(8.2 칸) — ${AI}`,
@@ -42,6 +47,7 @@ const LINES: Record<Ed4Tag, string[]> = {
     `5.5 운영 위험(8.3 칸) — ${AI}`,
     `5.6 추가 관찰(7.3 칸) — ${AI}`,
     `6 개선 권고(9 칸) — ${AI}`,
+    JUDGE_LINE,
   ],
   yeast_strong: [
     `5.1 판정과 불확실성(8.2 칸) — ${AI}`,
@@ -51,6 +57,7 @@ const LINES: Record<Ed4Tag, string[]> = {
     `5.5 운영 위험(8.3 칸) — ${AI}`,
     "5.6 추가 관찰(7.3 칸) — 고정 문구",
     `6 개선 권고(9 칸) — ${AI}`,
+    JUDGE_LINE,
   ],
 };
 const TAGS: Ed4Tag[] = ["bc_strong", "digits_strong", "yeast_strong"];
@@ -61,7 +68,7 @@ const ED3_PLACE_MARKS = [/7·8·9절/, /표지·1\.4·6\.0/, /성적서 6\.0/, /
 const readFixture = (name: string) => JSON.parse(readFileSync(resolve(ED4_FIXTURE_DIR, name), "utf8"));
 
 describe("Ed4NarrativeRecord — 상자 모양(B25·B26)", () => {
-  it.each(TAGS)("%s: 머리 한 줄과 B26 순서 일곱 줄, print:hidden", (tag) => {
+  it.each(TAGS)("%s: 머리 한 줄과 B26 순서 일곱 줄 + B47 검증 모델 줄, print:hidden", (tag) => {
     const view = render(<Ed4NarrativeRecord data={loadEd4(tag, "final")} />);
     const box = view.container.querySelector('details[aria-label="작성 기록"]')!;
     expect(box).not.toBeNull();
@@ -96,8 +103,26 @@ describe("Ed4NarrativeRecord — 상자 모양(B25·B26)", () => {
     const data: FinalReportData = { ...base, narrativeSections: { ...base.narrativeSections, "9.9": "fallback" } };
     const view = render(<Ed4NarrativeRecord data={data} />);
     const items = [...view.container.querySelectorAll("li")].map((li) => li.textContent);
-    expect(items).toEqual([...LINES.bc_strong, "9.9 — 규칙 기반 문장"]);
+    expect(items).toEqual([...LINES.bc_strong.slice(0, 7), "9.9 — 규칙 기반 문장", JUDGE_LINE]);
     view.unmount();
+  });
+
+  it("B47 검증 모델 줄은 심판을 통과한 판 4 에만 — 묶음 없음·보류면 없다, 값은 묶음 그대로", () => {
+    const base = loadEd4("bc_strong", "final");
+    const lines = (data: FinalReportData) => {
+      const view = render(<Ed4NarrativeRecord data={data} />);
+      const out = [...view.container.querySelectorAll("li")].map((li) => li.textContent);
+      view.unmount();
+      return out;
+    };
+    const { judge: _j, ...noJudge } = base;
+    expect(lines(noJudge as FinalReportData)).toEqual(LINES.bc_strong.slice(0, 7));
+    expect(lines({ ...base, judge: { ...base.judge!, gate: "held", heldKind: "gate_failed", counts: null } })).toEqual(
+      LINES.bc_strong.slice(0, 7),
+    );
+    expect(lines({ ...base, judge: { ...base.judge!, model: "gpt-x", criteriaVersion: "1.1" } }).at(-1)).toBe(
+      "검증 모델: gpt-x (점검 기준 1.1)",
+    );
   });
 });
 
@@ -107,7 +132,7 @@ describe("/report/no/:번호 — 판 4 상자가 보이고 판 3 상자는 없�
     const lines = text.split("\n");
     const at = lines.indexOf(HEADER);
     expect(at).toBeGreaterThanOrEqual(0);
-    expect(lines.slice(at + 1, at + 8)).toEqual(LINES[tag]);
+    expect(lines.slice(at + 1, at + 9)).toEqual(LINES[tag]);
     expect(lines.filter((l) => l === HEADER)).toHaveLength(1);
     expect(text).not.toContain(ED3_HEADER_MARK);
     // 본문 제목보다 앞(머리 상자 다음, 본문 앞)

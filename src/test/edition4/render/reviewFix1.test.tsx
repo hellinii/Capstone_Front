@@ -247,7 +247,7 @@ describe("지적 6 — 4.3 판정 칸 미달 지표는 판 3 같은 칸 글자 '
 });
 
 describe("지적 7 — 의뢰자·데이터 값 속 $&·$'·$$·$` 를 그대로 찍는다(문자열 치환 특수 패턴)", () => {
-  const SPECIALS = ["Net$&X", "a$'b", "c$$d", "e$`f", "{조사}g", "h{목록}"];
+  const SPECIALS = ["Net$&X", "a$'b", "c$$d", "e$`f", "{조사}g", "h{목록}", "i{연락}"];
 
   it("rv3 dollarModel: 1.2 목적 문단 모델명, 2.2 클래스 목록 — 화면 글", () => {
     const data = structuredClone(loadEd4("bc_strong", "final"));
@@ -266,11 +266,14 @@ describe("지적 7 — 의뢰자·데이터 값 속 $&·$'·$$·$` 를 그대로
       data.evalScope.targetModel = value;
       data.datasetInfo.classLabels = [value, "z"];
       data.performer.orgName = value;
+      // 시험기관 주소·이메일(D48, 심판 라운드 1단계)도 같은 길 — 괄호 틀 "({연락})" 의 자리 글자가 값 안에 있어도 그대로.
+      data.performer.address = `${value} 4층`;
+      data.performer.email = `${value}@x`;
       expect(purposeParagraph(data)).toContain(`"${value}"`);
       expect(purposeParagraph(data)).not.toMatch(/\{모델\}/);
       const classes = evaluationDataRows(data).find((r) => r[0] === "감지된 클래스 수")!;
       expect(classes[1]).toBe(`2개 — 클래스 목록: ${value}, z`);
-      expect(coverIssuerLine(data)).toBe(`발급 기관: ${value}`);
+      expect(coverIssuerLine(data)).toBe(`발급 기관: ${value} (${value} 4층, ${value}@x)`);
       expect(ed4RuleTail(value)).toContain(`(입력 점검 규칙 ${value})`);
     });
   }
@@ -317,14 +320,14 @@ describe("rv2 지적 1 — 인쇄 입구(ReportPrint)가 판 4 를 mode=print �
     return { pageBreaks, badges };
   };
 
-  it("digits_strong(8.1 규칙 기반 칸): ReportPrint 경로 DOM 에 PageBreak 6개, 칸 배지 요소 0개(print:hidden 으로 가린 것도 없음)", async () => {
+  it("digits_strong(8.1 규칙 기반 칸): ReportPrint 경로 DOM 에 PageBreak 7개(부록 1 앞 포함 — 심판 라운드 J7), 칸 배지 요소 0개(print:hidden 으로 가린 것도 없음)", async () => {
     // 같은 데이터의 화면에는 배지가 있다(위 0 단정이 빈 이빨이 아님).
     expect(screenText(loadEd4("digits_strong", "issued"))).toContain(SECTION_SOURCE_BADGE_TEXT);
-    expect(await inspectPrint("digits_strong")).toEqual({ pageBreaks: 6, badges: 0 });
+    expect(await inspectPrint("digits_strong")).toEqual({ pageBreaks: 7, badges: 0 });
   });
 
-  it("bc_strong: ReportPrint 경로 PageBreak 6개", async () => {
-    expect((await inspectPrint("bc_strong")).pageBreaks).toBe(6);
+  it("bc_strong: ReportPrint 경로 PageBreak 7개(부록 1 앞 포함)", async () => {
+    expect((await inspectPrint("bc_strong")).pageBreaks).toBe(7);
   });
 });
 

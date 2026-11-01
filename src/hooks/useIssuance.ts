@@ -13,6 +13,8 @@ import type { FinalReportData } from "../types/finalReport.types";
 import { saveRun, useWorkspaceStore } from "../utils/stores/useWorkspaceStore";
 import { ISSUE_CONTENT_MAX_BYTES, exceedsIssueLimit, jsonBytes } from "../utils/image/examplePreview";
 import { applyIssuance, issueReport, reissueReport } from "../lib/report/issuanceApi";
+import { reportLock, type LockPhase } from "../lib/report/reportLock";
+import { isJudgeRejection, serverRejectedText } from "../lib/report/judgeNotice";
 
 export interface UseIssuanceResult {
   /** 발급 반영본(있으면) 또는 원본 리포트 데이터 */
@@ -28,11 +30,20 @@ export interface UseIssuanceResult {
   reissue: (note: string) => Promise<void>;
 }
 
+/** 서버 발급 검사가 판 4 발급을 거절했으면 B48 안내, 아니면 null(지금 안내 그대로). */
+function rejectionText(e: any): string | null {
+  const detail = String(e?.message ?? "");
+  return isJudgeRejection(e?.status, detail) ? serverRejectedText(detail) : null;
+}
+
 export function useIssuance(
   id: string,
   reportData: FinalReportData | null,
-  /** 서술까지 끝났는가(성적서 훅의 서술 상태 done). 아니면 발급·정정 발급 모두 잠근다(서술 라운드 S3b). */
-  narrativeDone = true,
+  /**
+   * 성적서 훅의 서술 상태. 잠금 판정(`reportLock` — 서술 미완료, 판 4 심판 보류·기록 없음)으로 발급·정정 발급을 잠근다(서술 라운드
+   * S3b, 심판 라운드 J6). 버튼만 잠그면 버튼 밖에서 부르는 길이 새므로 이 훅도 같은 판정을 본다.
+   */
+  narrativePhase: LockPhase = "done",
 ): UseIssuanceResult {
   const [override, setOverride] = useState<FinalReportData | null>(null);
   const [busy, setBusy] = useState(false);
@@ -43,7 +54,7 @@ export function useIssuance(
   // 발급은 "평가가 완료된(isEvaluated)" 리포트에만 허용 — 재로드 후 미평가 draft(빈 결과)에
   // 번호가 발급되는 것을 막는다(useReportData 는 미평가 run 도 data 로 세팅할 수 있음).
   // 끝나지 않은 서술은 완성본이 아니다 — 서술이 done 이고 완성본(isEvaluated)일 때만.
-  const complete = narrativeDone && !!data?.isEvaluated;
+  const complete = reportLock(narrativePhase, data) === null;
   const canIssue = !!id && !!data && complete;
 
   function persist(merged: FinalReportData) {
@@ -74,6 +85,7 @@ export function useIssuance(
       .getState()
       .evaluationRuns.find((r) => r.id === id);
     setBusy(true);
+    // 판 4 성적서는 서버가 이 작업 번호가 "판 4 · 완료 · 심판 통과"인지 다시 본다(서버 발급 검사, 심판 라운드 J5b).
     try {
       const result = await issueReport({
         runId: id,
@@ -84,10 +96,11 @@ export function useIssuance(
         // 발급 시점의 성적서 원본을 서버에 보관한다 — 이것이 없으면 번호로 문서를
         // 복원할 수도, 인쇄물의 진위를 대조할 수도 없다(F-01).
         content: data,
+        narrativeJobId: run?.narrative?.jobId ?? undefined,
       });
       persist(applyIssuance(data, result));
     } catch (e: any) {
-      alert(`발급 실패: ${e?.message ?? e}`);
+      alert(rejectionText(e) ?? `발급 실패: ${e?.message ?? e}`);
     } finally {
       setBusy(false);
     }
@@ -99,13 +112,15 @@ export function useIssuance(
     setBusy(true);
     try {
       // run 식별자는 소지 증명으로 필수다(G-02). 라우트의 id 가 발급 때 보낸 runId 와 같다.
+      const run = useWorkspaceStore.getState().evaluationRuns.find((r) => r.id === id);
       const result = await reissueReport(data.meta.reportId, note, {
         runId: id,
         content: data,
+        narrativeJobId: run?.narrative?.jobId ?? undefined,
       });
       persist(applyIssuance(data, result));
     } catch (e: any) {
-      alert(`재발급 실패: ${e?.message ?? e}`);
+      alert(rejectionText(e) ?? `재발급 실패: ${e?.message ?? e}`);
     } finally {
       setBusy(false);
     }

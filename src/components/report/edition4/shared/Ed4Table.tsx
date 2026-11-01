@@ -9,6 +9,14 @@ import type { ReactNode } from "react";
 
 import { cn } from "../../../../utils/styling/styles";
 
+/**
+ * 좁은 칸에서 한국어 낱말 중간이 끊기지 않게(keep-all) 하고 표 머리는 한 줄로 두는 인쇄 모양(J7 부록 1 표, 세션 5 끝 6절 권고 표 —
+ * PDF 눈 확인에서 "우/선/순/위"·"데이/터가" 처럼 끊김). 글자는 바꾸지 않는다. 판 4 표에만 붙인다(판 3 절 컴포넌트는 이 부품을 쓰지 않는다).
+ */
+export const ED4_KEEP_WORDS_TABLE = "[word-break:keep-all] [&_th]:whitespace-nowrap";
+/** 첫 열이 짧은 이름 칸(부록 1.3 축 이름, 6절 우선순위 "높음·중간·낮음")인 표 — 첫 열도 한 줄로. */
+export const ED4_KEEP_WORDS_TABLE_SHORT_FIRST = `${ED4_KEEP_WORDS_TABLE} [&_td:first-child]:whitespace-nowrap`;
+
 export interface Ed4TableProps {
   columns: ReadonlyArray<ReactNode>;
   rows: ReadonlyArray<ReadonlyArray<ReactNode>>;

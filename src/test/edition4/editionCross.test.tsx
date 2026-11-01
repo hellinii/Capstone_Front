@@ -21,6 +21,8 @@ const ctl = vi.hoisted(() => ({
   mapperSchemas: [] as number[],
   useNewResponses: false,
   redirected: 0,
+  /** 판 4 로 만든 run 이면 작업 응답에 통과 심판 묶음을 끼운다(심판 라운드 J6). 판 3 run 은 판 3 응답 그대로. */
+  judgeOnJobs: false,
 }));
 
 vi.mock("../../lib/report/mapWorkflowToFinalReport", async (importOriginal) => {
@@ -43,6 +45,7 @@ vi.mock("../../lib/report/mapWorkflowToFinalReport", async (importOriginal) => {
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
+  const { JOBS_JSON, withPassedJudge } = await import("./passedJudge");
   const OLD = /([\\/])edition3\1newRun\1inputs\1(\w+)\.evaluate\.json$/;
   const readFileSync = ((path: unknown, ...rest: unknown[]) => {
     const m = ctl.useNewResponses && typeof path === "string" ? OLD.exec(path) : null;
@@ -50,6 +53,11 @@ vi.mock("node:fs", async (importOriginal) => {
       ctl.redirected += 1;
       const sep = m[1];
       path = (path as string).replace(OLD, `${sep}edition4${sep}evaluateNewKeys${sep}${m[2]}.evaluate.json`);
+    }
+    // 판 4 run 의 작업 응답에 통과 심판 묶음(심판 라운드 J6 — 없으면 닫힌 쪽 기본값대로 보류된다, `passedJudge.ts`).
+    if (ctl.judgeOnJobs && typeof path === "string" && JOBS_JSON.test(path)) {
+      const raw = (actual.readFileSync as (...a: unknown[]) => unknown)(path, "utf8") as string;
+      return withPassedJudge(raw, (p) => (actual.readFileSync as (...a: unknown[]) => unknown)(p, "utf8") as string);
     }
     return (actual.readFileSync as (...a: unknown[]) => unknown)(path, ...rest);
   }) as typeof actual.readFileSync;
@@ -74,6 +82,7 @@ async function capture(tag: Tag, creationFlag: string, evaluationFlag: string, u
   ctl.creationFlag = creationFlag;
   ctl.evaluationFlag = evaluationFlag;
   ctl.useNewResponses = useNewResponses;
+  ctl.judgeOnJobs = creationFlag === "4";
   const calls = ctl.mapperCalls;
   const redirected = ctl.redirected;
   vi.stubEnv("VITE_REPORT_EDITION", evaluationFlag);
@@ -91,6 +100,7 @@ async function capture(tag: Tag, creationFlag: string, evaluationFlag: string, u
     vi.useRealTimers();
     vi.unstubAllEnvs();
     ctl.useNewResponses = false;
+    ctl.judgeOnJobs = false;
   }
 }
 

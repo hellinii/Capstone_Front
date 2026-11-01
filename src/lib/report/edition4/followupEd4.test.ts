@@ -3,7 +3,7 @@
  *
  * - U1(사용자 답 T3) 멀티레이블 4.5 학습·평가 비율의 분모 = 표본 수 — 평가 비율 = 그 레이블이 붙은 평가 표본 / 전체 평가 표본(4.5 분포
  *   문장과 같은 숫자), 학습 비율 = 그 레이블이 붙은 학습 표본 / 의뢰자가 준 학습 표본 수. 학습 표본 수가 없으면 비교하지 않고
- *   생략 이유를 B16(학습 분포 없음)과 다르게 저장한다(training_samples_not_provided — 4.5 문장은 B33(초안)이고 S5 렌더러가 그린다). 판 3 은 그대로.
+ *   생략 이유를 B16(학습 분포 없음)과 다르게 저장한다(training_samples_not_provided — 4.5 문장은 B33(2026-10-26 확정)이고 S5 렌더러가 그린다). 판 3 은 그대로.
  *   숫자는 백엔드 tests/test_p4_followup_ed4.py 와 같은 사례(yeast_strong 평가 917 — Class12 688·Class13 683, 학습 1500 중 1000·900).
  * - U2(오케스트레이터 결정) 클래스별 표 F1 = `classF1TextEd4` — 공통 대조 표 distinct 의 class_table 줄(백엔드 `class_f1_text_ed4` 와
  *   같은 표).
@@ -182,7 +182,7 @@ describe("U1 — 학습 표본 수가 없으면 비교하지 않고 B16 과 다�
     expect(multilabelRun(composer(YEAST_TRAIN, "unknown"), 3).factSheet.facts!.distribution_shift_status).toBe("compared");
   });
 
-  it("이 상태의 4.5 자리에는 B16 문장이 저장되지 않는다(B33(초안) 문장은 S5 렌더러 몫 — 계약 decided)", () => {
+  it("이 상태의 4.5 자리에는 B16 문장이 저장되지 않는다(B33 문장은 S5 렌더러 몫 — 계약 decided)", () => {
     const { stage1Report } = multilabelRun(composer(YEAST_TRAIN, "unknown"), 4);
     const text = JSON.stringify(stage1Report.edition4Values!.distribution);
     expect(text).not.toContain("학습 클래스 분포가 제공되지 않아");

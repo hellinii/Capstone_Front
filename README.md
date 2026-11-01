@@ -2,7 +2,7 @@
 
 ML 모델 성능 평가 보고서("시험성적서")를 **KS X ISO/IEC TS 4213:2022** 표준에 따라 자동 생성하는 웹 애플리케이션의 프론트엔드입니다.
 
-> 이 README는 **디자인 시스템·컴포넌트 패턴** 위주입니다. 코드 구조/아키텍처는 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)와 [`docs/FRONTEND_DEVELOPMENT_GUIDELINE.md`](docs/FRONTEND_DEVELOPMENT_GUIDELINE.md)를, 지표·컬럼·검증 규칙은 [`SPEC.md`](SPEC.md)(프론트/백 공통 단일 진실 문서)를, 프로젝트 전체(프론트+백)는 백엔드 저장소(`Capstone_Back`)의 `docs/PROJECT_OVERVIEW.md`를 참고하세요. 성적서 서술·판(contentSchema)은 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §6, 판 4 켜는 법은 §6.6.
+> 이 README는 **디자인 시스템·컴포넌트 패턴** 위주입니다. 코드 구조/아키텍처는 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)와 [`docs/FRONTEND_DEVELOPMENT_GUIDELINE.md`](docs/FRONTEND_DEVELOPMENT_GUIDELINE.md)를, 지표·컬럼·검증 규칙은 [`SPEC.md`](SPEC.md)(프론트/백 공통 단일 진실 문서)를, 프로젝트 전체(프론트+백)는 백엔드 저장소(`Capstone_Back`)의 `docs/PROJECT_OVERVIEW.md`를 참고하세요. 성적서 서술·판(contentSchema)은 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §6, 판 4 켜는 법은 §6.6, 판 4 심판 화면(검증 중·발급 보류·잠금·부록 1)은 §6.7.
 
 ## 프로젝트 구조 (요약)
 
@@ -45,6 +45,7 @@ src/
 
 - 새 성적서의 판은 run 을 만들 때 `src/lib/report/reportEdition.ts` 의 `newRunContentSchema()` 한 곳에서 정한다. 빌드 환경변수 `VITE_REPORT_EDITION` 이 꼭 `"4"` 일 때만 판 4, 그 밖(없음·빈 값·`"3"`·`"true"`)은 판 3 이다.
 - **판 4 를 켜려면 백엔드를 먼저 배포**하고(`/health` 의 `commit` 확인), Vercel 환경변수에 `VITE_REPORT_EDITION=4` 를 넣고 다시 배포한다. 켜기 전 확인 목록과 이유는 `docs/ARCHITECTURE.md` §6.6.
+- 판 4 성적서는 서술 뒤 백엔드 심판을 통과해야 인쇄·발급이 열린다. 통과하지 못하면 "발급 보류" 띠가 뜨고 잠긴다(`docs/ARCHITECTURE.md` §6.7).
 
 ## 디자인 시스템
 

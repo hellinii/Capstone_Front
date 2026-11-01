@@ -15,26 +15,20 @@ export const FIXED_9_PER_LABEL_ED4 = "본 평가의 예측값은 제출된 확�
 export const FIXED_9_ARGMAX_ED4 =
   "본 평가의 예측값은 제출된 클래스별 확률값 중 가장 큰 값의 클래스를 택하여 산출하였습니다(결정 임계값 없음).";
 
-/** 고정 문구 20 — 4.2 판정 근거. 합격은 확정 글, 나머지 세 갈래는 예시본을 만들며 정한 초안(판 4 를 켜기 전 확인 목록). */
+/** 고정 문구 20 — 4.2 판정 근거 네 갈래(2026-10-26 확정). */
 export const VERDICT_BASIS_PASS = "핵심 지표 {핵심 지표}과(와) 그 밖의 판정 대상 지표가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.";
-export const VERDICT_BASIS_CONDITIONAL_DRAFT =
+export const VERDICT_BASIS_CONDITIONAL =
   "핵심 지표 {핵심 지표}은(는) 목표를 충족하였으나 {미달 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 조건부 합격으로 판정하였다.";
-export const VERDICT_BASIS_FAIL_DRAFT = "핵심 지표 {미달 핵심 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 불합격으로 판정하였다.";
-export const VERDICT_BASIS_INCONCLUSIVE_DRAFT = "{원인}(으)로 3.4의 판정 규칙에 따라 판정할 수 없었다.";
+export const VERDICT_BASIS_FAIL = "핵심 지표 {미달 핵심 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 불합격으로 판정하였다.";
+export const VERDICT_BASIS_INCONCLUSIVE = "{원인}(으)로 3.4의 판정 규칙에 따라 판정할 수 없었다.";
 /** 부록 B13 — 핵심 지표만 판정 대상인 합격. */
 export const VERDICT_BASIS_PASS_CORE_ONLY = "핵심 지표 {핵심 지표}이(가) 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.";
 /**
- * 부록 B31(초안, 2026-10-24 승인 — 판 4 를 켜기 전 확인 목록) — 핵심 지표가 하나도 없는 성적서의 4.2 판정 근거. {판정} 은 판정
- * 글자(`VERDICT_BASIS_WORD`), 조사 (으)로 는 그 글자로 고른다.
+ * 부록 B31(2026-10-26 확정) — 핵심 지표가 하나도 없는 성적서의 4.2 판정 근거. 핵심 지표가 없으면 "핵심 지표는 모두 충족"이 빈
+ * 조건으로 참이라(3.4) 판정은 합격 또는 조건부 합격뿐이고, 미달이 있으면 늘 조건부 합격이다(판정 글자를 끼우지 않는다).
  */
-export const VERDICT_BASIS_PASS_NO_CORE_DRAFT = "판정 대상 지표 {N}개가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.";
-export const VERDICT_BASIS_FAILED_NO_CORE_DRAFT = "{미달 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 {판정}(으)로 판정하였다.";
-/** 근거 문장 끝 "…(으)로 판정하였다" 의 판정 글자(고정 문구 20 의 "합격으로"·"조건부 합격으로"·"불합격으로"). */
-export const VERDICT_BASIS_WORD: Record<"PASS" | "CONDITIONAL_PASS" | "FAIL", string> = {
-  PASS: "합격",
-  CONDITIONAL_PASS: "조건부 합격",
-  FAIL: "불합격",
-};
+export const VERDICT_BASIS_PASS_NO_CORE = "판정 대상 지표 {N}개가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.";
+export const VERDICT_BASIS_CONDITIONAL_NO_CORE = "{미달 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 조건부 합격으로 판정하였다.";
 /** 부록 B13 — 판정 불가의 {원인}. */
 export const INCONCLUSIVE_CAUSE_NOT_COMPUTED = "핵심 지표 {이름}의 산출 실패";
 export const INCONCLUSIVE_CAUSE_NO_TARGET = "핵심 지표 {이름}의 목표값 부재";
@@ -52,7 +46,7 @@ export const VERDICT_LABEL_ED4: Record<"PASS" | "CONDITIONAL_PASS" | "FAIL" | "I
 export const VERDICT_COUNT_CELL = "{N}개 중 {n}개";
 export const VERDICT_COUNT_NONE = "—";
 
-/** 고정 문구 21 — 표지 시험 결과 요약의 줄 이름과 종합 판정·핵심 지표 줄. */
+/** 고정 문구 21 — 표지 시험 결과 요약의 줄 이름과 종합 판정·핵심 지표 줄(2026-10-26 확정). */
 export const COVER_ROW_VERDICT = "종합 판정";
 export const COVER_ROW_CORE = "핵심 지표";
 export const COVER_VERDICT_ROW = "{판정} (판정 대상 지표 {N}개 중 {n}개 충족, 4.2)";
@@ -60,12 +54,15 @@ export const COVER_CORE_ROW = "{이름} {값} (합격 기준 {기준}, {충족/�
 /** 부록 B2 — 판정 대상 0개. */
 export const COVER_VERDICT_NONE = "판정 불가 (판정 대상 지표 없음, 4.2)";
 /**
- * 부록 B32(초안, 2026-10-24 승인 — 판 4 를 켜기 전 확인 목록) — 목표값이 없는 핵심 지표. 값은 판정과 무관해 plain(같은 원값의
- * 판정 대상 지표가 있으면 그 글자 — D2).
+ * 부록 B32(2026-10-26 확정) — 목표값이 없는 핵심 지표. 값은 판정과 무관해 plain(같은 원값의 판정 대상 지표가 있으면 그 글자 —
+ * D2). 줄 이름 "핵심 지표: " 는 표의 첫 칸이다.
  */
-export const COVER_CORE_NO_TARGET_DRAFT = "{이름} {값} (합격 기준 없음, 참고 지표, 4.3)";
-/** 부록 B3 — 핵심 지표 측정 불가. */
-export const COVER_CORE_UNAVAILABLE = "{이름} 측정 불가 (합격 기준 {기준}, 4.3)";
+export const COVER_CORE_NO_TARGET = "{이름} {값} (합격 기준 없음, 참고 지표, 4.3)";
+/**
+ * 고정 문구 21 의 핵심 지표 산출 실패 줄("핵심 지표: {이름} 측정 불가 (4.3)", 2026-10-26 확정 — 합격 기준을 싣던 부록 B3 글을
+ * 바꿈). 목표값이 있든 없든 산출에 실패하면 이 줄이다. 줄 이름 "핵심 지표: " 는 표의 첫 칸이다.
+ */
+export const COVER_CORE_UNAVAILABLE = "{이름} 측정 불가 (4.3)";
 
 /** 고정 문구 19 의 판정 여유 값(4.3 열·표지 핵심 지표 줄). */
 export const JUDGMENT_MARGIN_LABEL: Record<"small" | "ample", string> = { small: "작음", ample: "충분" };
@@ -178,6 +175,11 @@ export const FIXED_13_ED4 =
   "본 시험성적서는 의뢰자가 제공한 데이터와 정보를 바탕으로 작성되었다. 제공된 내용이 사실과 다르면 본 시험성적서의 결과와 해석은 유효하지 않다.";
 /** ※ 판 4 — 5절 머리 줄. */
 export const FIXED_NOTE_ED4 = "※ 5절은 4절의 시험 결과를 해석한 참고 의견이며, 시험 결과에 해당하지 않습니다.";
+/**
+ * 고정 문구 27(판 4, 늘 — 서술 설계 D54) — 5절 머리 ※ 줄 바로 아래 범례. 서술 칸에 긋는 왼쪽 세로줄(`Ed4AutoMark`)의 뜻을
+ * 알린다. 칸이 AI 로 쓰였든 규칙 템플릿으로 대체되었든 같은 글이다(D46 — 대체 사실은 인쇄하지 않는다).
+ */
+export const ED4_FIXED_27 = "※ 왼쪽에 세로줄이 있는 부분은 평가 시스템이 자동 작성한 것입니다.";
 /** 고정 문구 19 — 4.3 표 아래. */
 export const FIXED_19_NOTE =
   '판정 여유 "작음"은 95% 신뢰구간이 합격 기준을 포함하거나, 신뢰구간이 없는 지표에서는 목표값과의 차이가 목표값의 3% 미만이라는 뜻입니다(3.4).';
@@ -261,5 +263,29 @@ export const B29_PLACES = "(표지·1.3·부록 1.2)";
  */
 export const B29_RULE_NAME = "입력 점검 규칙";
 export const B30_NOT_PROVIDED = "제공되지 않음";
-/** 부록 B33(초안, 2026-10-24 승인) — 멀티레이블, 학습 표본 수 없음(저장 이유 코드 training_samples_not_provided). */
-export const B33_NO_TRAINING_SAMPLES_DRAFT = "제공되지 않음 — 학습 표본 수가 제공되지 않아 학습·평가 비율을 비교하지 않았다.";
+/** 부록 B33(2026-10-26 확정) — 멀티레이블, 학습 표본 수 없음(저장 이유 코드 training_samples_not_provided). */
+export const B33_NO_TRAINING_SAMPLES = "제공되지 않음 — 학습 표본 수가 제공되지 않아 학습·평가 비율을 비교하지 않았다.";
+
+/*
+ * 심판 라운드 J6 화면 문안(고정 문구 1.1 표 B35~B48, 2026-10-29 Q7 승인 문안 그대로) — 판 4 성적서 화면에만. 판 3 화면 글은 그대로다.
+ */
+/** B35 — 진행 단계 judging 이름. B36(regenerating)은 지금 이름 "다시 만드는 중" 그대로라 상수를 따로 두지 않는다. */
+export const B35_STAGE_JUDGING = "검증 중";
+/** B37 — 발급 보류 띠 머리(모든 보류 공통). */
+export const B37_HELD_HEAD = "발급 보류 — 자동 검증을 통과하지 못해 인쇄·발급할 수 없습니다. 운영자에게 알렸습니다.";
+/** B38~B44 — 보류 띠 둘째 줄(보류 종류별). judge_error 는 백엔드 retry_allowed 로 두 글 중 하나를 고른다(B40). */
+export const B38_HELD_GATE_FAILED = "서술이 시험 결과와 맞는지 확인하지 못했습니다.";
+export const B39_HELD_TIMEOUT = "검증이 제한 시간(10분) 안에 끝나지 않았습니다.";
+export const B40_HELD_JUDGE_ERROR_RETRY = "검증 서버와 연결이 원활하지 않아 검증을 마치지 못했습니다.";
+export const B40_HELD_JUDGE_ERROR = "검증을 마치지 못했습니다.";
+export const B41_HELD_NO_KEY = "검증 기능이 설정되지 않아 검증하지 못했습니다.";
+export const B42_HELD_BUDGET = "검증 요청이 많아 잠시 받을 수 없습니다. 한 시간쯤 뒤에 서술을 다시 만들어 주세요.";
+export const B43_HELD_JOB_LIMIT = "요청이 많아 검증하지 못했습니다. 한 시간쯤 뒤에 다시 평가해 주세요.";
+export const B44_HELD_NO_MATERIAL = "성적서가 너무 커서 검증 자료를 함께 보내지 못했습니다.";
+/** B45·B46 — 인쇄·발급 버튼 옆 잠금 이유(보류 / 심판 기록 없음·모르는 값). */
+export const B45_LOCK_HELD = "자동 검증을 통과하지 못해 인쇄·발급할 수 없습니다.";
+export const B46_LOCK_NO_RECORD = "자동 검증 기록이 없어 인쇄·발급할 수 없습니다. 서술을 다시 만들어 주세요.";
+/** B47 — 작성 기록 "검증 모델" 줄(통과한 판 4, 화면에만). */
+export const B47_JUDGE_MODEL = "검증 모델: {모델 이름} (점검 기준 {버전})";
+/** B48 — 화면 잠금을 피해 서버가 발급을 거절(409)했을 때. 서버 글 끝 괄호의 사유 코드는 그대로 둔다(문의용). */
+export const B48_SERVER_REJECTED = "서버가 발급을 거절했습니다: {서버 글}";

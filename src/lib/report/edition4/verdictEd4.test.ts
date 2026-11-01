@@ -2,14 +2,19 @@
  * 판 4 종합 판정 글(S3 ⑥, 4절 표 "4.2 종합 판정 표 + 근거 문장"·"표지 시험 결과 요약 4줄") — 판정은 다시 하지 않고 판정 근거
  * (`verdictDetail` — `computeVerdict` 한 곳)와 저장된 판정 여유만 읽는다.
  *
- * 고정 문구 20 의 조건부 합격·불합격·판정 불가 글은 초안이다(판 4 를 켜기 전 확인 목록) — 시험 이름에 "초안". 부록 B31(핵심
- * 지표가 없는 성적서의 근거)·B32(목표값 없는 핵심 지표의 표지 줄)도 초안이다(2026-10-24 사용자 승인, 계획 부록 B 의 글을 옮겨 적음).
+ * 고정 문구 20·21 과 부록 B31(핵심 지표가 없는 성적서의 근거)·B32(목표값 없는 핵심 지표의 표지 줄)는 2026-10-26 에 확정됐다
+ * (고정 문구 rev 134). 심판 라운드 1단계에서 바뀐 것:
+ * - B31 미달 문장의 판정 글자를 "조건부 합격"으로 고정 — 핵심 지표가 없으면 "핵심 지표는 모두 충족"이 빈 조건으로 참이라(3.4)
+ *   미달이 있으면 판정은 늘 조건부 합격이다(`computeVerdict` ③ 과 같은 결과).
+ * - 표지 핵심 지표 산출 실패 줄 "핵심 지표: {이름} 측정 불가 (4.3)"(21번 — 합격 기준을 싣던 옛 B3 글을 바꿈). 목표값이 없는 핵심
+ *   지표가 산출에도 실패했으면 이 줄이다(B32 는 값을 채울 수 없다).
  */
 import { describe, expect, it } from "vitest";
 
 import type { KpiResult } from "../../../types/finalReport.types";
 import { verdictDetail } from "../narrativeFacts";
 import { buildCoverResultRows, buildVerdictEd4 } from "./verdictEd4";
+import { VERDICT_LABEL_ED4 } from "./edition4Text";
 
 function kpi(over: Partial<KpiResult>): KpiResult {
   return { metricId: "M1", name: "Accuracy", value: 0.98, threshold: 0.95, status: "pass", higherIsBetter: true, ...over };
@@ -68,7 +73,7 @@ describe("4.2 근거 문장 — 갈래", () => {
     );
   });
 
-  it("조건부 합격(초안) — 충족한 핵심 지표와 미달한 지표", () => {
+  it("조건부 합격 — 충족한 핵심 지표와 미달한 지표", () => {
     const results = [
       kpi({ metricId: "M3", name: "Recall", value: 0.99, threshold: 0.97, isCore: true }),
       kpi({ metricId: "M9", name: "AUROC", value: 0.9, threshold: 0.98, status: "fail" }),
@@ -81,7 +86,7 @@ describe("4.2 근거 문장 — 갈래", () => {
     );
   });
 
-  it("불합격(초안) — 미달한 핵심 지표", () => {
+  it("불합격 — 미달한 핵심 지표", () => {
     const results = [
       kpi({ metricId: "M3", name: "Recall", value: 0.9, threshold: 0.97, isCore: true, status: "fail" }),
       kpi({ metricId: "M1", value: 0.99 }),
@@ -91,7 +96,7 @@ describe("4.2 근거 문장 — 갈래", () => {
     expect(v.basis).toBe("핵심 지표 Recall(M3)이 목표에 미달하여, 3.4의 판정 규칙에 따라 불합격으로 판정하였다.");
   });
 
-  it("판정 불가(초안) — 원인 셋(부록 B13)", () => {
+  it("판정 불가 — 원인 셋(부록 B13)", () => {
     const notComputed = [kpi({ metricId: "M3", name: "Recall", status: "unavailable", value: 0, isCore: true }), kpi({ metricId: "M1" })];
     expect(verdictOf(notComputed, ["M3"]).basis).toBe("핵심 지표 Recall(M3)의 산출 실패로 3.4의 판정 규칙에 따라 판정할 수 없었다.");
     const noTarget = [kpi({ metricId: "M3", name: "Recall", threshold: null, isCore: true }), kpi({ metricId: "M1" })];
@@ -102,16 +107,16 @@ describe("4.2 근거 문장 — 갈래", () => {
     expect(v.basis).toBe("판정 대상 지표 부재로 3.4의 판정 규칙에 따라 판정할 수 없었다.");
   });
 
-  // 계획 부록 B31(초안, 2026-10-24 승인)의 글 — "합격: 판정 대상 지표 {N}개가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로
-  // 판정하였다. / 미달이 있으면: {미달 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 {판정}으로 판정하였다."
-  it("핵심 지표가 없는 합격(B31 초안) — 판정 대상 지표 수", () => {
+  // 부록 B31(2026-10-26 확정) — "합격: 판정 대상 지표 {N}개가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다. /
+  // 미달이 있으면: {미달 지표}이(가) 목표에 미달하여, 3.4의 판정 규칙에 따라 조건부 합격으로 판정하였다."
+  it("핵심 지표가 없는 합격(B31) — 판정 대상 지표 수", () => {
     const results = [kpi({ metricId: "M1", value: 0.99 }), kpi({ metricId: "M9", name: "AUROC", value: 0.99 }), kpi({ metricId: "M2", name: "Precision", threshold: null })];
     const v = verdictOf(results, []);
     expect([v.verdict, v.countText]).toEqual(["PASS", "2개 중 2개"]);
     expect(v.basis).toBe("판정 대상 지표 2개가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.");
   });
 
-  it("핵심 지표가 없고 미달이 있으면(B31 초안) — 미달 지표를 B13 처럼 잇고 조사는 마지막 이름, 판정 글자 뒤 '으로'", () => {
+  it("핵심 지표가 없고 미달이 있으면(B31) — 판정은 조건부 합격, 미달 지표를 B13 처럼 잇고 조사는 마지막 이름", () => {
     const one = [kpi({ metricId: "M1", value: 0.99 }), kpi({ metricId: "M9", name: "AUROC", value: 0.9, threshold: 0.98, status: "fail" })];
     const v = verdictOf(one, []);
     expect([v.verdict, v.label]).toEqual(["CONDITIONAL_PASS", "조건부 합격"]);
@@ -124,14 +129,33 @@ describe("4.2 근거 문장 — 갈래", () => {
     expect(verdictOf(two, []).basis).toBe("AUROC(M9), Recall(M3)이 목표에 미달하여, 3.4의 판정 규칙에 따라 조건부 합격으로 판정하였다.");
   });
 
+  it("핵심 지표가 없을 때 표·근거·표지가 같은 판정(판정 지점 하나) — 조건부 합격 / 합격", () => {
+    const failing = [
+      kpi({ metricId: "M1", value: 0.99, judgmentMargin: "ample" }),
+      kpi({ metricId: "M9", name: "AUROC", value: 0.9, threshold: 0.98, status: "fail", judgmentMargin: "ample" }),
+    ];
+    const v = verdictOf(failing, []);
+    expect([v.verdict, v.label, v.countText]).toEqual(["CONDITIONAL_PASS", VERDICT_LABEL_ED4.CONDITIONAL_PASS, "2개 중 1개"]);
+    expect(v.basis).toMatch(/조건부 합격으로 판정하였다\.$/);
+    // 표지: 종합 판정 줄 하나뿐(핵심 지표 줄 없음), 판정 이름은 4.2 표와 같은 글자.
+    // 핵심 지표 줄을 빼는 것은 지금 코드의 모양을 굳혀 둔 것이다 — 고정 문구 21번에 이 갈래가 없어 결정 대기
+    // (docs/ARCHITECTURE.md §6.6 켜기 전 확인 목록). 정해지면 이 기대값을 그 글로 바꾼다.
+    expect(buildCoverResultRows(v, failing)).toEqual([{ label: "종합 판정", value: "조건부 합격 (판정 대상 지표 2개 중 1개 충족, 4.2)" }]);
+    const passing = [kpi({ metricId: "M1", value: 0.99, judgmentMargin: "ample" })];
+    const p = verdictOf(passing, []);
+    expect([p.verdict, p.label]).toEqual(["PASS", "최종 합격"]);
+    expect(p.basis).toBe("판정 대상 지표 1개가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다.");
+    expect(buildCoverResultRows(p, passing)).toEqual([{ label: "종합 판정", value: "최종 합격 (판정 대상 지표 1개 중 1개 충족, 4.2)" }]);
+  });
+
   it("핵심 지표가 없는 성적서의 판정 불가는 기존 갈래(B13 '판정 대상 지표 부재')", () => {
     const v = verdictOf([kpi({ metricId: "M2", name: "Precision", threshold: null })], []);
     expect(v.basis).toBe("판정 대상 지표 부재로 3.4의 판정 규칙에 따라 판정할 수 없었다.");
   });
 });
 
-describe("표지 요약 줄 — 목표값 없는 핵심 지표(B32 초안)", () => {
-  // 계획 부록 B32(초안, 2026-10-24 승인)의 글 — "핵심 지표: {이름} {값} (합격 기준 없음, 참고 지표, 4.3)".
+describe("표지 요약 줄 — 목표값 없는 핵심 지표(B32)", () => {
+  // 부록 B32(2026-10-26 확정)의 글 — "핵심 지표: {이름} {값} (합격 기준 없음, 참고 지표, 4.3)".
   it("값은 판정과 무관해 plain — 판정 불가(목표값 부재) 표지", () => {
     const results = [kpi({ metricId: "M3", name: "Recall", value: 0.984375, threshold: null, isCore: true }), kpi({ metricId: "M1", value: 0.9696, threshold: 0.97, status: "fail" })];
     const v = verdictOf(results, ["M3"]);
@@ -155,8 +179,18 @@ describe("표지 요약 줄 — 목표값 없는 핵심 지표(B32 초안)", () 
     expect(buildCoverResultRows(verdictOf(alone, ["M3"]), alone)[1].value).toBe("Recall 0.970 (합격 기준 없음, 참고 지표, 4.3)");
   });
 
-  it("목표값도 값도 없으면(산출 실패) 줄을 두지 않는다", () => {
+  it("목표값이 없고 산출에도 실패했으면 21번 산출 실패 줄(B32 는 값을 채울 수 없다)", () => {
     const results = [kpi({ metricId: "M3", name: "Recall", value: 0, threshold: null, status: "unavailable", isCore: true }), kpi({ metricId: "M1" })];
+    const v = verdictOf(results, ["M3"]);
+    expect(v.basis).toBe("핵심 지표 Recall(M3)의 산출 실패로 3.4의 판정 규칙에 따라 판정할 수 없었다.");
+    expect(buildCoverResultRows(v, results)).toEqual([
+      { label: "종합 판정", value: "판정 불가 (판정 대상 지표 1개 중 1개 충족, 4.2)" },
+      { label: "핵심 지표", value: "Recall 측정 불가 (4.3)" },
+    ]);
+  });
+
+  it("목표값이 없고 값이 숫자가 아니면 줄을 두지 않는다(채울 틀이 없다)", () => {
+    const results = [kpi({ metricId: "M3", name: "Recall", value: Number.NaN, threshold: null, isCore: true }), kpi({ metricId: "M1" })];
     expect(buildCoverResultRows(verdictOf(results, ["M3"]), results).map((r) => r.label)).toEqual(["종합 판정"]);
   });
 });
@@ -169,7 +203,7 @@ describe("표지 요약 줄 — 갈래", () => {
     ]);
   });
 
-  it("핵심 지표 측정 불가는 부록 B3, 미달·충분·낮을수록 좋은 지표의 기준 ≤", () => {
+  it("핵심 지표 측정 불가는 21번 산출 실패 줄(합격 기준 없이), 미달·충분·낮을수록 좋은 지표의 기준 ≤", () => {
     const results = [
       kpi({ metricId: "M3", name: "Recall", value: 0, threshold: 0.97, status: "unavailable", isCore: true }),
       kpi({ metricId: "M19", name: "Log Loss", value: 0.1204, threshold: 0.1, higherIsBetter: false, status: "fail", isCore: true, judgmentMargin: "ample" }),
@@ -178,8 +212,23 @@ describe("표지 요약 줄 — 갈래", () => {
     const rows = buildCoverResultRows(verdictOf(results, ["M3", "M19"]), results);
     expect(rows).toEqual([
       { label: "종합 판정", value: "최종 불합격 (판정 대상 지표 2개 중 1개 충족, 4.2)" },
-      { label: "핵심 지표", value: "Recall 측정 불가 (합격 기준 ≥ 0.970, 4.3)" },
+      { label: "핵심 지표", value: "Recall 측정 불가 (4.3)" },
       { label: "핵심 지표", value: "Log Loss 0.120 (합격 기준 ≤ 0.100, 미달, 판정 여유 충분, 4.3)" },
+    ]);
+  });
+
+  it("측정 불가 핵심 지표가 여럿이면 지표마다 한 줄(4.3 순서), 판정은 판정 불가(산출 실패 원인에 모두)", () => {
+    const results = [
+      kpi({ metricId: "M4", name: "F1 Score", value: 0, threshold: 0.95, status: "unavailable", isCore: true }),
+      kpi({ metricId: "M1", value: 0.99, judgmentMargin: "ample" }),
+      kpi({ metricId: "M3", name: "Recall", value: 0, threshold: 0.97, status: "unavailable", isCore: true }),
+    ];
+    const v = verdictOf(results, ["M3", "M4"]);
+    expect(v.basis).toBe("핵심 지표 F1 Score(M4), Recall(M3)의 산출 실패로 3.4의 판정 규칙에 따라 판정할 수 없었다.");
+    expect(buildCoverResultRows(v, results)).toEqual([
+      { label: "종합 판정", value: "판정 불가 (판정 대상 지표 1개 중 1개 충족, 4.2)" },
+      { label: "핵심 지표", value: "F1 Score 측정 불가 (4.3)" },
+      { label: "핵심 지표", value: "Recall 측정 불가 (4.3)" },
     ]);
   });
 

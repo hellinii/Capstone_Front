@@ -512,6 +512,331 @@
       "score": 100,
       "verdict": "PASS"
     },
+    "judge_material": {
+      "material_check_version": "2.0",
+      "segments": [
+        {
+          "header": [
+            "종합 판정",
+            "판정 대상 지표 중 충족"
+          ],
+          "id": "4.2-table",
+          "kind": "table",
+          "numbers": [
+            {
+              "field": "verdict.judged_count",
+              "text": "5"
+            },
+            {
+              "field": "verdict.passed_count",
+              "text": "5"
+            }
+          ],
+          "place": "4.2",
+          "rows": [
+            [
+              "최종 합격",
+              "5개 중 5개"
+            ]
+          ],
+          "slot": "8",
+          "text": ""
+        },
+        {
+          "id": "4.2-basis",
+          "kind": "fixed",
+          "numbers": [],
+          "place": "4.2",
+          "slot": "8",
+          "text": "핵심 지표 Recall(M3)과 그 밖의 판정 대상 지표가 모두 목표를 충족하여, 3.4의 판정 규칙에 따라 합격으로 판정하였다."
+        },
+        {
+          "header": [
+            "시험항목",
+            "판정 여유"
+          ],
+          "id": "4.3-margin",
+          "kind": "table",
+          "numbers": [],
+          "place": "4.3",
+          "rows": [
+            [
+              "Accuracy",
+              "작음"
+            ],
+            [
+              "Recall (핵심)",
+              "작음"
+            ],
+            [
+              "F1 Score",
+              "작음"
+            ],
+            [
+              "AUROC",
+              "충분"
+            ],
+            [
+              "Log Loss",
+              "충분"
+            ]
+          ],
+          "slot": "8.3",
+          "text": ""
+        },
+        {
+          "id": "3.3-derivation",
+          "kind": "fixed",
+          "numbers": [
+            {
+              "field": "derived_prediction.threshold",
+              "text": "0.5"
+            }
+          ],
+          "place": "3.3",
+          "slot": "7.1",
+          "text": "본 평가의 예측값은 제출된 확률값에 결정 임계값 0.5를 적용하여 산출하였습니다. (점수 컬럼: score_malignant)"
+        },
+        {
+          "header": [
+            "양성 클래스",
+            "TP",
+            "TN",
+            "FP",
+            "FN"
+          ],
+          "id": "4.4-counts",
+          "kind": "table",
+          "numbers": [
+            {
+              "field": "confusion_counts.malignant.tp",
+              "text": "63"
+            },
+            {
+              "field": "confusion_counts.malignant.tn",
+              "text": "105"
+            },
+            {
+              "field": "confusion_counts.malignant.fp",
+              "text": "2"
+            },
+            {
+              "field": "confusion_counts.malignant.fn",
+              "text": "1"
+            }
+          ],
+          "place": "4.4",
+          "rows": [
+            [
+              "malignant",
+              "63",
+              "105",
+              "2",
+              "1"
+            ]
+          ],
+          "slot": "7.1",
+          "text": "혼동 행렬 건수"
+        },
+        {
+          "id": "4.4-fixed17",
+          "kind": "fixed",
+          "numbers": [],
+          "place": "4.4",
+          "slot": "7.1",
+          "text": "확률이 있는 오분류 3건 중 경계 오류(확률과 결정 임계값 0.5의 차가 0.1 미만)는 1건(33.3%), 확신 오류(틀린 쪽 확률 0.9 이상)는 0건(0.0%)이다."
+        },
+        {
+          "header": [
+            "클래스",
+            "F1",
+            "표본 수",
+            "비율",
+            "매크로 F1과의 차이",
+            "작은 표본"
+          ],
+          "id": "4.4-weakest",
+          "kind": "table",
+          "numbers": [
+            {
+              "field": "facts.weakest_class.f1",
+              "text": "0.977"
+            },
+            {
+              "field": "facts.weakest_class.support",
+              "text": "64"
+            },
+            {
+              "field": "facts.weakest_class.share",
+              "text": "37.4%"
+            },
+            {
+              "field": "facts.weakest_class.gap",
+              "text": "0.005"
+            }
+          ],
+          "place": "4.4",
+          "rows": [
+            [
+              "malignant(악성 종양)",
+              "0.977",
+              "64",
+              "37.4%",
+              "0.005",
+              "아니오"
+            ]
+          ],
+          "slot": "7.1",
+          "text": "최약 클래스(F1 최저)\n매크로 F1과의 차이 = 매크로 F1 − 이 클래스의 F1. 작은 표본은 표본 수 30건 미만 또는 전체의 5% 미만입니다."
+        },
+        {
+          "header": [
+            "양성 클래스",
+            "예측 수",
+            "실제 수",
+            "차이(예측 − 실제)"
+          ],
+          "id": "4.4-bias",
+          "kind": "table",
+          "numbers": [
+            {
+              "field": "facts.prediction_bias.malignant.predicted",
+              "text": "65"
+            },
+            {
+              "field": "facts.prediction_bias.malignant.actual",
+              "text": "64"
+            },
+            {
+              "field": "facts.prediction_bias.malignant.difference",
+              "text": "+1"
+            }
+          ],
+          "place": "4.4",
+          "rows": [
+            [
+              "malignant(악성 종양)",
+              "65",
+              "64",
+              "+1"
+            ]
+          ],
+          "slot": "7.1",
+          "text": "예측 편향(예측 수 대 실제 수)"
+        },
+        {
+          "header": [
+            "지표",
+            "현재 결정 임계값 0.5",
+            "F1이 가장 높은 결정 임계값 0.6166"
+          ],
+          "id": "4.4-threshold",
+          "kind": "table",
+          "numbers": [],
+          "place": "4.4",
+          "rows": [
+            [
+              "F1 Score",
+              "0.977",
+              "0.984"
+            ],
+            [
+              "Recall",
+              "0.984",
+              "0.984"
+            ],
+            [
+              "Precision",
+              "0.969",
+              "0.984"
+            ]
+          ],
+          "slot": "7.1",
+          "text": "임계값 조정 여지\nF1의 최대 상승폭은 0.008이다."
+        },
+        {
+          "id": "5.1-fixed11",
+          "kind": "fixed",
+          "numbers": [],
+          "place": "5.1",
+          "slot": "8.2",
+          "text": "평가 데이터는 학습 데이터와 동일한 출처에서 수집되었다. 본 결과는 동일 분포 내 성능을 나타내며, 다른 운영 환경에서의 일반화 성능을 보증하지 않는다."
+        },
+        {
+          "id": "4.6-fixed16",
+          "kind": "fixed",
+          "numbers": [],
+          "place": "4.6",
+          "slot": "8.1",
+          "text": "다음 지표는 내부 참조 기준치가 없어 벤치마크 비교를 하지 않았다: Log Loss, Imbalance Ratio."
+        },
+        {
+          "id": "5.4-b18",
+          "kind": "fixed",
+          "numbers": [],
+          "place": "5.4",
+          "slot": "8.1",
+          "text": "해당 없음",
+          "when": "slot_empty"
+        },
+        {
+          "id": "5.6-fixed15",
+          "kind": "fixed",
+          "numbers": [],
+          "place": "5.6",
+          "slot": "7.3",
+          "text": "해당 없음",
+          "when": "slot_empty"
+        },
+        {
+          "header": [
+            "우선순위",
+            "대응 문제 번호",
+            "권고",
+            "기대 효과"
+          ],
+          "id": "6.1-recommend",
+          "kind": "recommend_rows",
+          "numbers": [],
+          "place": "6.1",
+          "row_keys": [
+            "P2"
+          ],
+          "rows": [
+            [
+              "낮음",
+              "P2 · 평가 데이터가 학습과 같은 출처"
+            ]
+          ],
+          "slot": "9",
+          "text": ""
+        },
+        {
+          "header": [
+            "우선순위",
+            "대응 문제 번호",
+            "권고",
+            "기대 효과"
+          ],
+          "id": "6.2-recommend",
+          "kind": "recommend_rows",
+          "numbers": [],
+          "place": "6.2",
+          "row_keys": [
+            "P1"
+          ],
+          "rows": [
+            [
+              "중간",
+              "P1 · 핵심 지표 근소 합격 (Recall)"
+            ]
+          ],
+          "slot": "9",
+          "text": ""
+        }
+      ],
+      "version": "judge-material-1"
+    },
     "report_edition": 4,
     "report_purpose": "external",
     "task_type": "binary"

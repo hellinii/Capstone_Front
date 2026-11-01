@@ -2,6 +2,9 @@
  * 판 4 1절 시험 개요(갈래 b1) — bc_strong 을 화면·인쇄·번호 열기로 그려 예시본 "## 1. 시험 개요" 블록과 줄 전체를 맞추고(가림 0개),
  * 다중·멀티 픽스처와 복사 데이터로 예시본에 없는 갈래(과제 칸, 목적별 점검 미충족, 영향 줄 둘, 6번 없음, 5번 없음, FAX·홈페이지)를
  * 정확값으로 단정한다.
+ *
+ * 1.1 시험기관 표의 주소·이메일 행(심판 라운드 1단계, D48·예시본 rev 85)은 판 4 run 을 만들 때 저장한 값이 있을 때만 — 저장값이
+ * 없는 옛 판 4 데이터는 기관명·발급 방식 두 행(발급 당시 모양).
  */
 import { describe, expect, it } from "vitest";
 
@@ -29,8 +32,16 @@ const purposeTableOf = (lines: string[]) => lines.slice(lines.findIndex((l) => l
 describe("1절 — bc_strong = 예시본 1절 블록(줄 전체·순서, 가림 0개)", () => {
   const want = asRendered(exampleBlock("## 1. 시험 개요"));
 
-  it("예시본 블록 자체: 27줄, ○ 없음, 1.3 은 1~6번과 영향 줄 하나", () => {
-    expect(want).toHaveLength(27);
+  it("예시본 블록 자체: 29줄(rev 85 에서 시험기관 표에 주소·이메일 두 행), ○ 없음, 1.3 은 1~6번과 영향 줄 하나", () => {
+    expect(want).toHaveLength(29);
+    expect(want.slice(want.indexOf("시험기관"), want.indexOf("시험기관") + 6)).toEqual([
+      "시험기관",
+      "| 항목 | 내용",
+      "| 기관명 | 리트머스",
+      "| 주소 | 서울특별시 중구 시험로 123, 4층",
+      "| 이메일 | contact@litmus.example",
+      "| 발급 방식 | 자동 발급 (사람 승인 없음)",
+    ]);
     expect(want.join("\n")).not.toMatch(/○/);
     expect(constraintsOf(want).map((l) => /^(\d)\. /.exec(l)?.[1] ?? "-")).toEqual(["1", "2", "3", "4", "5", "6", "-"]);
   });
@@ -148,11 +159,36 @@ describe("1절 — 픽스처에 없는 갈래(복사 데이터)", () => {
     ]);
   });
 
-  it("시험기관 표 — 기관명은 performer.orgName, 평가자·연락처 칸 없음", () => {
-    const data = copy(base, (d) => (d.performer.orgName = "다른기관"));
+  it("시험기관 표 — 기관명·주소·이메일은 저장값(performer), 평가자·연락처·전화 칸 없음", () => {
+    const data = copy(base, (d) => {
+      d.performer.orgName = "다른기관";
+      d.performer.address = "부산광역시 해운대구 시험로 1";
+      d.performer.email = "lab@other.example";
+    });
     const lines = partOf(screenText(data), FIRST, NEXT);
     const from = lines.indexOf("시험기관");
-    expect(lines.slice(from, from + 4)).toEqual(["시험기관", "| 항목 | 내용", "| 기관명 | 다른기관", "| 발급 방식 | 자동 발급 (사람 승인 없음)"]);
+    expect(lines.slice(from, from + 6)).toEqual([
+      "시험기관",
+      "| 항목 | 내용",
+      "| 기관명 | 다른기관",
+      "| 주소 | 부산광역시 해운대구 시험로 1",
+      "| 이메일 | lab@other.example",
+      "| 발급 방식 | 자동 발급 (사람 승인 없음)",
+    ]);
+  });
+
+  it("시험기관 표 — 옛 판 4 데이터(주소·이메일 저장값 없음)는 세 경로 모두 기관명·발급 방식 두 행", async () => {
+    const old = (d: FinalReportData) =>
+      copy(d, (x) => {
+        delete x.performer.address;
+        delete x.performer.email;
+      });
+    const table = (lines: string[]) => lines.slice(lines.indexOf("시험기관"), lines.indexOf("1.2 시험 목적과 성적서 용도"));
+    const want = ["시험기관", "| 항목 | 내용", "| 기관명 | 리트머스", "| 발급 방식 | 자동 발급 (사람 승인 없음)"];
+    expect(table(partOf(screenText(old(loadEd4("bc_strong", "issued"))), FIRST, NEXT))).toEqual(want);
+    expect(table(partOf(await printText(old(loadEd4("bc_strong", "issued"))), FIRST, NEXT))).toEqual(want);
+    const page = await byNumberText(old(loadEd4("bc_strong", "final")), loadEd4Issuance("bc_strong"), { dropRecord: true });
+    expect(table(partOf(page, FIRST, NEXT))).toEqual(want);
   });
 
   it("용도 개요가 비면 용도별 기본 글, 과제 번호 칸(값이 있을 때)", () => {

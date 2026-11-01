@@ -10,7 +10,7 @@ import { josa } from "../../koreanJosa";
 import { CONFIDENCE_INTERVAL_PREMISE, REPORT_PURPOSE_LABEL, REPORT_PURPOSE_OVERVIEW } from "../../reportConstants";
 import { materialRowText } from "../../reportMaterials";
 import { FIXED_13_ED4, FIXED_2_2_NOT_PROVIDED_LABEL } from "../edition4Text";
-import type { CoverRow } from "./cover";
+import { institutionContact, type CoverRow } from "./cover";
 import { ISSUE_METHOD_AUTO } from "./coverText";
 import {
   BASE_CONSTRAINTS_ED4,
@@ -40,10 +40,16 @@ export function clientRows(data: FinalReportData): CoverRow[] {
   ];
 }
 
-/** 1.1 시험기관 표 — 기관명과 발급 방식(대응표 19·31 — 평가자·연락처 없음). */
+/**
+ * 1.1 시험기관 표 — 기관명, 주소, 이메일, 발급 방식(대응표 19·31, D48 — 평가자·전화 없음). 주소·이메일은 run 을 만들 때 저장한
+ * 값이 있을 때만(표지 발급 기관 줄과 같은 값 — `institutionContact`).
+ */
 export function institutionRows(data: FinalReportData): CoverRow[] {
+  const { address, email } = institutionContact(data);
   return [
     { label: OVERVIEW_INSTITUTION_LABEL.orgName, value: data.performer.orgName },
+    ...(address !== null ? [{ label: OVERVIEW_INSTITUTION_LABEL.address, value: address }] : []),
+    ...(email !== null ? [{ label: OVERVIEW_INSTITUTION_LABEL.email, value: email }] : []),
     { label: OVERVIEW_INSTITUTION_LABEL.issueMethod, value: ISSUE_METHOD_AUTO },
   ];
 }

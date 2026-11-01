@@ -13,7 +13,7 @@ import {
   B15_SUBMITTED_PREDICTION,
   B16_NO_TRAINING_DISTRIBUTION,
   B17_NO_CURVES,
-  B33_NO_TRAINING_SAMPLES_DRAFT,
+  B33_NO_TRAINING_SAMPLES,
   FIXED_24_DISTRIBUTION,
 } from "../../../lib/report/edition4/edition4Text";
 import { FIXED_7_MULTILABEL_IMBALANCE } from "../../../lib/report/edition4/render/resultsDetailText";
@@ -280,7 +280,7 @@ describe("픽스처에 없는 갈래 — 복사본", () => {
     const d = clone(loadEd4("yeast_strong", "final"));
     d.edition4Values!.distribution.training = { status: "training_samples_not_provided", rows: [] };
     const lines = partLines(d);
-    expect(after(lines, "학습·평가 클래스 비율", 2)).toEqual([B33_NO_TRAINING_SAMPLES_DRAFT, FIXED_24_DISTRIBUTION]);
+    expect(after(lines, "학습·평가 클래스 비율", 2)).toEqual([B33_NO_TRAINING_SAMPLES, FIXED_24_DISTRIBUTION]);
     expect(lines).not.toContain(B16_NO_TRAINING_DISTRIBUTION);
   });
 

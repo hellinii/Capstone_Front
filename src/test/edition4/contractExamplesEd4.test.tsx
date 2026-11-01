@@ -19,6 +19,7 @@ const ctl = vi.hoisted(() => ({ redirected: 0 }));
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
+  const { JOBS_JSON, withPassedJudge } = await import("./passedJudge");
   const OLD = /([\\/])edition3\1newRun\1inputs\1(\w+)\.evaluate\.json$/;
   const readFileSync = ((path: unknown, ...rest: unknown[]) => {
     const m = typeof path === "string" ? OLD.exec(path) : null;
@@ -26,6 +27,11 @@ vi.mock("node:fs", async (importOriginal) => {
       ctl.redirected += 1;
       const sep = m[1];
       path = (path as string).replace(OLD, `${sep}edition4${sep}evaluateNewKeys${sep}${m[2]}.evaluate.json`);
+    }
+    // 판 4 run 의 작업 응답에 통과 심판 묶음(심판 라운드 J6 — 없으면 닫힌 쪽 기본값대로 보류된다, `passedJudge.ts`).
+    if (typeof path === "string" && JOBS_JSON.test(path)) {
+      const raw = (actual.readFileSync as (...a: unknown[]) => unknown)(path, "utf8") as string;
+      return withPassedJudge(raw, (p) => (actual.readFileSync as (...a: unknown[]) => unknown)(p, "utf8") as string);
     }
     return (actual.readFileSync as (...a: unknown[]) => unknown)(path, ...rest);
   }) as typeof actual.readFileSync;
@@ -58,11 +64,13 @@ const EXAMPLE_OF: Record<Tag, string> = {
  * "samples", Class9 share 0.087·low_support false, low_support_classes 는 Class14 하나, 문제 근거 weakest_class 같이). 이진·다중 그대로.
  * S6 뒤 사용자 결정 4(2026-10-24)로 멀티 예시만 다시 떴다 — 고정 문구 17(facts.fixed_sentences)의 "틀린 레이블 칸 2,687개"(건수
  * 쉼표). 그 밖 바이트·이진·다중 그대로.
+ * 심판 라운드 J2(2026-10-29)로 세 예시 모두 다시 떴다 — 판 4 요청 맨 끝에 심판 읽기 재료(judge_material, 계약 judge_material_ed4.json)가
+ * 붙었다. 그 앞 바이트(task_type~client_inputs)는 그대로다.
  */
 const SHA256: Record<string, string> = {
-  "fact_sheet_binary_ed4.json": "0f7da6dfc88870aec7cb18c3a02204319df8487b4a9e058c344ade8dc0d63f69",
-  "fact_sheet_multiclass_ed4.json": "68277d563888fdc1fdb1f4c50a0cd373d264394026c0ede9e1c421bc91ef96a5",
-  "fact_sheet_multilabel_ed4.json": "9c3a3d73ed30839d403ba4971a25b0052754baa84bc5e888aa49dc022caf53d5",
+  "fact_sheet_binary_ed4.json": "cf9e0bf6d2822197ed4327ae49e618bd7d471728a77f7e6a5c99af32156248df",
+  "fact_sheet_multiclass_ed4.json": "b02df6a786b55f4d3ced5ebdb1ed4689afffdb47a6c9638c628755ab9535f010",
+  "fact_sheet_multilabel_ed4.json": "44d0d30f674ec140f5136a16b322eaafee3b4208ccc0423a6080278f451855c0",
 };
 
 const UPDATE = process.env.UPDATE_CONTRACT === "1";
