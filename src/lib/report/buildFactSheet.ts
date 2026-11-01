@@ -141,6 +141,11 @@ export interface NarrativeRequestPayload {
    * 만드는 곳은 `lib/report/reportMaterials.ts` 의 `buildClientInputs`.
    */
   client_inputs?: Record<string, unknown>;
+  /**
+   * 심판 읽기 재료(판 4 만 — `attachJudgeMaterial`). 판 3 요청에는 키가 없다. 백엔드는 형식이 틀리거나 크면 이 칸만 버린다.
+   * 만드는 곳은 `lib/report/edition4/judgeMaterialEd4.ts`.
+   */
+  judge_material?: unknown;
 }
 
 export interface BuildFactSheetInput {

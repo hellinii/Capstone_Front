@@ -100,7 +100,8 @@ export interface NarrativeFacts {
   core_metrics_source: "default" | "client";
   /**
    * 의뢰자가 고른 지표(M 표기, 표 지표 M21·M22 포함 — 산출 실패도). 사실 시트 지표 목록은 표 지표를 빼므로,
-   * 5절의 "M22 를 골랐으면"·"M2·M3 를 골랐으면" 같은 서술 조건은 이 목록으로 본다(백엔드 select_items).
+   * 5절의 "M2·M3 를 골랐으면"(Precision·Recall 차이) 같은 서술 조건은 이 목록으로 본다(백엔드 select_items).
+   * 8.2 평균 방식 차이는 심판 라운드 1단계부터 M22 선택과 무관하다 — 클래스별 표를 늘 계산하고 `average_gap` 을 늘 싣는다.
    */
   selected_metrics: string[];
   declarations: {

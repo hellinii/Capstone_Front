@@ -2,6 +2,7 @@ import { useParams } from "react-router";
 import { isLegacyLayout, usesSchema3, usesSchema4 } from "../../lib/report/normalizeReportContent";
 import { useStoredReport } from "../../hooks/useReportData";
 import { NotPrintableState, ReportNotFoundState } from "../../components/report/ReportStateNotices";
+import { lockReasonText } from "../../lib/report/judgeNotice";
 import { usePrintOnReady } from "../../hooks/usePrintOnReady";
 import { PrintLayout } from "../../components/report/layout/PrintLayout";
 import { PageBreak } from "../../components/report/layout/PageBreak";
@@ -24,11 +25,14 @@ import { Edition4Report } from "../../components/report/edition4/Edition4Report"
 export function ReportPrint() {
   const { id = "" } = useParams();
   // 저장된 완성본만 읽는다 — 인쇄 탭은 평가·서술 작업을 시작하지 않는다(서술 라운드 S3b).
-  const { data, status } = useStoredReport(id);
+  const { data, status, lock } = useStoredReport(id);
   const containerRef = usePrintOnReady(data, status === "ready");
 
   if (status === "not_found" || !data) return <ReportNotFoundState />;
-  if (status === "not_printable") return <NotPrintableState />;
+  if (status === "not_printable") {
+    // 판 4 심판 잠금이면 그 이유(B45·B46), 서술 미완료면 지금 안내 그대로.
+    return <NotPrintableState reason={lock && lock !== "narrative" ? lockReasonText(lock, "") : undefined} />;
+  }
 
   return (
     <PrintLayout>

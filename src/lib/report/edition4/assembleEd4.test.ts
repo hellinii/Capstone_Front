@@ -121,3 +121,67 @@ describe("옛 백엔드 응답(새 칸 없음)", () => {
     expect(four.stage1Report).not.toHaveProperty("nearTargetNote");
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * 심판 라운드 1단계(갈래 FE_B) — 판정 지점 하나, 핵심 지표 산출 실패 줄, 시험기관 주소·이메일
+ * ------------------------------------------------------------------ */
+describe("판정 지점 하나 — 판정 이름·4.2 근거·표지·서술 요청 사실이 같은 판정", () => {
+  /** 핵심 지표를 비운 입력(화면은 1개 이상을 강제한다 — 화면을 거치지 않은 입력이 오는 경우의 방어 갈래, B31). */
+  function noCoreInputs(): EvaluatedReportInputs {
+    const i = inputs();
+    // M1 목표를 0.99 로 올려 미달(0.982) — 핵심 지표가 없으니 판정은 조건부 합격.
+    i.metricDetails = { ...i.metricDetails, M1: { ...(i.metricDetails.M1 as object), targetValue: "0.99" } as never };
+    i.composerMetrics = { coreMetrics: { choices: [] } };
+    return i;
+  }
+
+  it("핵심 지표가 없고 미달이 있으면 모든 자리가 조건부 합격(B31)", () => {
+    const { stage1Report, factSheet } = assembleEvaluatedReport(base(4), structuredClone(NEW), noCoreInputs());
+    expect(stage1Report.kpiResults.filter((r) => r.isCore)).toEqual([]);
+    expect(stage1Report.conclusion.verdict).toBe("CONDITIONAL_PASS");
+    expect(factSheet.verdict).toBe("CONDITIONAL_PASS");
+    expect(factSheet.facts!.verdict_detail.verdict).toBe("CONDITIONAL_PASS");
+    const v = stage1Report.edition4Values!.verdict;
+    expect([v.verdict, v.label, v.countText]).toEqual(["CONDITIONAL_PASS", "조건부 합격", "5개 중 4개"]);
+    expect(v.basis).toBe("Accuracy(M1)가 목표에 미달하여, 3.4의 판정 규칙에 따라 조건부 합격으로 판정하였다.");
+    expect(stage1Report.edition4Values!.coverResultRows).toEqual([
+      { label: "종합 판정", value: "조건부 합격 (판정 대상 지표 5개 중 4개 충족, 4.2)" },
+    ]);
+  });
+
+  it("핵심 지표 산출 실패(응답 failed_metrics) — 표지 '측정 불가 (4.3)', 4.2 는 판정 불가(산출 실패)", () => {
+    const r = structuredClone(NEW);
+    delete r.results.success_metrics.M3;
+    r.results.failed_metrics = { M3: "계산 실패" };
+    const { stage1Report, factSheet } = assembleEvaluatedReport(base(4), r, inputs());
+    expect(stage1Report.conclusion.verdict).toBe("INCONCLUSIVE");
+    expect(factSheet.facts!.verdict_detail.verdict).toBe("INCONCLUSIVE");
+    const v = stage1Report.edition4Values!.verdict;
+    expect(v.basis).toBe("핵심 지표 Recall(M3)의 산출 실패로 3.4의 판정 규칙에 따라 판정할 수 없었다.");
+    expect(stage1Report.edition4Values!.coverResultRows).toEqual([
+      { label: "종합 판정", value: "판정 불가 (판정 대상 지표 4개 중 4개 충족, 4.2)" },
+      { label: "핵심 지표", value: "Recall 측정 불가 (4.3)" },
+    ]);
+  });
+});
+
+describe("시험기관 주소·이메일(D48) — 판 4 run 을 만들 때 찍고, 판 3 run 에는 없다", () => {
+  it("판 4 run 의 performer 에 재료 목록 고정값, 조립 뒤에도 그대로", () => {
+    const want = {
+      orgName: "리트머스",
+      evaluator: "자동 평가 엔진",
+      contact: "—",
+      address: "서울특별시 중구 시험로 123, 4층",
+      email: "contact@litmus.example",
+    };
+    expect(base(4).performer).toEqual(want);
+    expect(assembleEvaluatedReport(base(4), structuredClone(NEW), inputs()).stage1Report.performer).toEqual(want);
+  });
+
+  it("판 3 run 의 performer 는 판 3 그대로(주소·이메일 키 없음)", () => {
+    const performer = base(3).performer;
+    expect(performer).toEqual({ orgName: "리트머스", evaluator: "자동 평가 엔진", contact: "—" });
+    expect(performer).not.toHaveProperty("address");
+    expect(performer).not.toHaveProperty("email");
+  });
+});

@@ -23,16 +23,20 @@ import {
 import { BackendNoticePanel } from "../../components/workflow/BackendNoticePanel";
 import { MaterialCheckOutdatedNotice } from "../../components/workflow/MaterialCheckNotice";
 import { usesSchema4 } from "../../lib/report/normalizeReportContent";
+import { reportLock } from "../../lib/report/reportLock";
+import { lockReasonText } from "../../lib/report/judgeNotice";
 
 export function Report() {
   // 기본값을 두지 않는다 — 폐지된 임시 성적서("preview")로 조용히 떨어지지 않게(E-06).
   const { id = "" } = useParams();
   const report = useReportData(id);
   const { data: reportData, status, error, narrative } = report;
-  const issuance = useIssuance(id, reportData, narrative.phase === "done");
+  const issuance = useIssuance(id, reportData, narrative.phase);
   const data = issuance.data; // 발급 반영본(있으면) — 섹션은 이 값을 렌더한다
-  // 끝나지 않은 서술은 완성본이 아니다 — 인쇄(PDF)·발급·정정 발급을 잠근다(서술 라운드 S3b, 계획 원칙 4).
-  const locked = narrative.phase !== "done" || !data?.isEvaluated;
+  // 끝나지 않은 서술은 완성본이 아니다 — 인쇄(PDF)·발급·정정 발급을 잠근다(서술 라운드 S3b, 계획 원칙 4). 판 4 는 심판 통과 기록이
+  // 있어야 연다(심판 라운드 J6). 판정은 한 곳(`reportLock`) — 발급 훅·인쇄 화면도 같은 함수를 부른다.
+  const lock = reportLock(narrative.phase, data);
+  const locked = lock !== null;
   // 저장에 실패했으면 인쇄 화면(새 탭, 저장본만 읽음)이 완성본을 못 읽는다 — PDF 도 잠그고 그 이유를 말한다(S3b 검토).
   const printLocked = locked || !!report.saveError;
   const { download } = usePdfDownload(id, !printLocked);
@@ -62,7 +66,7 @@ export function Report() {
       onDownload={download}
       issued={issuance.issued}
       canIssue={issuance.canIssue}
-      lockReason={locked ? NARRATIVE_LOCK_REASON : undefined}
+      lockReason={lock ? lockReasonText(lock, NARRATIVE_LOCK_REASON) : undefined}
       printLockReason={!locked && report.saveError ? SAVE_LOCK_REASON : undefined}
       reportId={data.meta.reportId}
       busy={issuance.busy}
@@ -93,6 +97,7 @@ export function Report() {
         retrying={narrative.retrying}
         onRetry={() => void report.retryNarrative()}
         edition4={usesSchema4(data)}
+        judge={data.judge}
       />
       {/* 작성 기록(판 3, 서술이 끝난 성적서) — 화면에만. 본문(ReportSections)·인쇄 경로에는 없다(사용자 결정 4).
           서술 대기·실패는 화면 출처(displaySource → narrativeSource pending·failed)로 상자가 스스로 가린다. */}

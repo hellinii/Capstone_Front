@@ -9,11 +9,12 @@ import {
   coverIssueSentence,
   coverIssuerLine,
   coverStandardLine,
+  institutionContact,
   coverStatusLines,
   coverSummaryRows,
   isIssuedEd4,
 } from "./cover";
-import { COVER_ISSUER_LINE, ISSUE_METHOD_AUTO } from "./coverText";
+import { COVER_ISSUER_CONTACT, COVER_ISSUER_LINE, ISSUE_METHOD_AUTO } from "./coverText";
 
 const copy = (data: FinalReportData, change: (d: FinalReportData) => void): FinalReportData => {
   const d = structuredClone(data);
@@ -53,11 +54,32 @@ describe("표준 문구·발급 기관", () => {
     expect(coverStandardLine(copy(issued, (d) => delete d.materialCheck))).toBeNull();
   });
 
-  it("발급 기관 = performer.orgName(서명·발급 기록의 issuer 가 아님)", () => {
+  it("발급 기관 = performer.orgName(서명·발급 기록의 issuer 가 아님) + 저장된 주소·이메일 괄호(D48, 예시본 rev 85)", () => {
     expect(COVER_ISSUER_LINE).toBe("발급 기관: {기관}");
-    expect(coverIssuerLine(issued)).toBe("발급 기관: 리트머스");
+    expect(COVER_ISSUER_CONTACT).toBe(" ({연락})");
+    expect(coverIssuerLine(issued)).toBe("발급 기관: 리트머스 (서울특별시 중구 시험로 123, 4층, contact@litmus.example)");
+    expect(coverIssuerLine(unissued)).toBe("발급 기관: 리트머스 (서울특별시 중구 시험로 123, 4층, contact@litmus.example)");
     expect(issued.signature.issuer).toBe("리트머스 평가부");
-    expect(coverIssuerLine(copy(issued, (d) => (d.performer.orgName = "다른기관")))).toBe("발급 기관: 다른기관");
+    expect(coverIssuerLine(copy(issued, (d) => (d.performer.orgName = "다른기관")))).toBe(
+      "발급 기관: 다른기관 (서울특별시 중구 시험로 123, 4층, contact@litmus.example)",
+    );
+  });
+
+  it("주소·이메일 — 저장값 순서(주소, 이메일), 없는 칸·빈 칸은 빼고, 둘 다 없으면 기관명만(옛 판 4 데이터)", () => {
+    const set = (address: string | undefined, email: string | undefined) =>
+      copy(issued, (d) => {
+        if (address === undefined) delete d.performer.address;
+        else d.performer.address = address;
+        if (email === undefined) delete d.performer.email;
+        else d.performer.email = email;
+      });
+    expect(coverIssuerLine(set("주소A", "a@b.example"))).toBe("발급 기관: 리트머스 (주소A, a@b.example)");
+    expect(coverIssuerLine(set("주소A", undefined))).toBe("발급 기관: 리트머스 (주소A)");
+    expect(coverIssuerLine(set(undefined, "a@b.example"))).toBe("발급 기관: 리트머스 (a@b.example)");
+    expect(coverIssuerLine(set("", ""))).toBe("발급 기관: 리트머스");
+    expect(coverIssuerLine(set(undefined, undefined))).toBe("발급 기관: 리트머스");
+    expect(institutionContact(set(undefined, undefined))).toEqual({ address: null, email: null });
+    expect(institutionContact(issued)).toEqual({ address: "서울특별시 중구 시험로 123, 4층", email: "contact@litmus.example" });
   });
 });
 

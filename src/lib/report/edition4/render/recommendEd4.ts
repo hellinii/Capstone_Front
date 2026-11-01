@@ -11,6 +11,11 @@
  * - 문제 목록이 아직 없으면(`problems` 키 없음 — 평가 전 초안) 판 3 9절과 같은 갈래: 6.1·6.2 칸 자리표시, 표 없음, 권고가 없으면
  *   그 아래 판 3 권고 표 자리 안내(`ED3_RECOMMEND_ITEMS_PLACEHOLDER`). 권고 행이 있어도 문제 번호가 없으니 찍지 않는다(위 규칙).
  * - 권고 분류(category)는 찍지 않는다(예시본에 열이 없음).
+ * - 자동 작성 표시(서술 설계 D54, 왼쪽 세로줄): 9 칸은 6.1·6.2 서술과 권고표가 한 칸이다(D36). 소절마다 서술 글이면 서술에
+ *   (`findingsEd4.ed4AutoMarked` — 5절과 같은 판정), 쓴 권고 행이 하나라도 있으면 권고표 **전체**에 긋는다 — 같은 표의 자리표시 행
+ *   (권고가 아직 없는 문제)도 선 안이다(표는 칸의 한 덩어리라 행마다 끊지 않는다). 행이 쓴 권고인지 자리표시인지는 행을 만들 때
+ *   한 곳(`ed4RecommendRowEntries`)에서 정하고, 표에 그을지는 그 값에서만 이끌어 낸다. 소절 제목·고정 문구 6·자리표시(서술 자리표시,
+ *   자리표시 행뿐인 표, 권고 표 자리 안내)에는 긋지 않는다.
  */
 import type { FinalReportData, Problem } from "../../../../types/finalReport.types";
 import { sectionBadgeKind } from "../../../../components/report/shared/SectionSourceBadge";
@@ -22,7 +27,7 @@ import {
 import { priorityLabelEd4, problemLabel } from "../../problemList";
 import { ED4_DASH, type Ed4TitleNumber } from "../edition4Text";
 import { ED4_RECOMMEND_SECTIONS } from "../narrativeSlots";
-import { ed4SlotBody, type Ed4SlotBody } from "./findingsEd4";
+import { ed4AutoMarked, ed4SlotBody, type Ed4SlotBody } from "./findingsEd4";
 import { ED3_RECOMMEND_ITEMS_PLACEHOLDER, ED3_RECOMMEND_PLACEHOLDER, ED3_RECOMMENDATION_PENDING } from "./recommendText";
 
 /** 권고 표 한 행(칸 글 넷 — 예시본 순서). */
@@ -34,6 +39,8 @@ export interface Ed4RecommendSide {
   body: Ed4SlotBody;
   /** 표 행 — 이 소절에 문제가 없으면 null(B19, 표 없음). */
   rows: Ed4RecommendRow[] | null;
+  /** 자동 작성 표시(D54) — 서술(body)·권고표(rows)에 왼쪽 세로줄을 긋는가. 둘 다면 한 줄로 이어 긋는다. */
+  autoMarked: { body: boolean; rows: boolean };
 }
 
 export type Ed4RecommendLayout =
@@ -51,20 +58,35 @@ const NARRATIVE_OF: Record<string, (data: FinalReportData) => string | undefined
   "9.2": (data) => data.recommendationNarrative?.modelOps,
 };
 
-/** 한 소절 문제들의 권고 표 행. */
-export function ed4RecommendRows(data: FinalReportData, problems: ReadonlyArray<Problem>): Ed4RecommendRow[] {
+/** 권고 표 한 행과 그 행이 쓴 권고인지(거짓 = 권고가 아직 없는 문제의 자리표시 행). */
+export interface Ed4RecommendRowEntry {
+  row: Ed4RecommendRow;
+  written: boolean;
+}
+
+/**
+ * 한 소절 문제들의 권고 표 행 — 행마다 쓴 권고인지 함께. "이 문제에 쓴 권고가 있나"를 정하는 곳은 여기 하나다
+ * (자리표시 행을 넣을지와 표에 자동 작성 표시를 그을지가 같은 값을 본다).
+ */
+export function ed4RecommendRowEntries(data: FinalReportData, problems: ReadonlyArray<Problem>): Ed4RecommendRowEntry[] {
   const recommendations = data.recommendations ?? [];
-  const rows: Ed4RecommendRow[] = [];
+  const entries: Ed4RecommendRowEntry[] = [];
   for (const problem of problems) {
     const priority = priorityLabelEd4(problem.priority);
     const label = problemLabel(problem);
     const recs = recommendations.filter((rec) => rec.problemId === problem.id);
     if (recs.length === 0) {
-      rows.push([priority, label, recommendationPlaceholder(data.narrativeSource, ED3_RECOMMENDATION_PENDING), ED4_DASH]);
+      const pending = recommendationPlaceholder(data.narrativeSource, ED3_RECOMMENDATION_PENDING);
+      entries.push({ row: [priority, label, pending, ED4_DASH], written: false });
     }
-    for (const rec of recs) rows.push([priority, label, rec.action, rec.expectedImpact]);
+    for (const rec of recs) entries.push({ row: [priority, label, rec.action, rec.expectedImpact], written: true });
   }
-  return rows;
+  return entries;
+}
+
+/** 한 소절 문제들의 권고 표 행(글만). */
+export function ed4RecommendRows(data: FinalReportData, problems: ReadonlyArray<Problem>): Ed4RecommendRow[] {
+  return ed4RecommendRowEntries(data, problems).map((entry) => entry.row);
 }
 
 /** 6절 배치. */
@@ -73,11 +95,15 @@ export function ed4RecommendLayout(data: FinalReportData): Ed4RecommendLayout {
   if (problems !== undefined && problems.length === 0) return { kind: "no_problem" };
   const sides = ED4_RECOMMEND_SECTIONS.map(({ slot, edition4_place }) => {
     const mine = (problems ?? []).filter((p) => p.recommend_section === slot);
+    const body = ed4SlotBody(data, NARRATIVE_OF[slot](data), undefined, ED3_RECOMMEND_PLACEHOLDER);
+    const entries = mine.length > 0 ? ed4RecommendRowEntries(data, mine) : null;
+    // 권고표는 쓴 권고 행이 하나라도 있으면 표 전체에 긋는다(같은 표의 자리표시 행도 선 안) — 자리표시 행뿐인 표(서술 전)에는 긋지 않는다.
     return {
       place: edition4_place as Ed4TitleNumber,
       slot,
-      body: ed4SlotBody(data, NARRATIVE_OF[slot](data), undefined, ED3_RECOMMEND_PLACEHOLDER),
-      rows: mine.length > 0 ? ed4RecommendRows(data, mine) : null,
+      body,
+      rows: entries && entries.map((entry) => entry.row),
+      autoMarked: { body: ed4AutoMarked(body), rows: entries !== null && entries.some((entry) => entry.written) },
     };
   });
   const itemsPlaceholder =

@@ -2,13 +2,16 @@
  * 판 4 문구(S3 ⑥⑦ 이 저장하는 글의 틀)가 고정 문구 사본(`src/test/edition4/fixedWording.ed4.json`)과 글자까지 같은가, 그리고 틀을
  * 채우는 `fillTemplate` 이 조사를 끼운 글자의 끝소리로 고르는가.
  *
- * 고정 문구 20 의 조건부 합격·불합격·판정 불가 세 갈래는 예시본을 만들며 정한 초안이다(판 4 를 켜기 전 확인 목록) — 시험 이름에 "초안".
+ * 고정 문구 20·21 과 부록 B31~B33 은 2026-10-26 에 확정됐다(고정 문구 rev 134). 21번에 더해진 핵심 지표 산출 실패 줄
+ * ("핵심 지표: {이름} 측정 불가 (4.3)")이 합격 기준을 싣던 옛 부록 B3 글을 대신한다 — 문서 1.1 표의 B3 줄도 고정 문구 rev 153
+ * (2026-10-28)에서 21번 줄과 같게 고쳐져, B3 은 그 글 + 문서 설명 꼬리 "(21번과 같은 줄)"로 대조한다.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  COVER_CORE_NO_TARGET,
   COVER_CORE_ROW,
   COVER_CORE_UNAVAILABLE,
   COVER_ROW_CORE,
@@ -24,11 +27,13 @@ import {
   INCONCLUSIVE_CAUSE_NO_TARGET,
   INCONCLUSIVE_CAUSE_NOT_COMPUTED,
   JUDGMENT_MARGIN_LABEL,
-  VERDICT_BASIS_CONDITIONAL_DRAFT,
-  VERDICT_BASIS_FAIL_DRAFT,
-  VERDICT_BASIS_INCONCLUSIVE_DRAFT,
+  VERDICT_BASIS_CONDITIONAL,
+  VERDICT_BASIS_CONDITIONAL_NO_CORE,
+  VERDICT_BASIS_FAIL,
+  VERDICT_BASIS_INCONCLUSIVE,
   VERDICT_BASIS_PASS,
   VERDICT_BASIS_PASS_CORE_ONLY,
+  VERDICT_BASIS_PASS_NO_CORE,
   VERDICT_COUNT_NONE,
 } from "./edition4Text";
 
@@ -42,11 +47,11 @@ describe("판 4 문구 = 고정 문구 사본(글자 대조)", () => {
     expect(VERDICT_BASIS_PASS).toBe(FIXED["20_pass"]);
   });
 
-  it("고정 문구 20 초안 세 갈래(조건부 합격·불합격·판정 불가)", () => {
-    expect([VERDICT_BASIS_CONDITIONAL_DRAFT, VERDICT_BASIS_FAIL_DRAFT, VERDICT_BASIS_INCONCLUSIVE_DRAFT]).toEqual([
-      FIXED["20_conditional_draft"],
-      FIXED["20_fail_draft"],
-      FIXED["20_inconclusive_draft"],
+  it("고정 문구 20 나머지 세 갈래(조건부 합격·불합격·판정 불가)", () => {
+    expect([VERDICT_BASIS_CONDITIONAL, VERDICT_BASIS_FAIL, VERDICT_BASIS_INCONCLUSIVE]).toEqual([
+      FIXED["20_conditional"],
+      FIXED["20_fail"],
+      FIXED["20_inconclusive"],
     ]);
   });
 
@@ -56,10 +61,25 @@ describe("판 4 문구 = 고정 문구 사본(글자 대조)", () => {
     expect(COVER_CORE_ROW).toBe(FIXED["21_core_row"]);
   });
 
-  it("부록 B2·B3·B12", () => {
+  it("부록 B2·B12", () => {
     expect(COVER_VERDICT_NONE).toBe(B.B2.candidate);
-    expect(COVER_CORE_UNAVAILABLE).toBe(B.B3.candidate);
     expect(B.B12.candidate).toBe(`판정 불가 | ${VERDICT_COUNT_NONE}`);
+  });
+
+  it("고정 문구 21 핵심 지표 산출 실패 줄 — 줄 이름(표의 첫 칸) + 값 칸이 사본 글 그대로, 합격 기준은 싣지 않는다", () => {
+    expect(`${COVER_ROW_CORE}: ${COVER_CORE_UNAVAILABLE}`).toBe(FIXED["21_core_unavailable"]);
+    expect(FIXED["21_core_unavailable"]).toBe("핵심 지표: {이름} 측정 불가 (4.3)");
+    expect(COVER_CORE_UNAVAILABLE).not.toContain("합격 기준");
+    expect(B.B3.candidate).toBe(`${FIXED["21_core_unavailable"]} (21번과 같은 줄)`);
+  });
+
+  it("부록 B31 — 핵심 지표가 없는 성적서의 4.2 근거 두 갈래(합격 / 미달이 있으면 늘 조건부 합격)", () => {
+    expect(B.B31.candidate).toBe(`합격: ${VERDICT_BASIS_PASS_NO_CORE} / 미달이 있으면: ${VERDICT_BASIS_CONDITIONAL_NO_CORE}`);
+    expect(VERDICT_BASIS_CONDITIONAL_NO_CORE).not.toContain("{판정}");
+  });
+
+  it("부록 B32 — 목표값 없는 핵심 지표 줄: 줄 이름(표의 첫 칸) + 값 칸이 사본 글 그대로", () => {
+    expect(`${COVER_ROW_CORE}: ${COVER_CORE_NO_TARGET}`).toBe(B.B32.candidate);
   });
 
   it("부록 B13 — 핵심 지표만 판정 대상인 합격 글, 판정 불가의 원인 셋(후보 글 안의 따옴표 글 그대로)", () => {
@@ -97,15 +117,15 @@ describe("fillTemplate — 조사는 끼운 글자의 끝소리로", () => {
     expect(fillTemplate(VERDICT_BASIS_PASS, { "핵심 지표": "Accuracy(M1), F1 Score(M4)" })).toContain("F1 Score(M4)와 그 밖의");
     expect(fillTemplate(VERDICT_BASIS_PASS, { "핵심 지표": "F1 Score(M4), Recall(M3)" })).toContain("Recall(M3)과 그 밖의");
     expect(
-      fillTemplate(VERDICT_BASIS_CONDITIONAL_DRAFT, { "핵심 지표": "F1 Score(M4)", "미달 지표": "AUROC(M9)" }),
+      fillTemplate(VERDICT_BASIS_CONDITIONAL, { "핵심 지표": "F1 Score(M4)", "미달 지표": "AUROC(M9)" }),
     ).toBe("핵심 지표 F1 Score(M4)는 목표를 충족하였으나 AUROC(M9)가 목표에 미달하여, 3.4의 판정 규칙에 따라 조건부 합격으로 판정하였다.");
-    expect(fillTemplate(VERDICT_BASIS_FAIL_DRAFT, { "미달 핵심 지표": "Recall(M3)" })).toBe(
+    expect(fillTemplate(VERDICT_BASIS_FAIL, { "미달 핵심 지표": "Recall(M3)" })).toBe(
       "핵심 지표 Recall(M3)이 목표에 미달하여, 3.4의 판정 규칙에 따라 불합격으로 판정하였다.",
     );
   });
 
   it("(으)로 — 원인 글 끝('실패'·'부재')은 받침이 없어 '로'", () => {
-    expect(fillTemplate(VERDICT_BASIS_INCONCLUSIVE_DRAFT, { 원인: INCONCLUSIVE_CAUSE_NO_JUDGED })).toBe(
+    expect(fillTemplate(VERDICT_BASIS_INCONCLUSIVE, { 원인: INCONCLUSIVE_CAUSE_NO_JUDGED })).toBe(
       "판정 대상 지표 부재로 3.4의 판정 규칙에 따라 판정할 수 없었다.",
     );
   });

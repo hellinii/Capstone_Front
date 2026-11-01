@@ -82,9 +82,25 @@ describe("판 4 본문의 인쇄 묶음 — 인쇄일 때만 PageBreak", () => {
     return n;
   };
 
-  it("인쇄는 6번 나눈다(표지+1절 / 2절 / 3절 / 4.1~4.3 / 4.4~4.8 / 5절 / 6절+끝), 화면은 0번", () => {
-    expect(breaks("print")).toBe(6);
+  it("부록 1 이 있으면 인쇄는 7번 나눈다(표지+1절 / 2절 / 3절 / 4.1~4.3 / 4.4~4.8 / 5절 / 6절 / 부록 1+끝), 화면은 0번", () => {
+    expect(breaks("print")).toBe(7);
     expect(breaks("screen")).toBe(0);
+  });
+
+  it("부록 1 이 없으면(검증 중·보류·이전 데이터) 지금대로 6번 — 빈 쪽을 만들지 않는다(심판 라운드 J7)", () => {
+    const { appendix1: _a, ...data } = loadEd4("bc_strong", "issued");
+    const view = render(<Edition4Report data={data} mode="print" />);
+    const n = [...view.container.querySelectorAll("div")].filter((d) => d.style.pageBreakBefore === "always").length;
+    view.unmount();
+    expect(n).toBe(6);
+  });
+
+  it("부록 1 은 쪽 나눔 바로 뒤에서 시작한다(6절과 다른 쪽)", () => {
+    const view = render(<Edition4Report data={loadEd4("bc_strong", "issued")} mode="print" />);
+    const part = view.container.querySelector('[data-ed4-part="Ed4Appendix"]')!;
+    expect(part.parentElement!.style.pageBreakBefore).toBe("always");
+    expect(part.parentElement!.querySelector('[data-ed4-part="Ed4Recommend"]')).toBeNull();
+    view.unmount();
   });
 });
 

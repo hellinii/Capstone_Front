@@ -203,7 +203,7 @@ describe("픽스처에 없는 갈래(복사본)", () => {
     expect(lines.filter((l) => l.startsWith("| 검증 항목"))).toEqual([]);
   });
 
-  it("판정 미달·불합격 — 늘린 값, 판정 칸 '불합격', 저장된 4.2 판정·근거(초안 20번 글)", async () => {
+  it("판정 미달·불합격 — 늘린 값, 판정 칸 '불합격', 저장된 4.2 판정·근거(20번 글)", async () => {
     const data = clone(loadEd4("bc_strong", "final"));
     setKpi(data, "M3", { value: 0.9696, status: "fail" });
     data.edition4Values!.verdict = {

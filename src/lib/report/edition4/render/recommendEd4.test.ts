@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { loadEd4 } from "../../../../test/edition4/render/ed4Fixtures";
 import type { FinalReportData } from "../../../../types/finalReport.types";
 import { NARRATIVE_PENDING_TEXT } from "../../../../components/report/shared/narrativePlaceholder";
-import { ed4RecommendLayout, ed4RecommendRows } from "./recommendEd4";
+import { ed4RecommendLayout, ed4RecommendRowEntries, ed4RecommendRows } from "./recommendEd4";
 
 const copy = (d: FinalReportData) => structuredClone(d);
 
@@ -89,6 +89,94 @@ describe("ed4RecommendLayout", () => {
     const layout = sides(loadEd4("bc_strong", "pending"));
     expect(layout.sides[0].body).toEqual({ kind: "placeholder", text: NARRATIVE_PENDING_TEXT });
     expect(layout.sides[0].rows).toEqual([["낮음", "P2 · 평가 데이터가 학습과 같은 출처", "권고를 만드는 중", "—"]]);
+  });
+});
+
+describe("자동 작성 표시(서술 설계 D54) — 9 칸 부분마다 서술·권고표", () => {
+  it("bc_strong — 6.1·6.2 모두 서술과 권고표에 긋는다", () => {
+    expect(sides(loadEd4("bc_strong", "issued")).sides.map((s) => s.autoMarked)).toEqual([
+      { body: true, rows: true },
+      { body: true, rows: true },
+    ]);
+  });
+
+  it("B19 — 문제가 없는 소절은 서술만(표 없음 → rows 거짓)", () => {
+    const data = copy(loadEd4("digits_strong", "issued"));
+    data.problems = data.problems!.filter((p) => p.recommend_section !== "9.2");
+    expect(sides(data).sides.map((s) => s.autoMarked)).toEqual([
+      { body: true, rows: true },
+      { body: true, rows: false },
+    ]);
+  });
+
+  it("대기 — 서술 자리표시, 권고 자리표시 행뿐인 표 → 둘 다 긋지 않는다", () => {
+    expect(sides(loadEd4("bc_strong", "pending")).sides.map((s) => s.autoMarked)).toEqual([
+      { body: false, rows: false },
+      { body: false, rows: false },
+    ]);
+  });
+
+  it("서술은 끝났는데 소절 문제의 권고가 없으면 표는 긋지 않는다 / 권고는 있는데 서술이 빈 글이면 표에만", () => {
+    const data = copy(loadEd4("bc_strong", "issued"));
+    data.recommendations = data.recommendations.filter((r) => r.problemId !== "P2");
+    expect(sides(data).sides.map((s) => s.autoMarked)).toEqual([
+      { body: true, rows: false },
+      { body: true, rows: true },
+    ]);
+    const data2 = copy(loadEd4("bc_strong", "issued"));
+    data2.recommendationNarrative = { ...data2.recommendationNarrative, modelOps: "" };
+    expect(sides(data2).sides.map((s) => s.autoMarked)).toEqual([
+      { body: true, rows: true },
+      { body: false, rows: true },
+    ]);
+  });
+
+  it("소절 문제 일부에만 권고가 있으면(yeast 6.1 의 P2 만) — 쓴 권고 행이 하나라도 있으니 표 전체에 긋는다(자리표시 행 포함)", () => {
+    const data = copy(loadEd4("yeast_strong", "issued"));
+    data.recommendations = data.recommendations.filter((r) => r.problemId !== "P3" && r.problemId !== "P4");
+    const layout = sides(data);
+    expect(layout.sides[0].rows!.map((r) => [r[1].slice(0, 2), r[2]])).toEqual([
+      ["P2", data.recommendations.find((r) => r.problemId === "P2")!.action],
+      ["P3", "권고 생성 예정"],
+      ["P4", "권고 생성 예정"],
+    ]);
+    expect(layout.sides.map((s) => s.autoMarked)).toEqual([
+      { body: true, rows: true },
+      { body: true, rows: true },
+    ]);
+  });
+
+  it("평가 전 초안(문제 목록 없음) — 둘 다 긋지 않는다", () => {
+    const data = copy(loadEd4("bc_strong", "issued"));
+    delete data.problems;
+    data.recommendationNarrative = { dataQuality: "", modelOps: "" };
+    delete data.narrativeSource;
+    expect(sides(data).sides.map((s) => s.autoMarked)).toEqual([
+      { body: false, rows: false },
+      { body: false, rows: false },
+    ]);
+  });
+});
+
+describe("ed4RecommendRowEntries — 쓴 권고/자리표시 판정 한 곳", () => {
+  it("행마다 written: 쓴 권고 행은 참, 권고가 없는 문제의 자리표시 행은 거짓 — 글은 ed4RecommendRows 와 같다", () => {
+    const data = copy(loadEd4("yeast_strong", "issued"));
+    data.recommendations = data.recommendations.filter((r) => r.problemId !== "P3");
+    const mine = data.problems!.filter((p) => p.recommend_section === "9.1");
+    const entries = ed4RecommendRowEntries(data, mine);
+    expect(entries.map((e) => [e.row[1].slice(0, 2), e.written])).toEqual([
+      ["P2", true],
+      ["P3", false],
+      ["P4", true],
+    ]);
+    expect(entries.map((e) => e.row)).toEqual(ed4RecommendRows(data, mine));
+  });
+
+  it("대기 — 자리표시 행뿐이라 모두 거짓", () => {
+    const data = loadEd4("bc_strong", "pending");
+    const entries = ed4RecommendRowEntries(data, data.problems!);
+    expect(entries.length).toBeGreaterThan(0);
+    expect(entries.map((e) => e.written)).toEqual(entries.map(() => false));
   });
 });
 

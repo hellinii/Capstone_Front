@@ -24,7 +24,9 @@
 import type { TaskType } from "../../data/evaluationData";
 import type { ComposerValueMap } from "../../types/reportComposer.types";
 import type {
+  AppendixRow3,
   MaterialCheckAck,
+  MaterialCheckAppendixEd4,
   MaterialCheckItem,
   MaterialCheckLine,
   MaterialCheckResult,
@@ -36,6 +38,22 @@ import { formatKstDateTime } from "./issuanceApi";
 import { AVERAGING_BY_PRIORITY, NOT_PROVIDED, choiceLabel } from "./reportMaterials";
 import { josaEunNeun, josaEuroRo } from "./koreanJosa";
 import { chosenText } from "../../utils/domain/composerFieldGate";
+import { METRICS } from "../../data/evaluationData";
+import { fillTemplate } from "./edition4/edition4Text";
+import {
+  APPENDIX_NONE_PLACE,
+  APPENDIX_NOT_PROVIDED,
+  APPENDIX_PROVIDED,
+  B49_PARTIAL,
+  B51_MET,
+  PURPOSE_MET_NO_METRIC,
+  OUTSIDE_12,
+  OUTSIDE_13,
+  OUTSIDE_13_PLACE,
+  PURPOSE_ROW_TEXT,
+  PURPOSE_UNMET,
+  REPORTING_PLACE_ED4,
+} from "./edition4/appendixText";
 
 export const MATERIAL_CHECK_VERSION = "2.0";
 
@@ -130,7 +148,7 @@ export const COVER_ROW_REPORTING = "보고 항목";
 export const COVER_ROW_CONSTRAINT = "주요 제약";
 
 /**
- * 판 4 표지 요약 두 줄(고정 문구 21 — 주요 제약 규칙은 예시본을 만들며 정한 초안, B4).
+ * 판 4 표지 요약 두 줄(고정 문구 21 — 주요 제약 규칙은 예시본을 만들며 정했고 2026-10-26 확정, B4).
  * - 보고 항목: "TS 4213 보고 항목 {N}개 중 {n}개 제공 (빠진 항목: {목록}, 1.3)", 모두 받았으면 "TS 4213 보고 항목 {N}개 모두 제공".
  * - 주요 제약: 같은 출처면 "평가 데이터가 학습 데이터와 같은 출처 (5.1)", 목적별 점검 미충족이면 "목적별 점검 {K}개 중 {k}개 충족
  *   (1.3)", 둘 다면 쉼표로 잇고(B4), 둘 다 아니면 "없음". 빠진 보고 항목은 바로 위 줄에 있으므로 되풀이하지 않는다.
@@ -196,6 +214,9 @@ function reportingItems(input: MaterialCheckInput): JudgedItem[] {
           : { provided: false, missing: ["지표 선택 이유"], parts: 1 };
       default: {
         // 여러 줄 항목은 모든 줄이 있어야 제공이다.
+        // 항목 2(평가 데이터 출처)는 백엔드도 같은 규칙으로 따로 판정한다 — 종합 총평 "평가 데이터의 대표성과 한계"(판 4 는
+        // 5.1)의 조건 `required_items._eval_data_source`. 이 셈을 바꾸면 백엔드도 같이 바꾸고, 두 저장소가 같은 바이트로 두는
+        // 대조 표 `src/test/contract/reporting_item2_cases.json`(시험 `reportingItem2Contract.test.ts`)을 함께 고친다.
         const rows = tagged.filter((row) => row.item === item);
         const missing = rows.filter((row) => row.value === null).map((row) => row.label);
         return {
@@ -221,10 +242,18 @@ function reportingItems(input: MaterialCheckInput): JudgedItem[] {
  * 줄짜리 항목, 빠진 줄이 항목 이름 그 자체이면(10번 "하이퍼파라미터") 이름만. 판정·경고 ID·점검 표 버전은 그대로라 저장하는
  * `items` 에는 넣지 않고 찍는 글(표지 보고 항목 줄·1.3 제공되지 않은 정보·영향 줄)만 바뀐다. 판 3 은 이름만(얼린 출력).
  */
-function printedItemNameEd4(item: JudgedItem): string {
+/**
+ * 판 4 "일부만 빠짐" 판정 — 여러 줄 항목에서 제공된 줄이 하나 이상이고, 빠진 줄이 항목 이름 그 자체가 아님. 찍는 이름(`printedItemNameEd4`
+ * — 표지·1.3·1.1)과 부록 1.2 결과 칸(B49)이 이 한 함수를 함께 쓴다(판정 지점 하나 — J7 검토).
+ */
+function isPartialMissingEd4(item: JudgedItem): boolean {
   const partial = item.missing.length > 0 && item.parts > item.missing.length;
   const self = item.missing.length === 1 && item.missing[0] === item.name;
-  return partial && !self ? `${item.name}(빠진 것: ${item.missing.join("·")})` : item.name;
+  return partial && !self;
+}
+
+function printedItemNameEd4(item: JudgedItem): string {
+  return isPartialMissingEd4(item) ? `${item.name}(빠진 것: ${item.missing.join("·")})` : item.name;
 }
 
 /** 선언의 선택값. 글만 쓴 답은 선택값이 없어 3층 줄을 만들지 않는다(`chosenText` — 1층은 선택 필수). */
@@ -232,10 +261,17 @@ function answerOf(perspective: ComposerValueMap, fieldId: string): string | null
   return chosenText(perspective[fieldId]);
 }
 
-function purposeLines(input: MaterialCheckInput, latencyProvided: boolean): MaterialCheckLine[] {
+/**
+ * 점검 줄 + 그 줄을 충족시킨 지표(`metBy` — 의뢰자가 고른 순서, 지표로 채우지 않는 줄은 빈 배열). `metBy` 는 판 4 부록 1.2 의
+ * "충족 (지표 이름)"(B51)에만 쓰고 저장하는 줄에는 넣지 않는다 — 충족 판정과 같은 자리에서 함께 내 판정 지점이 하나다(계획 15-1).
+ */
+type JudgedLine = MaterialCheckLine & { metBy: string[] };
+
+function purposeLines(input: MaterialCheckInput, latencyProvided: boolean): JudgedLine[] {
   const { taskType, perspective } = input;
   const picked = new Set(input.selectedMetricIds);
-  const lines: MaterialCheckLine[] = [];
+  const inOrder = (ok: (id: string) => boolean) => input.selectedMetricIds.filter((id, i, all) => ok(id) && all.indexOf(id) === i);
+  const lines: JudgedLine[] = [];
 
   // ① 대화형 → 지연시간. 2층 8번과 같은 판정값을 쓴다.
   if (answerOf(perspective, "usageMode") === "Real-time") {
@@ -243,6 +279,7 @@ function purposeLines(input: MaterialCheckInput, latencyProvided: boolean): Mate
     lines.push({
       id: "latency",
       met: latencyProvided,
+      metBy: [],
       title: "사용 방식 → 지연시간",
       declared,
       recommended: [],
@@ -256,9 +293,11 @@ function purposeLines(input: MaterialCheckInput, latencyProvided: boolean): Mate
     const fn = risk === "Missed (FN)";
     const declared = choiceLabel("perspective", "criticalErrorType", risk);
     const fbetaFits = picked.has("M5") && (fn ? input.beta > 1 : input.beta < 1);
+    const metBy = inOrder((id) => id === (fn ? "M3" : "M2") || (id === "M5" && fbetaFits));
     lines.push({
       id: "riskDirection",
-      met: picked.has(fn ? "M3" : "M2") || fbetaFits,
+      met: metBy.length > 0,
+      metBy,
       title: "위험 방향 → 재현율·정밀도",
       declared,
       recommended: [fn ? "M3" : "M2"],
@@ -273,9 +312,11 @@ function purposeLines(input: MaterialCheckInput, latencyProvided: boolean): Mate
   const averaging = priority ? AVERAGING_BY_PRIORITY[priority] : undefined;
   if (taskType !== "binary" && priority && averaging) {
     const declared = choiceLabel("perspective", "classPriority", priority);
+    const metBy = inOrder((id) => AVERAGING_METRICS[taskType][priority].includes(id));
     lines.push({
       id: "averaging",
-      met: AVERAGING_METRICS[taskType][priority].some((id) => picked.has(id)),
+      met: metBy.length > 0,
+      metBy,
       title: "클래스 중요도 → 평균 방식",
       declared,
       recommended: [AVERAGING_RECOMMENDATION[taskType][priority]],
@@ -295,6 +336,7 @@ function purposeLines(input: MaterialCheckInput, latencyProvided: boolean): Mate
     lines.push({
       id: "curveImbalance",
       met: picked.has("M10"),
+      metBy: picked.has("M10") ? ["M10"] : [],
       title: "큰 불균형 → AUPRC",
       declared: `불균형 비율 ${shown}`,
       recommended: ["M10"],
@@ -304,12 +346,69 @@ function purposeLines(input: MaterialCheckInput, latencyProvided: boolean): Mate
   return lines;
 }
 
+/** 지표 번호 → 성적서 이름(지표 목록의 이름). 모르는 번호는 번호 그대로. */
+function metricName(id: string): string {
+  return METRICS.find((m) => m.id === id)?.name ?? id;
+}
+
+/**
+ * 판 4 부록 1.2 의 재료 선택 점검 행(계획 15-1, 예시본 부록 1.2·고정 문구 B49~B52). 판정은 위에서 한 그대로 읽기만 한다.
+ * - 보고 항목 표: 항목 번호 순, 실린 곳은 판 4 자리, 결과는 "제공" / "제공되지 않음" / 일부만 빠지면 B49(빠진 칸을 쉼표로).
+ * - 점검 수 밖: 13번·12번(멀티레이블이 아니면) — 예시본 순서. 14번은 신뢰구간을 알아야 해 부록을 만들 때 더한다.
+ * - 목적별 점검: 적용되는 줄만, 충족이면 B51(충족시킨 지표), 지연시간 줄은 지표가 없어 "충족".
+ */
+function appendixEd4(input: MaterialCheckInput, judged: JudgedItem[], lines: JudgedLine[]): MaterialCheckAppendixEd4 {
+  const reporting: AppendixRow3[] = judged.map((item) => {
+    const partial = !item.provided && isPartialMissingEd4(item);
+    return {
+      name: item.name,
+      middle: REPORTING_PLACE_ED4[item.item] ?? APPENDIX_NONE_PLACE,
+      result: item.provided
+        ? APPENDIX_PROVIDED
+        : partial
+          ? fillTemplate(B49_PARTIAL, { "빠진 칸": item.missing.join(", ") })
+          : APPENDIX_NOT_PROVIDED,
+    };
+  });
+  // 순서는 예시본 그대로 13 → 12(멀티레이블이 아니면) — 14 는 부록을 만들 때 뒤에 붙인다.
+  const outside: AppendixRow3[] = [
+    input.taskType === "multiclass"
+      ? { name: OUTSIDE_13.name, middle: OUTSIDE_13_PLACE, result: OUTSIDE_13.recorded }
+      : { name: OUTSIDE_13.name, middle: APPENDIX_NONE_PLACE, result: OUTSIDE_13.notApplicable },
+    ...(input.taskType === "multilabel" ? [] : [{ name: OUTSIDE_12.name, middle: APPENDIX_NONE_PLACE, result: OUTSIDE_12.notApplicable }]),
+  ];
+  const risk = answerOf(input.perspective, "criticalErrorType");
+  const purpose: AppendixRow3[] = lines.map((line) => {
+    const text =
+      line.id === "riskDirection"
+        ? risk === "Missed (FN)"
+          ? PURPOSE_ROW_TEXT.riskFN
+          : PURPOSE_ROW_TEXT.riskFP
+        : line.id === "averaging"
+          ? {
+              name: PURPOSE_ROW_TEXT.averaging.name,
+              need: fillTemplate(PURPOSE_ROW_TEXT.averaging.need, {
+                "평균 방식": AVERAGING_BY_PRIORITY[answerOf(input.perspective, "classPriority") ?? ""] ?? "",
+              }),
+            }
+          : PURPOSE_ROW_TEXT[line.id];
+    const result = !line.met
+      ? PURPOSE_UNMET
+      : line.metBy.length > 0
+        ? fillTemplate(B51_MET, { "지표 이름": line.metBy.map(metricName).join(", ") })
+        : PURPOSE_MET_NO_METRIC;
+    return { name: text.name, middle: text.need, result };
+  });
+  return { reporting, outside, purpose, purposeNotApplied: 4 - lines.length };
+}
+
 /** 재료 선택 점검(점검 표 2.0). */
 export function checkMaterialSelection(input: MaterialCheckInput): MaterialCheckResult {
   const judged = reportingItems(input);
   const items: MaterialCheckItem[] = judged.map(({ parts: _parts, ...item }) => item);
   const latencyProvided = items.find((item) => item.item === 8)?.provided ?? false;
-  const lines = purposeLines(input, latencyProvided);
+  const judgedLines = purposeLines(input, latencyProvided);
+  const lines: MaterialCheckLine[] = judgedLines.map(({ metBy: _metBy, ...line }) => line);
 
   const missingItems = items.filter((item) => !item.provided);
   const unmetLines = lines.filter((line) => !line.met);
@@ -395,6 +494,7 @@ export function checkMaterialSelection(input: MaterialCheckInput): MaterialCheck
             averagingSentence: `의뢰자가 클래스 중요도를 "${averagingLine!.declared}"${josaEuroRo(averagingLine!.declared)} 밝혔으나, 이에 맞는 ${averaging} 지표는 시험 항목에 ${averagingRef}.`,
           }
         : {}),
+      ...(edition4 ? { appendix: appendixEd4(input, judged, judgedLines) } : {}),
       ...(edition4
         ? {
             coverRows: coverRowsEd4(

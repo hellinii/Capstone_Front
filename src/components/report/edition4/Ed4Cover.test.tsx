@@ -1,10 +1,14 @@
 /**
  * 판 4 표지(갈래 b1) — 화면·인쇄·번호 열기 세 경로로 그려 예시본 표지 블록과 줄 전체를 맞추고, 미발급(B1)·다중·멀티·요약 표 갈래
- * (B2·B3·B4·B32 — 저장값을 그대로 찍는지)를 정확값으로 단정한다. 픽스처에 없는 갈래는 픽스처를 복사해 필요한 칸만 바꾼다.
+ * (B2·B4·B32·21번 산출 실패 줄 — 저장값을 그대로 찍는지)를 정확값으로 단정한다. 픽스처에 없는 갈래는 픽스처를 복사해 필요한 칸만
+ * 바꾼다.
+ *
+ * 시험기관 주소·이메일(심판 라운드 1단계, D48·예시본 rev 85): 판 4 run 을 만들 때 저장한 `performer.address`·`performer.email` 을
+ * 발급 기관 줄 괄호에 찍는다. 저장값이 없는 옛 판 4 데이터는 기관명만(발급 당시 모양), 서버 발급 기록의 기관 주소는 쓰지 않는다.
  */
 import { describe, expect, it } from "vitest";
 
-import { COVER_CORE_NO_TARGET_DRAFT, COVER_CORE_UNAVAILABLE, COVER_VERDICT_NONE, fillTemplate } from "../../../lib/report/edition4/edition4Text";
+import { COVER_CORE_NO_TARGET, COVER_CORE_UNAVAILABLE, COVER_VERDICT_NONE, fillTemplate } from "../../../lib/report/edition4/edition4Text";
 import { asRendered, coverExampleBlock, partOf } from "../../../lib/report/edition4/render/coverTestKit";
 import { loadEd4, loadEd4Issuance } from "../../../test/edition4/render/ed4Fixtures";
 import { byNumberText, printText, screenText } from "../../../test/edition4/render/renderEd4";
@@ -12,6 +16,8 @@ import type { FinalReportData } from "../../../types/finalReport.types";
 
 const TITLE = "기계학습 분류 성능 시험성적서";
 const NEXT = "1. 시험 개요";
+/** 예시본 rev 85 표지의 발급 기관 줄(손으로 옮겨 적음). */
+const ISSUER = "발급 기관: 리트머스 (서울특별시 중구 시험로 123, 4층, contact@litmus.example)";
 
 const copy = (data: FinalReportData, change: (d: FinalReportData) => void): FinalReportData => {
   const d = structuredClone(data);
@@ -48,7 +54,7 @@ describe("표지 — 미발급(부록 B1)", () => {
     "[ 초안 — 미발급 ]",
     "평가 결과는 확정되었으나 아직 발급되지 않았습니다.",
     "ISO/IEC TS 4213:2022에 따라 평가. 일부 보고 항목 미제공(1.3 참조)",
-    "발급 기관: 리트머스",
+    ISSUER,
     "| 문서 번호 | (미발급) | 발급 일시 | (미발급)",
     "| 시험 대상 | BreastScreen-LR v2.1 | 의뢰자 | (주)시연고객",
     "| 평가 유형 | 이진 분류 | 시험 기간 | 2026-10-22 ~ 2026-10-22",
@@ -92,7 +98,7 @@ describe("표지 — 다중·멀티(예시본에 없는 갈래, 저장값 정확
       TITLE,
       "[ 발급 완료 ]",
       "ISO/IEC TS 4213:2022에 따라 평가. 일부 보고 항목 미제공(1.3 참조)",
-      "발급 기관: 리트머스",
+      ISSUER,
       "본 시험성적서는 평가 시스템이 자동으로 발급한 문서이며, 발급 전에 사람이 승인하지 않았습니다. 의뢰자는 입력 내용을 확인하고 발급을 요청하였습니다.",
       "| 문서 번호 | RPT-2026-0003 | 발급 일시 | 2026-10-22 18:52",
       "| 시험 대상 | DigitReader-SVC v1.4.0 | 의뢰자 | (주)시연고객",
@@ -128,7 +134,7 @@ describe("표지 — 다중·멀티(예시본에 없는 갈래, 저장값 정확
   });
 });
 
-describe("표지 요약 표 — 저장값을 그대로·순서대로 찍는다(B2·B3·B32 는 저장값이 담는다)", () => {
+describe("표지 요약 표 — 저장값을 그대로·순서대로 찍는다(B2·B32·산출 실패 줄은 저장값이 담는다)", () => {
   const summaryOf = (data: FinalReportData) => {
     const lines = partOf(screenText(data), TITLE, NEXT);
     return lines.slice(lines.indexOf("시험 결과 요약") + 1);
@@ -146,9 +152,9 @@ describe("표지 요약 표 — 저장값을 그대로·순서대로 찍는다(B
     ]);
   });
 
-  it("B3 측정 불가 · B32 목표값 없음(초안) — 글자 그대로", () => {
-    const b3 = fillTemplate(COVER_CORE_UNAVAILABLE, { 이름: "Recall", 기준: "≥ 0.970" });
-    const b32 = fillTemplate(COVER_CORE_NO_TARGET_DRAFT, { 이름: "AUPRC", 값: "0.996" });
+  it("고정 문구 21 산출 실패 줄 · B32 목표값 없음 — 글자 그대로", () => {
+    const b3 = fillTemplate(COVER_CORE_UNAVAILABLE, { 이름: "Recall" });
+    const b32 = fillTemplate(COVER_CORE_NO_TARGET, { 이름: "AUPRC", 값: "0.996" });
     const data = copy(loadEd4("bc_strong", "issued"), (d) => {
       d.edition4Values!.coverResultRows = [
         { label: "종합 판정", value: "판정 불가 (판정 대상 지표 5개 중 4개 충족, 4.2)" },
@@ -158,7 +164,7 @@ describe("표지 요약 표 — 저장값을 그대로·순서대로 찍는다(B
     });
     expect(summaryOf(data).slice(1, 4)).toEqual([
       "| 종합 판정 | 판정 불가 (판정 대상 지표 5개 중 4개 충족, 4.2)",
-      "| 핵심 지표 | Recall 측정 불가 (합격 기준 ≥ 0.970, 4.3)",
+      "| 핵심 지표 | Recall 측정 불가 (4.3)",
       "| 핵심 지표 | AUPRC 0.996 (합격 기준 없음, 참고 지표, 4.3)",
     ]);
   });
@@ -175,6 +181,51 @@ describe("표지 요약 표 — 저장값을 그대로·순서대로 찍는다(B
 
   it("재료 점검 결과가 없으면 표준 문구 줄이 없다(발급 기관 줄이 상태 줄 바로 뒤)", () => {
     const data = copy(loadEd4("bc_strong", "issued"), (d) => delete d.materialCheck);
-    expect(partOf(screenText(data), TITLE, NEXT).slice(0, 3)).toEqual([TITLE, "[ 발급 완료 ]", "발급 기관: 리트머스"]);
+    expect(partOf(screenText(data), TITLE, NEXT).slice(0, 3)).toEqual([TITLE, "[ 발급 완료 ]", ISSUER]);
+  });
+});
+
+describe("표지 발급 기관 줄 — 시험기관 주소·이메일(D48)", () => {
+  /** 이 칸이 생기기 전에 만든 판 4 run(주소·이메일 저장값 없음). */
+  const old = (data: FinalReportData) =>
+    copy(data, (d) => {
+      delete d.performer.address;
+      delete d.performer.email;
+    });
+  const issuerLine = (lines: string[]) => lines.find((l) => l.startsWith("발급 기관: "));
+
+  it("새 판 4 run — 세 경로 모두 예시본 줄", async () => {
+    expect(issuerLine(partOf(screenText(loadEd4("bc_strong", "issued")), TITLE, NEXT))).toBe(ISSUER);
+    expect(issuerLine(partOf(await printText(loadEd4("bc_strong", "issued")), TITLE, NEXT))).toBe(ISSUER);
+    const page = await byNumberText(loadEd4("bc_strong", "final"), loadEd4Issuance("bc_strong"), { dropRecord: true });
+    expect(issuerLine(partOf(page, TITLE, NEXT))).toBe(ISSUER);
+  });
+
+  it("옛 판 4 run(저장값 없음) — 세 경로 모두 기관명만(발급 당시 모양)", async () => {
+    expect(issuerLine(partOf(screenText(old(loadEd4("bc_strong", "issued"))), TITLE, NEXT))).toBe("발급 기관: 리트머스");
+    expect(issuerLine(partOf(await printText(old(loadEd4("bc_strong", "issued"))), TITLE, NEXT))).toBe("발급 기관: 리트머스");
+    const page = await byNumberText(old(loadEd4("bc_strong", "final")), loadEd4Issuance("bc_strong"), { dropRecord: true });
+    expect(issuerLine(partOf(page, TITLE, NEXT))).toBe("발급 기관: 리트머스");
+  });
+
+  it("저장값을 읽는다 — 값을 바꾼 데이터는 그 값, 한쪽만 있으면 그 하나만 괄호에", () => {
+    const changed = copy(loadEd4("bc_strong", "issued"), (d) => {
+      d.performer.address = "부산광역시 해운대구 시험로 1";
+      d.performer.email = "lab@other.example";
+    });
+    expect(issuerLine(partOf(screenText(changed), TITLE, NEXT))).toBe("발급 기관: 리트머스 (부산광역시 해운대구 시험로 1, lab@other.example)");
+    const onlyEmail = copy(loadEd4("bc_strong", "issued"), (d) => delete d.performer.address);
+    expect(issuerLine(partOf(screenText(onlyEmail), TITLE, NEXT))).toBe("발급 기관: 리트머스 (contact@litmus.example)");
+  });
+
+  it("번호 열기 — 서버 발급 기록의 기관 주소가 있어도 보관본에 저장된 값(서버 address 는 쓰지 않음)", async () => {
+    const issuance = structuredClone(loadEd4Issuance("bc_strong"));
+    issuance.organization.address = "서버에 적힌 다른 주소";
+    const page = await byNumberText(loadEd4("bc_strong", "final"), issuance, { dropRecord: true });
+    expect(issuerLine(partOf(page, TITLE, NEXT))).toBe(ISSUER);
+    expect(page).not.toContain("서버에 적힌 다른 주소");
+    const oldPage = await byNumberText(old(loadEd4("bc_strong", "final")), issuance, { dropRecord: true });
+    expect(issuerLine(partOf(oldPage, TITLE, NEXT))).toBe("발급 기관: 리트머스");
+    expect(oldPage).not.toContain("서버에 적힌 다른 주소");
   });
 });

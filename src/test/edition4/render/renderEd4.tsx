@@ -6,8 +6,9 @@
  * - `screenText(data)` — 화면 본문(`ReportSections`, 번호 열기도 이것을 쓴다).
  * - `printText(data)` — 인쇄(`/report/:id/print` 의 `ReportPrint`, 인쇄 준비 신호까지 기다림, print:hidden 뺌). 서술이 끝난 run 으로 연다.
  *   셋째 인자 `{ inspect }` 로 글로 읽기 전 인쇄 DOM(`[data-pdf-ready]`)을 받아 볼 수 있다.
- * - `byNumberText(content, issuance, { dropRecord })` — 번호로 연 페이지 전체(`/report/no/:번호` — 머리 상자·작성 기록 포함, dropRecord 면
- *   작성 기록 상자를 뺌). 서버 응답은 fetch 가짜. 이 도구들은 끝날 때 `vi.unstubAllGlobals()` 를 부른다(시험의 다른 전역 stub 도 풀림).
+ * - `byNumberText(content, issuance, { dropRecord, inspect })` — 번호로 연 페이지 전체(`/report/no/:번호` — 머리 상자·작성 기록 포함,
+ *   dropRecord 면 작성 기록 상자를 뺌, inspect 로 글로 읽기 전 페이지 DOM 을 받아 볼 수 있다). 서버 응답은 fetch 가짜. 이 도구들은
+ *   끝날 때 `vi.unstubAllGlobals()` 를 부른다(시험의 다른 전역 stub 도 풀림).
  *
  * 예시본 대조:
  * - `exampleBlock("### 4.3 지표별 결과")` — 예시본 사본(`rpt0001/example.md`)에서 그 제목 줄부터 같은 깊이 이상의 다음 제목 앞까지.
@@ -198,7 +199,7 @@ function issuanceBody(r: IssuanceResult) {
 export async function byNumberText(
   content: FinalReportData,
   issuance: IssuanceResult | null = null,
-  options: { dropRecord?: boolean } = {},
+  options: { dropRecord?: boolean; inspect?: (root: Element) => void } = {},
 ): Promise<string> {
   const raw = JSON.stringify(content);
   const reportNo = issuance?.reportNo ?? (content.meta.reportId || "RPT-2026-9999");
@@ -231,6 +232,8 @@ export async function byNumberText(
     await screen.findByText(/서버 보관본/);
     // dropRecord: 작성 기록 상자(화면 전용 서비스 정보)를 뺀 글 — 금지어 시험처럼 본문만 볼 때.
     if (options.dropRecord) view.container.querySelectorAll('[aria-label="작성 기록"]').forEach((el) => el.remove());
+    // inspect — 글로 읽기 전 페이지 DOM(자동 작성 표시 같은 속성 단정용).
+    options.inspect?.(view.container);
     const text = blockText([view.container]);
     view.unmount();
     return text;
