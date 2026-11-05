@@ -61,6 +61,15 @@ describe("심판 묶음 읽기(toJudgeBundle) — 계약 예시는 읽고, 틀�
     expect(b?.counts).not.toHaveProperty("coverage");
   });
 
+  it("지금 백엔드 모양 — 게이트 두 축만(필수 내용 2026-11-01·표기 2026-11-04 를 뺌)", () => {
+    const { coverage: _c, readability: _r, ...counts } = PASSED.counts;
+    const b = toJudgeBundle({ ...PASSED, axes: ["faithfulness", "consistency"], counts });
+    expect(b?.axes).toEqual(["faithfulness", "consistency"]);
+    expect(b?.counts).not.toHaveProperty("coverage");
+    expect(b?.counts).not.toHaveProperty("readability");
+    expect(b?.counts?.faithfulness).toEqual({ checked: PASSED.counts.faithfulness.checked, matched: PASSED.counts.faithfulness.matched });
+  });
+
   it.each([
     ["없음", undefined],
     ["null", null],
