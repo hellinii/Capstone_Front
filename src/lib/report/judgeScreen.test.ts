@@ -70,6 +70,13 @@ describe("심판 묶음 읽기(toJudgeBundle) — 계약 예시는 읽고, 틀�
     expect(b?.counts?.faithfulness).toEqual({ checked: PASSED.counts.faithfulness.checked, matched: PASSED.counts.faithfulness.matched });
   });
 
+  it("지금 백엔드 모양 — 일관성 한 축만(사실 일치도 2026-11-05 평가 단계 뒤 뺌)", () => {
+    const { consistency } = PASSED.counts;
+    const b = toJudgeBundle({ ...PASSED, axes: ["consistency"], counts: { consistency } });
+    expect(b?.axes).toEqual(["consistency"]);
+    expect(b?.counts).toEqual({ consistency: { checked: consistency.checked, contradictions: consistency.contradictions } });
+  });
+
   it.each([
     ["없음", undefined],
     ["null", null],
