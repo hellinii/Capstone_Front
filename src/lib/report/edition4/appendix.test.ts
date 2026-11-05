@@ -257,6 +257,19 @@ describe("갈래 — 예시본에 없는 것(B49~B58)", () => {
     expect(a.summary).toBe("이 성적서는 TS 4213 보고 항목 11개 중 10개를 제공받았고, 목적별 점검 1개를 모두 충족하였다.");
   });
 
+  it("지금 백엔드 모양(일관성 한 축만 — 사실 일치도 뺌, 2026-11-05)이면 1.3 표가 일관성 한 행이다", () => {
+    const j = copy(judgeOf(bc()));
+    j.axes = ["consistency"];
+    delete j.counts!.faithfulness;
+    delete j.counts!.coverage;
+    delete j.counts!.readability;
+    const a = build(bc(), j);
+    expect(a.axes.map((r) => r[0])).toEqual(["일관성"]);
+    expect(allText(a)).not.toContain("사실 일치");
+    expect(a.checklist).toEqual([]);
+    expect(a.summary).toBe("이 성적서는 TS 4213 보고 항목 11개 중 10개를 제공받았고, 목적별 점검 1개를 모두 충족하였다.");
+  });
+
   it("멀티레이블은 필수 내용 이름·영향 문장의 '클래스'를 '레이블'로(체크리스트·1.1)", () => {
     const y = loadEd4("yeast_strong", "final");
     const j = copy(judgeOf(y));
