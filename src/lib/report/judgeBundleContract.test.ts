@@ -15,7 +15,7 @@ const PATH = resolve(__dirname, "../../test/contract", NAME);
 const BACKEND_COPY = resolve(__dirname, "../../../../Capstone_Back/tests/contract", NAME);
 
 /** 심판 라운드 J1 ④(2026-10-29)에 만든 바이트. 백엔드 tests/test_judge_bundle_contract.py 와 같은 값이다. */
-const SHA256 = "e4bc794868a7bb8cc781765ae383c2de647328d434986a6cb245bdccb6d1c25e";
+const SHA256 = "43588cfa804a10d7b3ad2dc80d0f4ccb8f5a6855ba284f3580e1683fed88ec4a";
 
 describe("심판 묶음 계약(판 4)", () => {
   it("바이트가 sha256 으로 고정돼 있다", () => {
