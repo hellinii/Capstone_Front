@@ -12,7 +12,7 @@ ML 모델 성능 평가 보고서("시험성적서")를 **KS X ISO/IEC TS 4213:2
 src/
 ├── App.tsx / main.tsx / routes.ts   # 라우팅 진입 (워크플로우는 /app/*, 성적서는 /report/*)
 ├── pages/          # 라우트 단위 얇은 조립자 (+ report/, workspaces/)
-├── components/     # 도메인별 UI (material-picker, composer-input … report, workspaces, landing, ui)
+├── components/     # 도메인별 UI (material-picker, composer-input … report, workspaces, ui)
 ├── layout/         # WorkflowShell(워크플로우 셸) · AppShell(비-워크플로우 셸)
 ├── hooks/          # 데이터 페칭·부수효과 훅
 ├── lib/            # apiBase · mapping(role 변환) · report(API·성적서 로직) · upload(업로드 한도)

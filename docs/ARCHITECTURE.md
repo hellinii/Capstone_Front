@@ -48,10 +48,9 @@ Capstone_Front/
 │   │   ├── workflow/          # 여러 화면이 함께 쓰는 안내 (생성 전 안내, 백엔드 안내, 파일 다시 올리기)
 │   │   ├── report/            # 📊 최종 성적서 렌더링 (layout/ · sections/ · shared/ — 판 1~3, edition4/ — 판 4 와 부록 1, §6.6·§6.7)
 │   │   ├── workspaces/        # 워크스페이스 목록/상세용 컴포넌트
-│   │   ├── landing/           # 랜딩 페이지 섹션 컴포넌트
 │   │   ├── ui/                # 🧩 공통 원시(primitive) 컴포넌트 (shadcn/ui 기반)
 │   │   └── ErrorBoundary.tsx  # 렌더 오류를 잡아 백지 대신 안내를 보인다
-│   ├── data/                  # 정적 도메인 데이터/카탈로그 (evaluationData, reportComposer(항목 레지스트리), workflowSteps(화면 카탈로그), templateExamples, landingData, dataValidationShowcase, reportShowcase)
+│   ├── data/                  # 정적 도메인 데이터/카탈로그 (evaluationData, reportComposer(항목 레지스트리), workflowSteps(화면 카탈로그), templateExamples)
 │   ├── hooks/                 # React 결합 재사용 로직 (useReportData, useIssuance, usePdfDownload, useDataValidation, useColumnAnalysis, usePrintOnReady, useStepFlow, useScrollEdges)
 │   ├── layout/                # 공개 레이아웃 셸
 │   │   ├── WorkflowShell.tsx  # 워크플로우 화면용 셸 (AppHeader + StepRail + ActionBar)
@@ -65,7 +64,7 @@ Capstone_Front/
 │   ├── pages/                 # 라우팅 단위 페이지 (Assembler 역할)
 │   │   ├── report/            # Report, ReportPrint, ReportByNumber(번호로 열기)
 │   │   └── workspaces/        # WorkspaceList, WorkspaceDetail
-│   ├── styles/                # 글로벌 스타일 (fonts.css, index.css, landing.css, tailwind.css, theme.css)
+│   ├── styles/                # 글로벌 스타일 (fonts.css, index.css, tailwind.css, theme.css)
 │   ├── test/                  # 테스트 설정과 저장소 전체 검사
 │   │   ├── archive/           # 옛 판 성적서 정답 파일·스냅샷 (손으로 고치지 않는다, §6.3)
 │   │   ├── contract/          # 사실 시트 계약 사본 (백엔드와 같아야 함, §6.2 · 판 4 사본 *_ed4.json §6.6·§6.7 · 보고 항목 2 대조 표 §6.5)
@@ -94,7 +93,7 @@ Capstone_Front/
 ### 4.1. 얇은 페이지 컴포넌트 (Thin Pages / Assembler Pattern)
 `src/pages/` 내의 파일들은 복잡한 JSX나 비즈니스 로직을 직접 갖지 않습니다.
 - **역할**: `useWorkflowStore`(Zustand)에서 상태를 읽어 `components/<도메인>/` 컴포넌트에 props 로 주입하고, `WorkflowShell`(워크플로우) 또는 `AppShell`(비-워크플로우)로 감쌉니다. 데이터 페칭 등 부수효과는 `hooks/` 로 분리합니다.
-- **구조**: 각 입력 화면은 독립 라우트/페이지입니다. 예: `routes.ts` 의 `/app/client-info → ClientInfo`, `/app/metrics → TestItems`. `Home.tsx` 는 루트("/")에서 `LandingPage` 를 렌더합니다. 옛 `/app/basic-info` 는 이제 작업 유형 화면(`/app`)으로 보내는 리다이렉트일 뿐입니다.
+- **구조**: 각 입력 화면은 독립 라우트/페이지입니다. 예: `routes.ts` 의 `/app/client-info → ClientInfo`, `/app/metrics → TestItems`. 루트("/")는 워크스페이스 목록(`/workspaces`)으로 보내는 리다이렉트입니다(평가는 워크스페이스 안에서만 시작합니다 — 종전의 영어 랜딩 페이지는 없앴습니다). 옛 `/app/basic-info` 는 이제 작업 유형 화면(`/app`)으로 보내는 리다이렉트일 뿐입니다.
 - **레퍼런스**: `pages/ClientInfo.tsx`, `pages/TestItems.tsx` 가 얇은 조립자의 모범 예시입니다.
 
 ### 4.2. 관심사의 분리 (Separation of Concerns)
@@ -262,7 +261,7 @@ AI·규칙 문장이 아니라 코드가 찍는 문장이다. 7~9절 문장은 �
 
 - 판 4 심판의 기준 고정과 검증을 마치고, 그 기록이 든 백엔드를 배포한다 — 기록이 없는 백엔드에서는 판 4 성적서가 모두 발급 보류다(백엔드 `docs/ARCHITECTURE.md` §14.8). 부록 1(§6.7)은 만들었다.
 - (정함, 2026-10-29) 평가 목록의 보류 표시 글은 "발급 보류"(`judgeNotice.LIST_HELD_BADGE`, §6.7)로 확정했다. 심판 묶음이 없는 판 4 완료 run 도 목록에서 보류로 보이는 지금 동작도 확정이다.
-- 랜딩 `components/landing/ReportDemo.tsx` 는 판 3 글("시험결과서" 등)을 손으로 적은 정적 그림이라 플래그를 따라가지 않는다. 판 4 글로 바꿀지 정한다(랜딩의 다른 미리보기 `ScrollableReportPreview` 는 매퍼로 만들어 플래그를 따른다).
+- (정함, 2026-11-10) 랜딩 페이지의 판 3 성적서 그림(`ReportDemo`)을 판 4 글로 바꿀지는 랜딩을 통째로 없애 더 정할 일이 없다.
 - 판 4 화면에서 본 어색한 곳: 평가 전 초안(3.1 핵심 열·3.4 지정 없음, 4.2·4.4·4.6 빈 소절, 4.7·4.8 문장), 인쇄 1쪽 "의뢰자" 줄이 홀로 다음 쪽으로 넘어감, "판정 불가 (… 4개 중 4개 충족)" 문장(고정 문구 21 틀과 10 번 "종합 판정에는 … 충족한 수를 함께 적는다"대로 찍힌 것 — 판정 불가일 때 충족 수를 뺄지는 문서에서 정할 일), 다중 최약 클래스 F1 넷째 자리와 고정 문구 23 범위. 인쇄에서: 표지 시험 결과 요약 표의 항목 칸이 좁아 낱말 가운데서 줄이 바뀜("종합 판/정"·"핵심 지/표" — 칸 폭은 결과 칸 글 길이에 따라 달라진다), 4.2 표와 그 아래 근거 문장이 쪽 경계에서 갈림(심판 라운드 1단계 스모크 PDF).
 - (정함, 2026-10-28) 시험기관 주소·이메일은 프론트 `lib/report/edition4/institutionEd4.ts` 의 고정값이 정본이다(재료 목록의 "고정값"). 기관 **이름**만 서버 발급 스냅샷에서 온다. 실제 주소가 정해지면 이 파일의 값만 바꾼다 — 이미 발급한 판 4 보관본은 발급 때 저장한 값 그대로다.
 - (정함, 2026-10-28) 핵심 지표가 없는 성적서(부록 B31 갈래)의 표지 요약은 "핵심 지표" 줄을 빼고 세 줄(종합 판정·보고 항목·주요 제약)로 둔다(`verdictEd4.test.ts` 가 지킴). 화면을 거친 입력에서는 나오지 않는다.

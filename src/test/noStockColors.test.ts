@@ -5,8 +5,7 @@
  * `text-destructive`·`bg-warning-subtle` 등)으로만 쓴다. `bg-blue-50` 이나 `#FAFAFA` 처럼
  * 값을 직접 적으면 디자인 시스템을 바꿀 때 그 자리만 옛 색으로 남는다.
  *
- * 성적서 렌더링(`components/report`)과 랜딩(`components/landing`, `pages/LandingPage.tsx`)은
- * 범위 밖이다 — 성적서는 인쇄되는 문서이고 랜딩은 마케팅 화면이라 따로 다룬다.
+ * 성적서 렌더링(`components/report`)은 범위 밖이다 — 인쇄되는 문서라 따로 다룬다.
  */
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -14,7 +13,7 @@ import { join, relative, resolve } from "node:path";
 
 const SRC = resolve(__dirname, "..");
 
-const EXCLUDED = [/^components\/report\//, /^components\/landing\//, /^pages\/LandingPage\.tsx$/];
+const EXCLUDED = [/^components\/report\//];
 
 const STOCK_COLOR =
   /\b(?:bg|text|border|ring|from|to|via|fill|stroke|outline|divide|placeholder|decoration|shadow|accent|caret)(?:-[trblxy])?-(?:slate|gray|zinc|neutral|stone|red|rose|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink)-\d{2,3}\b/;

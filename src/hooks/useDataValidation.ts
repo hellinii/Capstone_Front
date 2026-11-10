@@ -3,11 +3,9 @@
  *
  * 페이지 진입 시 워크플로우 store 입력값으로 payload/FormData 를 구성해
  * /api/validate-data 를 호출하고 결과를 반환한다. 결과는 리포트(6절 시험 결과)에서
- * 재사용할 수 있도록 store.setValidationResult 로 보존한다. showcase 모드(?showcase=1)에서는
- * 정적 목 데이터(DATA_VALIDATION_SHOWCASE)를 사용한다. DataValidation 페이지에서 사용.
+ * 재사용할 수 있도록 store.setValidationResult 로 보존한다. DataValidation 페이지에서 사용.
  */
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
 
 import { apiUrl } from "@/lib/apiBase";
 import { translateRoleToBackend } from "../lib/mapping/translateRoleToBackend";
@@ -18,7 +16,6 @@ import {
 } from "../lib/report/mapWorkflowToFinalReport";
 import type { ValidateDataResponseData } from "../types/validation.types";
 import { useWorkflowStore } from "../utils/stores/useWorkflowStore";
-import { DATA_VALIDATION_SHOWCASE } from "../data/dataValidationShowcase";
 import { resolveBeta } from "../utils/domain/validation";
 import { resolveTaskType } from "../data/evaluationData";
 import { requestDecisionThreshold } from "../components/column-mapping/DecisionThresholdCard";
@@ -37,20 +34,14 @@ interface UseDataValidationResult {
 }
 
 export function useDataValidation(): UseDataValidationResult {
-  const [searchParams] = useSearchParams();
   const store = useWorkflowStore();
 
   const [validationData, setValidationData] = useState<ValidateDataResponseData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 페이지 진입 시 /api/validate-data 호출 (showcase 모드는 목 데이터 사용)
+  // 페이지 진입 시 /api/validate-data 호출
   useEffect(() => {
-    if (searchParams.get("showcase") === "1") {
-      setValidationData(DATA_VALIDATION_SHOWCASE);
-      return;
-    }
-
     if (!store.rawFile) {
       setError("업로드된 파일이 없습니다. 평가 데이터 화면으로 돌아가 주세요.");
       return;
