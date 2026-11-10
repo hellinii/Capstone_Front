@@ -122,7 +122,7 @@ export function validationDetailEd4(detail: string): string {
 
 /**
  * 요약 표 네 줄([항목, 값, 비고]) — 판 3 6.0 과 같은 재료(`validationSummary`, 없으면 `datasetInfo.sampleCount`). 검증 결과가 하나도
- * 없으면(검증 단계를 건너뛴 평가·랜딩 미리보기) 넷째 줄 "데이터 검증 결과 | 오류 0건 / 경고 0건 | 항목별 결과는 아래 표"를 빼고
+ * 없으면(검증 단계를 건너뛴 평가) 넷째 줄 "데이터 검증 결과 | 오류 0건 / 경고 0건 | 항목별 결과는 아래 표"를 빼고
  * 세 줄 — 아래에는 표 대신 판 3 안내 글(`V3_NO_VALIDATION`)이 서므로 그 줄은 사실과 어긋난다.
  */
 export function validationSummaryRowsEd4(data: Pick<FinalReportData, "dataValidation" | "validationSummary" | "datasetInfo">): string[][] {

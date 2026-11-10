@@ -1,7 +1,5 @@
 import { useMemo } from "react";
-import { Link, useNavigate } from "react-router";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "../../components/ui/button";
+import { useNavigate } from "react-router";
 import { AppShell } from "../../layout/AppShell";
 import { WorkspaceCreateForm } from "../../components/workspaces/WorkspaceCreateForm";
 import { WorkspaceCard } from "../../components/workspaces/WorkspaceCard";
@@ -34,12 +32,6 @@ export function WorkspaceList() {
   return (
     <AppShell>
       <section className="flex flex-col gap-4">
-        <Button asChild variant="ghost" size="sm" className="-ml-3 w-fit">
-          <Link to="/">
-            <ArrowLeft className="h-4 w-4" />
-            홈
-          </Link>
-        </Button>
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold text-foreground">평가 워크스페이스</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">

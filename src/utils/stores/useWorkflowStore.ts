@@ -988,20 +988,6 @@ function applyMaterialPicks(
 /** persist 저장소 키. 테스트와 운영이 같은 값을 보도록 export 한다. */
 export const WORKFLOW_STORAGE_KEY = "ml-evaluation-workflow";
 
-/**
- * 시연 모드(?showcase=1) 여부.
- *
- * showcase 는 `seedShowcaseData` 로 **실제 store 에 가짜 기업정보·사업자등록번호를 주입**하고,
- * WorkflowShell 이 라우팅마다 그것을 다시 실행한다(E-05). persist 를 그대로 붙이면
- * 그 가짜 데이터가 사용자의 실제 작업 위에 영속된다.
- * 그래서 시연 중에는 저장소를 **읽지도 쓰지도 않는다** — 시연이 실제 작업을 덮지 않고,
- * 실제 작업이 시연 화면에 새어 나오지도 않는다.
- */
-function isShowcaseMode(): boolean {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("showcase") === "1";
-}
-
 export const useWorkflowStore = create<WorkflowState>()(
   persist(
     (set) => ({
@@ -1100,7 +1086,7 @@ export const useWorkflowStore = create<WorkflowState>()(
       // Step 5
       setColumnMapping: (value) =>
         set((state) => {
-          // 모든 매핑 쓰기(업로드의 분석 결과·역할 변경·시연 시드)가 여기를 지난다. 평가 흐름에 놓지
+          // 모든 매핑 쓰기(업로드의 분석 결과·역할 변경)가 여기를 지난다. 평가 흐름에 놓지
           // 않은 항목의 역할은 받지 않는다 — 맡아 둔다(docs/MATERIAL_PICKER.md §12.4).
           const next = restrictMappingRoles(
             typeof value === "function" ? value(state.columnMapping) : value,
@@ -1184,11 +1170,9 @@ export const useWorkflowStore = create<WorkflowState>()(
        *  남은 작성 중 상태에 대한 결정이 아니다 — 여기서는 정리하는 쪽이 옳다.)
        */
       migrate: (persisted, version) => migrateWorkflowState(persisted as any, version),
-      // 시연 모드에서는 저장소를 읽지도 쓰지도 않는다(위 isShowcaseMode 주석 참조).
       storage: createJSONStorage(() => ({
-        getItem: (name) => (isShowcaseMode() ? null : window.localStorage.getItem(name)),
+        getItem: (name) => window.localStorage.getItem(name),
         setItem: (name, value) => {
-          if (isShowcaseMode()) return;
           try {
             window.localStorage.setItem(name, value);
           } catch {

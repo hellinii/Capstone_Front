@@ -47,7 +47,7 @@ export interface LayerOneSource {
   composerMetrics: ComposerValueMap;
   composerPerspective: ComposerValueMap;
   materialPicks?: MaterialPicks;
-  /** 지금 매핑. 없거나 비었으면(시연) 지표 가용성을 보지 않는다. */
+  /** 지금 매핑. 없거나 비었으면 지표 가용성을 보지 않는다. */
   columnMapping?: MappingRow[];
   /** 매핑 확정 응답의 가용 지표(정본). 없으면 매핑으로 판정한다(`unavailableMetricReasons`). */
   availableMetricIds?: string[] | null;

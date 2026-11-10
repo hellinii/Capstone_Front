@@ -138,7 +138,7 @@ describe("지적 3 — 같은 수는 같은 글자(4.3·4.4·4.6, 사실 시트)
   });
 });
 
-describe("지적 4 — 평가 전 초안·랜딩의 빈 표와 4.1 모순", () => {
+describe("지적 4 — 평가 전 초안의 빈 표와 4.1 모순", () => {
   it("bc_strong 초안: 4.3 은 행 0개 표를 그리지 않는다(머리 행만 있는 표 없음)", () => {
     const draft = draftReport("bc_strong");
     const at43 = between(screenText(draft), "4.3 지표별 결과", "4.4 오분류");

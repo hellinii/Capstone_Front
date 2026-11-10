@@ -423,8 +423,8 @@ PR #54 이후 팀 피드백: 화면이 각 필드 설명을 보여 주는 데 �
 
 확률을 따로 고르는 항목으로 두지 않는다 — 조건이 "예측 **또는** 확률"이라 둘로 쪼개면 서로에 달린 조건이 생기고, 숨기면 AUROC 같은 지표가 원인 없이 꺼지며, 자동 매핑이 찾은 확률 컬럼을 버리게 된다. 백엔드 계약은 그대로다: 샘플 ID·지연시간은 원래 선택 역할이고, 내린 행은 ignore 로 가서 중복 ID 검사·지연시간 통계가 돌지 않는다("받지 않음"의 뜻 그대로).
 
-**판정 한 곳, 적용 두 곳.** 받는 역할은 `allowedMappingRoles(taskType, evalDataPicks)`(`utils/domain/mappingPicks.ts`) 하나가 정한다 — 유형의 매핑 역할 중 그 역할을 받는 ① 항목을 받는 것(`isFieldPicked`) + ignore. picks 가 없으면(평가 흐름 이전·시연) 모두 받는다. 적용은 스토어의 두 쓰기 지점에서만 한다.
-- `setColumnMapping` — 업로드의 분석 결과·매핑 화면의 역할 변경·시연 시드가 모두 여기를 지난다.
+**판정 한 곳, 적용 두 곳.** 받는 역할은 `allowedMappingRoles(taskType, evalDataPicks)`(`utils/domain/mappingPicks.ts`) 하나가 정한다 — 유형의 매핑 역할 중 그 역할을 받는 ① 항목을 받는 것(`isFieldPicked`) + ignore. picks 가 없으면(평가 흐름 이전) 모두 받는다. 적용은 스토어의 두 쓰기 지점에서만 한다.
+- `setColumnMapping` — 업로드의 분석 결과·매핑 화면의 역할 변경이 모두 여기를 지난다.
 - `setMaterialPick` — ① 의 항목이 바뀌면 지금 매핑에 다시 적용한다.
 - 둘 다 매핑이 실제로 바뀌었을 때만 가용 지표(`availableMetricIds`)를 비운다(`restrictMappingRoles` 는 바뀐 것이 없으면 같은 배열을 돌려준다).
 
@@ -501,7 +501,7 @@ AI 에 넘기는 클래스 설명도 같은 거른 값(`reportInput.classLabelDe
 
 **β 기본값 한 곳(B3).** Fβ(M5)의 β 는 `DEFAULT_BETA = "1.0"`(`utils/domain/validation.ts`) 하나에서 시작한다. 지표의 상세 값 줄은 β 칸과 목표값 칸 중 어느 쪽을 먼저 적어도 `newMetricDetail(id, name)` 으로 만든다 — 종전에는 목표값을 먼저 적으면 M5 줄이 `beta: ""` 로 생겨 β 칸이 비고 "다음"이 잠겼다. β 를 직접 지우면 여전히 오류다(`isBetaValid` 를 지표 화면·β 칸·1층 재확인이 같이 쓴다). 이미 `beta: ""` 로 저장된 진행분은 사용자가 지운 것인지 알 수 없어 옮기지 않는다.
 
-**계산할 수 없게 된 지표(B8).** 검증 화면 "다음"의 1층 재확인(`layerOneGaps`)이 고른 지표를 지금 매핑으로 계산할 수 있는지도 본다(`unavailableSelectedMetrics` — 판정은 지표 화면과 같은 `unavailableMetricReasons`, 매핑 확정 응답의 가용 지표가 있으면 그것이 정본). 남아 있으면 "지표와 합격 기준에서 채우기"와 함께 "AUROC: 양성 클래스 점수(score) 컬럼이 매핑되지 않아 계산할 수 없습니다." 같은 줄을 보인다. 지표 화면은 들어올 때 그 지표를 빼고 알린다. 매핑을 고친 뒤 단계 표시줄로 지표 화면을 건너뛰어도 막힌다. 빈 매핑(시연)은 막지 않는다.
+**계산할 수 없게 된 지표(B8).** 검증 화면 "다음"의 1층 재확인(`layerOneGaps`)이 고른 지표를 지금 매핑으로 계산할 수 있는지도 본다(`unavailableSelectedMetrics` — 판정은 지표 화면과 같은 `unavailableMetricReasons`, 매핑 확정 응답의 가용 지표가 있으면 그것이 정본). 남아 있으면 "지표와 합격 기준에서 채우기"와 함께 "AUROC: 양성 클래스 점수(score) 컬럼이 매핑되지 않아 계산할 수 없습니다." 같은 줄을 보인다. 지표 화면은 들어올 때 그 지표를 빼고 알린다. 매핑을 고친 뒤 단계 표시줄로 지표 화면을 건너뛰어도 막힌다. 빈 매핑은 막지 않는다.
 
 **목표값 범위와 자릿수(B9·B10).**
 - M14(클래스 분포 차이, 총변동거리)·M18(레이블 분포 차이, 코사인 거리)의 목표값은 0~1 이다(백엔드 계산식과 같다). KL Divergence·Log Loss 는 그대로 0 이상.

@@ -9,14 +9,14 @@ import { cn } from "../../utils/styling/styles";
 import { useWorkflowStore } from "../../utils/stores/useWorkflowStore";
 
 /**
- * @param showTaskType 워크플로우 안에서만 분류 유형 배지를 띄운다. AppShell(워크스페이스·
- *   랜딩)은 특정 평가에 매여 있지 않으므로 기본값은 false 다.
+ * @param showTaskType 워크플로우 안에서만 분류 유형 배지를 띄운다. AppShell(워크스페이스)은
+ *   특정 평가에 매여 있지 않으므로 기본값은 false 다.
  */
 export function AppHeader({ showTaskType = false }: { showTaskType?: boolean }) {
   return (
     <header className="h-14 border-b border-border bg-card sticky top-0 z-50">
       <div className="h-full px-8 flex items-center justify-between max-w-[1344px] mx-auto">
-        <Link to="/" className="flex items-center gap-3 hover:opacity-85 transition-opacity">
+        <Link to="/workspaces" className="flex items-center gap-3 hover:opacity-85 transition-opacity">
           <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
             <svg
               viewBox="0 0 24 24"

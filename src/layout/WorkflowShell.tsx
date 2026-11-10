@@ -12,7 +12,6 @@ import {
   resumeStepId,
   stepIdToPath,
 } from "../utils/domain/workflowSteps";
-import { seedShowcaseData } from "../utils/domain/showcaseSeed";
 import { cn } from "../utils/styling/styles";
 
 interface WorkflowShellProps {
@@ -78,7 +77,6 @@ export function WorkflowShell({
 }: WorkflowShellProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const isShowcaseMode = new URLSearchParams(location.search).get("showcase") === "1";
 
   useEffect(() => {
     // 단계가 아닌 화면(재료 고르기)은 단계 표시를 건드리지 않는다.
@@ -92,13 +90,6 @@ export function WorkflowShell({
     const store = useWorkflowStore.getState();
     // 걸을 목록은 고른 카드와 그 순서에서 나온다 — 가드도 이 목록을 기준으로 판단해야 한다.
     const steps = buildStepList(store.composerCards, store.cardOrder);
-
-    if (isShowcaseMode) {
-      // 시연은 시드가 완료 표시를 직접 채우므로 가드를 적용하지 않는다.
-      store.setCurrentStepId(stepId);
-      seedShowcaseData(store, stepId);
-      return;
-    }
 
     /**
      * run 에 매인 화면은 가드하지 않는다.
@@ -127,7 +118,7 @@ export function WorkflowShell({
     }
 
     store.setCurrentStepId(stepId);
-  }, [location.pathname, location.search, isShowcaseMode, isStepPage, navigate]);
+  }, [location.pathname, isStepPage, navigate]);
 
   return (
     <div
@@ -150,7 +141,7 @@ export function WorkflowShell({
           {children}
         </div>
       )}
-      {showActionBar && !isShowcaseMode && (
+      {showActionBar && (
         <ActionBar
           showPrevious={showPrevious}
           showNext={showNext}

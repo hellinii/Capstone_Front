@@ -95,7 +95,7 @@ describe("계산할 수 없게 된 지표 (B8 — 단계 표시줄로 지표 화
     expect(layerOneGaps({ ...withAuroc, columnMapping, availableMetricIds: ["M1", "M9"] })).toEqual([]);
   });
 
-  it("빈 매핑(시연)이나 매핑이 없으면 막지 않는다", () => {
+  it("빈 매핑이나 매핑이 없으면 막지 않는다", () => {
     expect(layerOneGaps({ ...withAuroc, columnMapping: [] })).toEqual([]);
     expect(layerOneGaps(withAuroc)).toEqual([]);
   });

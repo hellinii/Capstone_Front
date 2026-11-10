@@ -11,10 +11,6 @@ import { toIsoDate } from "./isoDate";
  * **'평가 실행' 순간에만 만든다.** 워크플로우 진입 시점에 만들면 `/app/basic-info` 를
  * 열었다 나가기만 해도 빈 워크스페이스가 하나씩 쌓인다. 여기서 만들면 정확히 필요한
  * 순간에 하나만 생긴다.
- *
- * **시연 모드는 여기 도달하지 않는다.** 랜딩 iframe 은 `WorkflowShell` 의 showcase
- * early return 에 먼저 걸리고, showcase 에서는 ActionBar 자체가 렌더되지 않아
- * '다음' 핸들러가 발화할 수 없다(두 겹).
  */
 export function ensureActiveWorkspace(modelName: string): string {
   const store = useWorkspaceStore.getState();
