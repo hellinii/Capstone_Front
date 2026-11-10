@@ -23,7 +23,7 @@ export function leafOfRole(role: MappingRole): string | null {
 
 /**
  * 이 유형에서 매핑 화면이 내놓는 역할: 유형의 매핑 역할 중 그 역할을 받는 ① 항목을 받는 것 + "ignore".
- * `evalDataPicks` 가 없으면(평가 흐름 만들기 이전의 상태·시연) 모두 받는다.
+ * `evalDataPicks` 가 없으면(평가 흐름 만들기 이전의 상태) 모두 받는다.
  */
 export function allowedMappingRoles(
   taskType: TaskType,

@@ -9,7 +9,6 @@
  * 함께 다뤄야 하는 것들 — persist 를 붙이는 순간 **지금은 새로고침이 초기화 역할을 해서
  * 세션 안에 갇혀 있던 오염이 영속화된다**:
  *   E-08 `setTaskType` 이 completedSteps·학습 데이터 정보를 비우지 않는다
- *   E-05 `?showcase=1` 이 실제 store 에 가짜 기업정보를 주입한다
  */
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -181,56 +180,25 @@ describe("[E-16] 현재 run 식별자", () => {
   });
 });
 
-describe("[E-05] 시연 모드(?showcase=1)", () => {
-  function enterShowcase() {
-    window.history.replaceState({}, "", "/app/basic-info?showcase=1");
-  }
-  function leaveShowcase() {
-    window.history.replaceState({}, "", "/app/basic-info");
-  }
-
-  it("시연 데이터가 저장소에 남지 않는다 — 가짜 사업자등록번호가 영속되면 안 된다", () => {
-    enterShowcase();
+describe("주소의 검색어는 저장에 영향이 없다 — 시연 모드(?showcase=1)는 랜딩과 함께 없앴다", () => {
+  // 종전에는 `?showcase=1` 이면 저장소를 읽지도 쓰지도 않았다(E-05, 랜딩 미리보기 전용).
+  // 그 우회가 남으면 이 주소로 들어온 사용자의 입력이 새로고침에 사라진다.
+  it("`?showcase=1` 주소에서도 입력을 저장하고, 저장된 입력을 다시 읽는다", async () => {
+    const before = window.location.pathname + window.location.search;
+    window.history.replaceState({}, "", "/app/client-info?showcase=1");
     try {
-      localStorage.clear(); // 시연 진입 시점의 저장소를 비운 뒤 시연 데이터를 주입한다
-      useWorkflowStore.getState().setBasicInfo({
-        ...DEFAULT_BASIC_INFO,
-        companyName: "Apex AI Lab",
-        businessNumber: "123-45-67890",
-      });
+      useWorkflowStore.getState().setBasicInfo({ ...DEFAULT_BASIC_INFO, companyName: "실제 고객사" });
+      expect((persistedState()!.basicInfo as { companyName: string }).companyName).toBe("실제 고객사");
+      const saved = localStorage.getItem(WORKFLOW_STORAGE_KEY)!;
 
-      expect(localStorage.getItem(WORKFLOW_STORAGE_KEY)).toBeNull();
-    } finally {
-      leaveShowcase();
-    }
-  });
-
-  it("시연 중에는 사용자의 실제 작업을 읽지 않는다 — 실제 데이터가 시연에 새어 나오면 안 된다", async () => {
-    useWorkflowStore.getState().setBasicInfo({ ...DEFAULT_BASIC_INFO, companyName: "실제 고객사" });
-    const saved = localStorage.getItem(WORKFLOW_STORAGE_KEY)!;
-
-    enterShowcase();
-    try {
-      localStorage.setItem(WORKFLOW_STORAGE_KEY, saved);
+      // 메모리만 비우고(이 쓰기도 저장되므로) 저장소에는 앞의 입력을 되돌려 둔 뒤 다시 읽는다.
       useWorkflowStore.setState({ basicInfo: DEFAULT_BASIC_INFO });
+      localStorage.setItem(WORKFLOW_STORAGE_KEY, saved);
       await useWorkflowStore.persist.rehydrate();
-
-      expect(useWorkflowStore.getState().basicInfo.companyName).not.toBe("실제 고객사");
+      expect(useWorkflowStore.getState().basicInfo.companyName).toBe("실제 고객사");
     } finally {
-      leaveShowcase();
+      window.history.replaceState({}, "", before);
     }
-  });
-
-  it("시연을 벗어나면 다시 정상적으로 저장한다", () => {
-    enterShowcase();
-    localStorage.clear();
-    useWorkflowStore.getState().setBasicInfo({ ...DEFAULT_BASIC_INFO, companyName: "시연" });
-    expect(localStorage.getItem(WORKFLOW_STORAGE_KEY)).toBeNull();
-
-    leaveShowcase();
-    useWorkflowStore.getState().setBasicInfo({ ...DEFAULT_BASIC_INFO, companyName: "실제" });
-    expect(persistedState()).not.toBeNull();
-    expect((persistedState()!.basicInfo as { companyName: string }).companyName).toBe("실제");
   });
 });
 
@@ -339,7 +307,7 @@ describe("매핑 불변식 — 평가 흐름에 놓지 않은 항목의 역할�
     expect(useWorkflowStore.getState().availableMetricIds).toEqual(["M1"]);
   });
 
-  it("picks 가 {} 면(평가 흐름 이전·시연) 그대로 받는다", () => {
+  it("picks 가 {} 면(평가 흐름 이전) 그대로 받는다", () => {
     expect(useWorkflowStore.getState().materialPicks).toEqual({});
     useWorkflowStore.getState().setColumnMapping(analysed());
     expect(latencyRow().confirmedRole).toBe("latency");

@@ -23,12 +23,6 @@ export function NotFound() {
         >
           워크스페이스
         </Link>
-        <Link
-          to="/"
-          className="rounded border border-border-strong px-4 py-2 text-sm text-foreground-secondary hover:bg-muted"
-        >
-          홈
-        </Link>
       </div>
     </div>
   );

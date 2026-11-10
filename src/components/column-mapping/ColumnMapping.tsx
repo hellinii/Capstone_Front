@@ -51,7 +51,7 @@ interface ColumnMappingProps {
   onDecisionThresholdChange?: (value: number | Record<string, number> | null) => void;
   /**
    * 평가 흐름에서 ① 평가 데이터에 넣은 항목. 넣지 않은 샘플 ID·지연시간 역할은 선택지에 없고,
-   * 클래스 레이블 설명 카드는 넣었을 때만 보인다. 없으면(평가 흐름 이전·시연) 모두 받는다.
+   * 클래스 레이블 설명 카드는 넣었을 때만 보인다. 없으면(평가 흐름 이전) 모두 받는다.
    */
   evalDataPicks?: readonly string[];
   /** 맡아 둔 행의 "평가 흐름 만들기에서 넣기" — 그 역할을 받는 ① 항목 id 를 넘긴다. */

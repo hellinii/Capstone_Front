@@ -57,7 +57,7 @@ export function Ed4ResultsCore({ data }: Ed4PartProps) {
       {basis && <Ed4Paragraph>{basis}</Ed4Paragraph>}
 
       <Ed4SubsectionTitle number="4.3" />
-      {/* 지표 결과가 없으면(평가 전 초안·랜딩) 머리 행만 있는 표를 그리지 않는다. */}
+      {/* 지표 결과가 없으면(평가 전 초안) 머리 행만 있는 표를 그리지 않는다. */}
       {data.kpiResults.length > 0 && (
         <Ed4Table
           columns={EX_4_3_COLUMNS}

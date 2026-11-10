@@ -1,6 +1,5 @@
 import { createElement } from "react";
 import { Navigate, useParams, type Params } from "react-router";
-import { Home } from "./pages/Home";
 import { TaskTypeSelect } from "./pages/TaskTypeSelect";
 import { MaterialPicker } from "./pages/MaterialPicker";
 import { ClientInfo } from "./pages/ClientInfo";
@@ -38,7 +37,9 @@ function redirectWithParams(build: (params: Readonly<Params<string>>) => string)
 }
 
 export const routes = [
-  { path: "/", Component: Home },
+  // 첫 화면은 워크스페이스 목록이다. 평가는 워크스페이스 안에서만 시작하므로(결과를 저장·발급·
+  // 재조회하려면 활성 워크스페이스가 있어야 한다) 종전의 영어 랜딩 페이지는 없앴다.
+  { path: "/", Component: redirectTo("/workspaces") },
   // 워크플로우 진입점 = 분류 유형 선택(docs/UI_DESIGN.md §3).
   // 종전에는 /app/basic-info 로 바로 리다이렉트해, 유형 선택이 1단계 폼 안에 묻혀 있었다.
   { path: "/app", Component: TaskTypeSelect },

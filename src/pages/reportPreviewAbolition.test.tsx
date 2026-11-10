@@ -16,13 +16,13 @@ import { ensureActiveWorkspace } from "../utils/domain/ensureActiveWorkspace";
  *
  * 그리고 랜딩의 성적서 미리보기 iframe 이 바로 그 경로를 가리켰는데 `?showcase=1` 이
  * 없어서, **방문자의 실제 회사명·사업자등록번호·주소가 공개 랜딩 페이지에 렌더**됐다.
+ * (랜딩 페이지는 그 뒤 통째로 없앴다.)
  */
 
 const read = (p: string) => readFileSync(resolve(__dirname, "..", p), "utf-8");
 
 describe("preview 경로가 코드에서 사라졌다 (E-06)", () => {
   it.each([
-    "components/landing/ScrollableReportPreview.tsx",
     "utils/stores/useWorkflowStore.ts",
     "hooks/useReportData.ts",
     "hooks/useIssuance.ts",
@@ -40,14 +40,11 @@ describe("preview 경로가 코드에서 사라졌다 (E-06)", () => {
     expect(code).not.toContain("/report/preview");
   });
 
-  it("랜딩 미리보기가 iframe 을 쓰지 않는다(방문자 입력 렌더 차단)", () => {
-    expect(read("components/landing/ScrollableReportPreview.tsx")).not.toContain("<iframe");
-  });
-
   it("옛 북마크는 워크스페이스 목록으로 보낸다", () => {
+    // 경로와 목적지를 한 줄로 묶어 본다 — `/` 도 `redirectTo("/workspaces")` 를 쓰므로 따로 찾으면
+    // `/report/preview` 의 목적지가 바뀌어도 통과한다.
     const routes = read("routes.ts");
-    expect(routes).toContain("/report/preview");
-    expect(routes).toContain('redirectTo("/workspaces")');
+    expect(routes).toMatch(/path: "\/report\/preview", Component: redirectTo\("\/workspaces"\)/);
   });
 });
 

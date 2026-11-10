@@ -35,7 +35,7 @@ describe("leafOfRole", () => {
 });
 
 describe("allowedMappingRoles", () => {
-  it("picks 가 없으면 유형의 모든 역할 + ignore (시연·평가 흐름 이전)", () => {
+  it("picks 가 없으면 유형의 모든 역할 + ignore (평가 흐름 이전)", () => {
     for (const task of TASKS) {
       expect(allowedMappingRoles(task, undefined)).toEqual([...MAPPABLE_ROLES_BY_TASK[task], "ignore"]);
     }
